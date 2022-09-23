@@ -1,0 +1,1 @@
+from mindaudio.nn.metric.metric import wer
