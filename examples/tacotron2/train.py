@@ -17,11 +17,11 @@ from mindspore.nn.optim import Adam
 
 sys.path.append('.')
 from examples.tacotron2.dataset import create_dataset
-from mindaudio.models.tacotron2.src.hparams import hparams as hps
-from mindaudio.models.tacotron2.src.callback import get_lr, LossCallBack
-from mindaudio.models.tacotron2.src.tacotron2 import Tacotron2, Tacotron2Loss, NetWithLossClass, TrainStepWrap
+from examples.tacotron2.hparams import hparams as hps
+from mindaudio.models.tacotron2 import get_lr, LossCallBack
+from mindaudio.models.tacotron2 import Tacotron2, Tacotron2Loss, NetWithLossClass, TrainStepWrap
 
-from mindaudio.models.tacotron2.model_utils.config import config
+from mindaudio.models.tacotron2 import config
 from mindaudio.adapter.local_adapter import get_device_id, get_device_num
 
 def get_ms_timestamp():
