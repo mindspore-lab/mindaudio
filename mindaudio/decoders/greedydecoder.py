@@ -1,11 +1,3 @@
-"""
-modify GreedyDecoder to adapt to MindSpore
-"""
-
-import numpy as np
-import sys
-sys.path.append('.')
-from  mindaudio.decoders.decoderms import GreedyDecoder
 # ----------------------------------------------------------------------------
 # Copyright 2015-2016 Nervana Systems Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,11 +12,13 @@ from  mindaudio.decoders.decoderms import GreedyDecoder
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ----------------------------------------------------------------------------
-# Modified to support pytorch Tensors
-
-# import Levenshtein as Lev
+"""
+modify GreedyDecoder to adapt to MindSpore
+"""
+import sys
+sys.path.append('.')
+import Levenshtein as Lev
 from six.moves import xrange
-
 import mindspore.ops as ops
 
 
@@ -95,7 +89,7 @@ class Decoder(object):
 
 class MSGreedyDecoder(Decoder):
     def __init__(self, labels, blank_index=0):
-        super(GreedyDecoder, self).__init__(labels, blank_index)
+        super(MSGreedyDecoder, self).__init__(labels, blank_index)
 
     def convert_to_strings(self,
                            sequences,

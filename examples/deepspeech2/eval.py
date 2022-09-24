@@ -3,7 +3,6 @@ Eval DeepSpeech2
 """
 import argparse
 import json
-import sys
 import pickle
 import numpy as np
 
@@ -13,11 +12,10 @@ import mindspore.common.dtype as mstype
 from mindspore import context
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
 
-sys.path.append('.')
-from mindaudio.models.deepspeech2.deepspeech2 import DeepSpeechModel
+from mindaudio.models.deepspeech2 import DeepSpeechModel
 from mindaudio.decoders.greedydecoder import MSGreedyDecoder
-from examples.deepspeech2.config import eval_config
-from examples.deepspeech2.dataset import create_dataset
+from mindaudio.examples.deepspeech2.config import eval_config
+from mindaudio.examples.deepspeech2.dataset import create_dataset
 
 
 parser = argparse.ArgumentParser(description='DeepSpeech evaluation')
