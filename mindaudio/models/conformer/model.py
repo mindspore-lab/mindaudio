@@ -21,13 +21,11 @@ import mindspore.common.dtype as mstype
 import mindspore.nn as nn
 import mindspore.ops as ops
 
-from mindaudio.models.conformer.src.layers.ctc import CTC
-from mindaudio.models.conformer.src.layers.label_smoothing_loss import LabelSmoothingLoss
-from mindaudio.models.conformer.src.transformer.cmvn import GlobalCMVN
-from mindaudio.models.conformer.src.transformer.decoder import TransformerDecoder
-from mindaudio.models.conformer.src.transformer.encoder import ConformerEncoder, TransformerEncoder
-from mindaudio.models.conformer.src.utils.cmvn import load_cmvn
-from mindaudio.models.conformer.src.utils.common import IGNORE_ID
+from mindaudio.models.conformer.layers.ctc import CTC
+from mindaudio.models.conformer.layers.label_smoothing_loss import LabelSmoothingLoss
+from mindaudio.models.conformer.transformer.decoder import TransformerDecoder
+from mindaudio.models.conformer.transformer.encoder import ConformerEncoder, TransformerEncoder
+from mindaudio.utils.common import IGNORE_ID
 
 
 class ASRModelWithAcc(nn.Cell):
@@ -266,8 +264,6 @@ class ASRModel(nn.Cell):
 def init_asr_model(config, input_dim, vocab_size):
     """Init a ASR model."""
     global_cmvn = None
-    # mean, istd = load_cmvn(config['cmvn_file'], config['is_json_cmvn'])
-    # global_cmvn = GlobalCMVN(mindspore.Tensor(mean, mstype.float32), mindspore.Tensor(istd, mstype.float32))
     if config['mixed_precision']:
         compute_type = mstype.float16
     else:

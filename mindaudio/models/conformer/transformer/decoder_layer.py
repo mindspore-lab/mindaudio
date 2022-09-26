@@ -23,8 +23,8 @@ import mindspore.common.dtype as mstype
 import mindspore.nn as nn
 import mindspore.ops as ops
 
-from mindaudio.models.conformer.src.layers.dense import Dense
-from mindaudio.models.conformer.src.layers.layernorm import LayerNorm
+from mindaudio.models.conformer.layers.dense import Dense
+from mindaudio.models.conformer.layers.layernorm import LayerNorm
 
 
 class DecoderLayer(nn.Cell):

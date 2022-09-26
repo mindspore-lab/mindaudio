@@ -6,11 +6,12 @@
 - ...
 
 ## [deepspeech2](/mindaudio/models/deepspeech2)
-- speed_perturb
-- spec_aug
+- DeepSpeechModel
 
 ## [tacotron2](/mindaudio/models/tacotron2)
-
+- Tacotron2
+- Encoder
+- Decoder
 
 ## Example usage of making a modelsset for text-to-speech training:
 

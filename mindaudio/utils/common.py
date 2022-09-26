@@ -109,7 +109,7 @@ def add_sos_eos(ys: List[np.ndarray],
 def get_activation(act):
     """Return activation function."""
     # Lazy load to avoid unused import
-    from src.layers.swish import Swish
+    from mindaudio.nn.swish import Swish
 
     activation_funcs = {
         "tanh": mindspore.nn.Tanh,

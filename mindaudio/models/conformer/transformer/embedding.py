@@ -26,7 +26,7 @@ import mindspore.ops.operations as ops
 import numpy as np
 from mindspore.common.tensor import Tensor  # pylint: disable=C0412
 
-from mindaudio.models.conformer.src.layers.conv import Conv1d
+from mindaudio.models.conformer.layers.conv import Conv1d
 
 
 class PositionalEncoding(nn.Cell):

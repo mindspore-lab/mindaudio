@@ -15,7 +15,7 @@ from examples.conformer.dataset import create_dataset
 from mindaudio.adapter.config import get_config
 from mindaudio.adapter.log import get_logger
 from mindaudio.adapter.parallel_info import get_device_id, get_device_num, get_rank_id
-from mindaudio.models.conformer.src.model.asr_model import init_asr_model
+from mindaudio.models.conformer import init_asr_model
 from mindaudio.utils.callback import CalRunTimeCallback, EvalCallBack, MemoryStartTimeCallback, TimeMonitor
 from mindaudio.utils.common import get_parameter_numel
 from mindaudio.utils.scheduler import ASRWarmupLR

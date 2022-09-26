@@ -28,7 +28,7 @@ from mindspore.common.initializer import XavierUniform, initializer
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
 
-from mindaudio.models.conformer.src.layers.dense import Dense
+from mindaudio.models.conformer.layers.dense import Dense
 
 
 class MultiHeadedAttention(nn.Cell):

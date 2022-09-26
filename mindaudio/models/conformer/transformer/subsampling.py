@@ -20,8 +20,8 @@ import mindspore
 import mindspore.nn as nn
 import mindspore.ops as ops
 
-from mindaudio.models.conformer.src.layers.conv import Conv2d
-from mindaudio.models.conformer.src.layers.dense import Dense
+from mindaudio.models.conformer.layers.conv import Conv2d
+from mindaudio.models.conformer.layers.dense import Dense
 
 
 class BaseSubsampling(nn.Cell):

@@ -19,7 +19,7 @@ import mindspore
 import mindspore.common.dtype as mstype
 import mindspore.nn as nn
 
-from mindaudio.models.conformer.src.layers.dense import Dense
+from mindaudio.models.conformer.layers.dense import Dense
 
 
 class PositionwiseFeedForward(nn.Cell):
