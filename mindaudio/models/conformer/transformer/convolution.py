@@ -22,9 +22,9 @@ import mindspore
 import mindspore.nn as nn
 import mindspore.ops as ops
 
-from mindaudio.models.conformer.src.layers.conv import Conv1d
-from mindaudio.models.conformer.src.layers.glu import GLU
-from mindaudio.models.conformer.src.layers.layernorm import LayerNorm
+from mindaudio.models.conformer.layers.conv import Conv1d
+from mindaudio.models.conformer.layers.glu import GLU
+from mindaudio.models.conformer.layers.layernorm import LayerNorm
 
 
 class ConvolutionModule(nn.Cell):

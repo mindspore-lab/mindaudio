@@ -10,10 +10,10 @@ sys.path.append('.')
 from mindaudio.adapter.config import get_config
 from mindaudio.adapter.log import get_logger
 from mindaudio.adapter.parallel_info import get_device_id
-from mindaudio.examples.conformer.dataset import create_asr_predict_dataset, load_language_dict
-from mindaudio.models.conformer.src.decode.predict_net import Attention, CTCGreedySearch, CTCPrefixBeamSearch, PredictNet
-from mindaudio.models.conformer.src.decode.recognize import ctc_greedy_search, ctc_prefix_beam_search, recognize
-from mindaudio.models.conformer.src.model.asr_model import init_asr_model
+from examples.conformer.dataset import create_asr_predict_dataset, load_language_dict
+from mindaudio.models.conformer.decode.predict_net import Attention, CTCGreedySearch, CTCPrefixBeamSearch, PredictNet
+from mindaudio.models.conformer.decode.recognize import ctc_greedy_search, ctc_prefix_beam_search, recognize
+from mindaudio.models.conformer import init_asr_model
 
 logger = get_logger()
 config = get_config('asr_config')

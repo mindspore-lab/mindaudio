@@ -23,19 +23,19 @@ import mindspore
 import mindspore.common.dtype as mstype
 import mindspore.nn as nn
 
-from mindaudio.models.conformer.src.layers.layernorm import LayerNorm
-from mindaudio.models.conformer.src.transformer.attention import MultiHeadedAttention, RelPositionMultiHeadedAttention
-from mindaudio.models.conformer.src.transformer.convolution import ConvolutionModule
-from mindaudio.models.conformer.src.transformer.embedding import (
+from mindaudio.models.conformer.layers.layernorm import LayerNorm
+from mindaudio.models.conformer.transformer.attention import MultiHeadedAttention, RelPositionMultiHeadedAttention
+from mindaudio.models.conformer.transformer.convolution import ConvolutionModule
+from mindaudio.models.conformer.transformer.embedding import (
     ConvPositionalEncoding, 
     NoPositionalEncoding, 
     PositionalEncoding,
     RelPositionalEncoding
 )
-from mindaudio.models.conformer.src.transformer.encoder_layer import ConformerEncoderLayer, TransformerEncoderLayer
-from mindaudio.models.conformer.src.transformer.positionwise_feed_forward import PositionwiseFeedForward
-from mindaudio.models.conformer.src.transformer.subsampling import Conv2dSubsampling4
-from mindaudio.models.conformer.src.utils.common import get_activation
+from mindaudio.models.conformer.transformer.encoder_layer import ConformerEncoderLayer, TransformerEncoderLayer
+from mindaudio.models.conformer.transformer.positionwise_feed_forward import PositionwiseFeedForward
+from mindaudio.models.conformer.transformer.subsampling import Conv2dSubsampling4
+from mindaudio.utils.common import get_activation
 
 
 class BaseEncoder(nn.Cell):

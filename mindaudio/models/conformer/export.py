@@ -6,9 +6,9 @@ import argparse
 import numpy as np
 from mindspore import Tensor, load_checkpoint, load_param_into_net, export, context
 
-from src.decode.predict_net import Attention, CTCGreedySearch, CTCPrefixBeamSearch
-from src.model.asr_model import init_asr_model
-from src.adapter.config import get_config
+from mindaudio.models.conformer.decode.predict_net import Attention, CTCGreedySearch, CTCPrefixBeamSearch
+from mindaudio.models.conformer import init_asr_model
+from mindaudio.adapter.config import get_config
 
 config = get_config("asr_conformer")
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")

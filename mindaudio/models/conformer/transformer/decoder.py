@@ -23,13 +23,13 @@ import mindspore.common.dtype as mstype
 import mindspore.nn as nn
 import mindspore.ops as ops
 
-from mindaudio.models.conformer.src.layers.dense import Dense
-from mindaudio.models.conformer.src.layers.layernorm import LayerNorm
-from mindaudio.models.conformer.src.transformer.attention import MultiHeadedAttention
-from mindaudio.models.conformer.src.transformer.decoder_layer import DecoderLayer
-from mindaudio.models.conformer.src.transformer.embedding import PositionalEncoding
-from mindaudio.models.conformer.src.transformer.positionwise_feed_forward import PositionwiseFeedForward
-from mindaudio.models.conformer.src.utils.common import get_activation
+from mindaudio.models.conformer.layers.dense import Dense
+from mindaudio.models.conformer.layers.layernorm import LayerNorm
+from mindaudio.models.conformer.transformer.attention import MultiHeadedAttention
+from mindaudio.models.conformer.transformer.decoder_layer import DecoderLayer
+from mindaudio.models.conformer.transformer.embedding import PositionalEncoding
+from mindaudio.models.conformer.transformer.positionwise_feed_forward import PositionwiseFeedForward
+from mindaudio.utils.common import get_activation
 
 
 class TransformerDecoder(nn.Cell):
