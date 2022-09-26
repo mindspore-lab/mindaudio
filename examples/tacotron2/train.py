@@ -18,7 +18,8 @@ from mindspore.nn.optim import Adam
 sys.path.append('.')
 from examples.tacotron2.dataset import create_dataset
 from examples.tacotron2.hparams import hparams as hps
-from mindaudio.models.tacotron2 import get_lr, LossCallBack
+from mindaudio.nn.lr_generator import get_tacotron2_lr
+from mindaudio.utils.callback import LossCallBack
 from mindaudio.models.tacotron2 import Tacotron2, Tacotron2Loss, NetWithLossClass, TrainStepWrap
 
 from mindaudio.models.tacotron2 import config
@@ -107,7 +108,7 @@ def _build_training_pipeline(pre_dataset, run_distribute=False):
 
     steps_per_epoch = pre_dataset.get_dataset_size()
 
-    learning_rate = get_lr(config.lr, epoch_num, steps_per_epoch, steps_per_epoch * config.warmup_epochs)
+    learning_rate = get_tacotron2_lr(config.lr, epoch_num, steps_per_epoch, steps_per_epoch * config.warmup_epochs)
     learning_rate = Tensor(learning_rate)
 
     scale_update_cell = DynamicLossScaleUpdateCell(loss_scale_value=2**12,

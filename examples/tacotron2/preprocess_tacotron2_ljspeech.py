@@ -10,11 +10,11 @@ from mindspore.dataset.audio import Spectrogram, MelScale, AmplitudeToDB
 
 sys.path.append('.')
 from examples.tacotron2.dataset import SAVE_POSTFIX
+from examples.tacotron2.hparams import hparams as hps
 from mindaudio.data.io import read
 from mindaudio.data.datasets import LJSpeechTTS, create_asr_dataset
 from mindaudio.data.features import trim
-from mindaudio.models.tacotron2.src.hparams import hparams as hps
-from mindaudio.models.tacotron2.model_utils.config import config
+from mindaudio.models.tacotron2.config import config
 
 
 def _normalize(S):

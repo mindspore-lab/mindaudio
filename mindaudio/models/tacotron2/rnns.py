@@ -7,8 +7,9 @@ from mindspore import Tensor, Parameter, ParameterTuple
 from mindspore.common.initializer import initializer, Uniform
 from mindspore import log as logger
 from mindspore.ops.primitive import constexpr
-from mindaudio.models.tacotron2.src.rnn_cells import rnn_relu_cell, rnn_tanh_cell, gru_cell
-from mindaudio.models.tacotron2.src.rnn_cells import LSTMCell
+from mindaudio.models.tacotron2.rnn_cells import (
+    rnn_relu_cell, rnn_tanh_cell, gru_cell, LSTMCell
+)
 
 
 @constexpr
