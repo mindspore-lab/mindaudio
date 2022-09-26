@@ -15,11 +15,11 @@ from mindspore.dataset.audio import DBToAmplitude, InverseMelScale, GriffinLim
 
 sys.path.append('.')
 from mindaudio.data.io import write
-from mindaudio.models.tacotron2.src.tacotron2 import Tacotron2
-from mindaudio.models.tacotron2.src.hparams import hparams as hps
+from mindaudio.models.tacotron2.tacotron2 import Tacotron2
+from mindaudio.models.tacotron2.hparams import hparams as hps
 from examples.tokenisers.utils import text_to_sequence
 
-from mindaudio.models.tacotron2.model_utils.config import config
+from mindaudio.models.tacotron2.config import config
 from mindaudio.adapter.local_adapter import get_device_id, get_device_num
 
 matplotlib.use('Agg')
