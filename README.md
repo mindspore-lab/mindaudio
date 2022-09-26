@@ -1,89 +1,73 @@
 # MindSpore Audio
 
 ## Introduction
-MindSpore Audio is an open source audio research toolbox based on MindSpore in audio direction. Mainly focused on rapid research and development on audio tasks, we provide numerous audio processing APIs, deep learning model implementations, as well as example preprocess-train-infer pipeline python scripts for academic purposes. You could easily adapt to your own choice of data processing and model designs for your projects!
+-----
+MindSpore Audio is an open source audio research toolbox based on MindSpore in audio direction. Mainly focused on rapid development and implementation for audio task researching, we provide numerous audio processing APIs, deep learning model implementations, as well as example preprocess-train-infer pipeline python scripts for academic purposes. These scripts are designed to be easily adapt to custom research projects.
 
-### Data API
-- stft
-- istft
-- etc...
+## API
+-----
 
-### Models
+### [mindaudio.data](/mindaudio/data)
+
+- io
+- features
+- datasets
+- augment
+- collate
+- masks
+
+### [mindaudio.models](/mindaudio/models)
 - conformer
 - deepspeech2
 - tacotron2
-- etc...
+- more coming soon...
 
-Under construction... 
+### [mindaudio.utils](/mindaudio/utils)
+- callback
+- initializer
+- scheduler
+- train_one_step
+
+### [mindaudio.adapter](/mindaudio/adapter)
+- local_adapter
 
 ## Installation
+-----
 
-### Dependency
-
-- mindspore >= 1.8.1
-- numpy >= 1.17.0
-- pyyaml >= 5.3
-- tqdm
-- sentencepiece
-- openmpi 4.0.3 (for distributed mode) 
-
-To install the dependency, please run
+1. Install dependency
 ```shell
 pip install -r requirements.txt
 ```
 
-MindSpore can be easily installed by following the official [instruction](https://www.mindspore.cn/install) where you can select your hardware platform for the best fit. To run in distributed mode, [openmpi](https://www.open-mpi.org/software/ompi/v4.0/) is required to install.   
+2. Install [MindSpore](https://www.mindspore.cn/install)
 
-The following instructions assume the desired dependency is fulfilled. 
+3. (optional) and [openmpi](https://www.open-mpi.org/software/ompi/v4.0/) for distributed mode.   
 
-TODO
+4. Install mindaudio
 
-### Install with pip
-MindAudio can be installed with pip. 
 ```shell
-pip install https:// xxx .whl
-```
-
-### Install from source
-To install MindAudio from source, please run,
-```shell
-# Clone the mindaudio repository.
 git clone https://github.com/mindlab-ai/mindaudio.git
 cd mindaudio
-
-# Install
 python setup.py install
 ```
 
-## Get Started 
+## Getting Started
+-----
 
-### Hands-on Demo
-Please see the [Quick Start Demo](quick_tour.ipynb) to help you get started with MindAudio and learn about the basic usage quickly. 
-
-
-```python
->>> import mindaudio 
-# Search a wanted pretrained model 
->>> mindaudio.list_models("densenet*", pretrain=True)
-['densenet201', 'densenet161', 'densenet169', 'densenet121']
-# Create the model object
->>> network = mindaudio.create_model('densenet121', pretrained=True)
-```
-
-### Quick Running Scripts
-It is easy to train your model on standard datasets or your own dataset with MindAudio. Model training, transfer learning, or evaluaiton can be done using one or a few line of code with flexible configuration.
-
-Here's an example on training your own Tacotron2 model on LJSpeech dataset:
+### Tacotron2
 
 - Preprocess LJSpeech
 
-`python examples/tacotron2/preprocess_tacotron2_ljspeech.py --config_path examples/tacotron2/config.yaml`
+```shell
+python examples/tacotron2/preprocess_tacotron2_ljspeech.py --config_path examples/tacotron2/config.yaml
+```
 
-- Standalone Training
 
-`python examples/tacotron2/train.py --config_path examples/tacotron2/config.yaml`
+- Standalone Training, [config](mindaudio/examples/tacotron2/config.yaml)
 
-Detailed adjustable parameters and their default value can be seen in [config.yaml](mindaudio/examples/tacotron2/config.yaml)
+```shell
+python examples/tacotron2/train.py --config_path examples/tacotron2/config.yaml
+```
 
 - Distributed Training 
 
@@ -93,25 +77,16 @@ mpirun --allow-run-as-root -n 4 python train.py --distribute \
 	--model=densenet121 --dataset=imagenet --data_dir=./datasets/imagenet   
 ```
 
-- Evaluation
+- Inference
 
-To validate the model, you can use `validate.py`. Here is an example.
+To validate the model, you can use `eval.py`. Here is an example.
 ```shell
-python validate.py --model=densenet121 --dataset=imagenet --val_split=val \
+python examples/tacotron2/eval.py --model=densenet121 --dataset=imagenet --val_split=val \
 		           --ckpt_path='./ckpt/densenet121-best.ckpt' 
 ``` 
 
-
-## Tutorials
-We provide [jupyter notebook tutorials](tutorials) for  
-
-- [Learn about configs](tutorials/learn_about_config.ipynb)  //tbc
-- [Inference with a pretrained model](tutorials/inference.ipynb) //tbc
-- [Finetune a pretrained model on custom datasets](tutorials/finetune.ipynb) 
-- [Customize models](tutorials/customize_model.ipynb) //tbc
-
-
 ## Notes
+
 ### What's New 
 
 - 2022/09/23
@@ -120,7 +95,7 @@ Initial version under review
 
 ### License
 
-This project is released under the [Apache License 2.0](LICENSE.md).
+This project is released under the [Apache License 2.0](LICENSE).
 
 ### Feedbacks and Contact
 
