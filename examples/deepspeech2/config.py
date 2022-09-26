@@ -1,4 +1,5 @@
 from easydict import EasyDict as ed
+import os
 
 train_config = ed({
 
@@ -7,10 +8,10 @@ train_config = ed({
     },
 
     "DataConfig": {
-        "data_path": '/root/lty/code/data/librispeech/dev-other',
-        "train_manifest": '/root/zdy/deepspeech2_manifest.csv',
-        "batch_size": 32,
-        "labels_path": "/root/lty/code/deepspeech2/labels.json",
+        "data_path": '/data/LibriTTS/dev-other',
+        "train_manifest": os.path.abspath('.')+'/libri_train_manifest.csv',
+        "batch_size": 2,
+        "labels_path": os.path.abspath('.')+"/labels.json",
 
         "SpectConfig": {
             "sample_rate": 16000,

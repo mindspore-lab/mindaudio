@@ -3,7 +3,9 @@ import json
 import os
 import sys
 
-import mindspore as ms
+import mindspore.nn as nn
+import mindspore.ops as ops
+import mindspore.common.dtype as mstype
 from mindspore import context, Tensor, ParameterTuple
 from mindspore.communication.management import init, get_rank, get_group_size
 from mindspore.context import ParallelMode
@@ -16,9 +18,8 @@ from mindspore.train.serialization import load_checkpoint, load_param_into_net
 sys.path.append('.')
 from examples.deepspeech2.config import train_config
 from examples.deepspeech2.dataset import create_dataset
-from mindaudio.utils.eval_callback import SaveCallback
-from mindaudio.models.deepspeech2.deepspeech2 import DeepSpeechModel
-from mindaudio.nn.net_withloss import NetWithLossClass
+from examples.deepspeech2.eval_callback import SaveCallback
+from mindaudio.models.deepspeech2 import DeepSpeechModel
 from mindaudio.nn.lr_generator import get_lr
 
 
@@ -26,10 +27,27 @@ parser = argparse.ArgumentParser(description='DeepSpeech2 training')
 parser.add_argument('--pre_trained_model_path', type=str, default='', help='Pretrained checkpoint path')
 parser.add_argument('--is_distributed', action="store_true", default=False, help='Distributed training')
 parser.add_argument('--bidirectional', action="store_false", default=True, help='Use bidirectional RNN')
-parser.add_argument('--device_target', type=str, default="GPU", choices=("GPU", "CPU"),
+parser.add_argument('--device_target', type=str, default="CPU", choices=("GPU", "CPU"),
                     help='Device target, support GPU and CPU, Default: GPU')
 args = parser.parse_args()
-ms.set_context(mode=ms.GRAPH_MODE)
+
+class NetWithLossClass(nn.Cell):
+    """
+    NetWithLossClass definition
+    """
+
+    def __init__(self, network):
+        super(NetWithLossClass, self).__init__(auto_prefix=False)
+        self.loss = ops.CTCLoss(ctc_merge_repeated=True)
+        self.network = network
+        self.ReduceMean_false = ops.ReduceMean(keep_dims=False)
+        self.squeeze_op = ops.Squeeze(0)
+        self.cast_op = ops.Cast()
+
+    def construct(self, inputs, input_length, target_indices, label_values):
+        predict, output_length = self.network(inputs, input_length)
+        loss = self.loss(predict, target_indices, label_values, self.cast_op(output_length, mstype.int32))
+        return self.ReduceMean_false(loss[0])
 
 if __name__ == '__main__':
 
