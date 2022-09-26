@@ -17,7 +17,7 @@ from mindspore.nn.optim import Adam
 
 sys.path.append('.')
 from examples.tacotron2.dataset import create_dataset
-from examples.tacotron2.hparams import hparams as hps
+from mindaudio.models.tacotron2.hparams import hparams as hps
 from mindaudio.nn.lr_generator import get_tacotron2_lr
 from mindaudio.utils.callback import LossCallBack
 from mindaudio.models.tacotron2 import Tacotron2, Tacotron2Loss, NetWithLossClass, TrainStepWrap
