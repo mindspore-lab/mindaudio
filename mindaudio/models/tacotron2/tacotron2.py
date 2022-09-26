@@ -12,8 +12,8 @@ from mindspore.nn.wrap.grad_reducer import DistributedGradReducer
 from mindspore.parallel._utils import  _get_gradients_mean
 from mindspore import Parameter, Tensor
 
-from mindaudio.models.tacotron2.src.rnns import LSTM
-from mindaudio.models.tacotron2.src.hparams import hparams as hps
+from mindaudio.models.tacotron2.rnns import LSTM
+from mindaudio.models.tacotron2.hparams import hparams as hps
 
 
 gain = {'linear': 1, 'sigmoid': 1, 'tanh': 5 / 3, 'relu': math.sqrt(2)}
