@@ -1,38 +1,23 @@
 # MindSpore Audio
 
 ## Introduction
------
+
 MindSpore Audio is an open source audio research toolbox based on MindSpore in audio direction. Mainly focused on rapid development and implementation for audio task researching, we provide numerous audio processing APIs, deep learning model implementations, as well as example preprocess-train-infer pipeline python scripts for academic purposes. These scripts are designed to be easily adapt to custom research projects.
 
+## Getting Started
+
+### [Conformer](/examples/conformer/)
+### [DeepSpeech2](/examples/deepspeech2/)
+### [Tacotron2](/examples/tacotron2/)
+
 ## API
------
 
 ### [mindaudio.data](/mindaudio/data)
-
-- io
-- features
-- datasets
-- augment
-- collate
-- masks
-
 ### [mindaudio.models](/mindaudio/models)
-- conformer
-- deepspeech2
-- tacotron2
-- more coming soon...
-
 ### [mindaudio.utils](/mindaudio/utils)
-- callback
-- initializer
-- scheduler
-- train_one_step
-
 ### [mindaudio.adapter](/mindaudio/adapter)
-- local_adapter
 
 ## Installation
------
 
 1. Install dependency
 ```shell
@@ -51,47 +36,11 @@ cd mindaudio
 python setup.py install
 ```
 
-## Getting Started
------
-
-### Tacotron2
-
-- Preprocess LJSpeech
-
-```shell
-python examples/tacotron2/preprocess_tacotron2_ljspeech.py --config_path examples/tacotron2/config.yaml
-```
-
-
-- Standalone Training, [config](mindaudio/examples/tacotron2/config.yaml)
-
-```shell
-python examples/tacotron2/train.py --config_path examples/tacotron2/config.yaml
-```
-
-- Distributed Training 
-
-```
-export CUDA_VISIBLE_DEVICES=0,1,2,3  # suppose there are 4 GPUs
-mpirun --allow-run-as-root -n 4 python train.py --distribute \
-	--model=densenet121 --dataset=imagenet --data_dir=./datasets/imagenet   
-```
-
-- Inference
-
-To validate the model, you can use `eval.py`. Here is an example.
-```shell
-python examples/tacotron2/eval.py --model=densenet121 --dataset=imagenet --val_split=val \
-		           --ckpt_path='./ckpt/densenet121-best.ckpt' 
-``` 
-
 ## Notes
 
 ### What's New 
 
-- 2022/09/23
-
-Initial version under review
+- 2022/09/30: version 0.1.0, 33 data APIs + 3 models
 
 ### License
 
