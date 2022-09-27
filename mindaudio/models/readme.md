@@ -5,7 +5,7 @@
 - decoder
 - ...
 
-## [deepspeech2](/mindaudio/models/deepspeech2)
+## [deepspeech2](/mindaudio/models/deepspeech2.py)
 - DeepSpeechModel
 
 ## [tacotron2](/mindaudio/models/tacotron2)
@@ -13,6 +13,6 @@
 - Encoder
 - Decoder
 
-## Example usage of making a modelsset for text-to-speech training:
+## Example usage
 
-see [preprocess ljspeech](/mindaudio/examples/tacotron2/preprocess_tacotron2_ljspeech.py) and [train tts with ljspeech](/mindaudio/examples/tacotron2/.py)
+see [examples](/examples)
