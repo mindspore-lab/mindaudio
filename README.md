@@ -1,4 +1,4 @@
-# MindSpore Audio
+# MindAudio
 
 ## Introduction
 
@@ -36,6 +36,13 @@ cd mindaudio
 python setup.py install
 ```
 
+or
+
+```shell
+sh package.sh
+pip install output/YOUR_PACKAGE.whl
+```
+
 ## Notes
 
 ### What's New 
@@ -52,7 +59,7 @@ The dynamic version is still under development, if you find any issue or have an
 
 ### Acknowledgement
 
-MindSpore is an open source project that welcome any contribution and feedback. We wish that the toolbox and benchmark could serve the growing research community by providing a flexible as well as standardized toolkit to reimplement existing methods and develop their own new Audio methods.
+MindAudio is an open source project that welcome any contribution and feedback. We wish that the toolbox and benchmark could serve the growing research community by providing a flexible as well as standardized toolkit to reimplement existing methods and develop their own new Audio methods.
 
 ### Contributing
 
