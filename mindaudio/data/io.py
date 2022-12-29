@@ -8,7 +8,10 @@ import numpy as np
 
 from mindaudio.utils.data_utils import batch_pad_right
 
-
+__all__ = [
+    'read',
+    'write',
+]
 class WaveFormat(IntEnum):
     """
     WAVE form wFormatTag IDs
@@ -693,6 +696,13 @@ def read(file, offset=0.0, duration=None):
         else:
             file_to_read.seek(0)
 
+    #Unified output format
+    audiodtype = audio.dtype
+    if audiodtype == 'int32':
+        audio = audio / 2147483648
+    elif audiodtype == 'int16':
+        audio = audio / 32768
+
     return audio, samplerate
 
 
@@ -751,6 +761,9 @@ def write(file, data, sr):
         fid = open(file, 'wb')
 
     fs = sr
+
+    if data.dtype == 'float64' or data.dtype == 'float16':
+        data = data.astype(np.float32)
 
     try:
         dkind = data.dtype.kind
