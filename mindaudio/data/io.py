@@ -1,3 +1,4 @@
+# pylint: disable=C0114
 import io
 import sys
 import struct
@@ -336,10 +337,12 @@ SUPPORTED_WAVE_FORMATS = {
 
 
 class WavFileWarning(UserWarning):
+    # pylint: disable=C0115
     pass
 
 
 class Endian:
+    # pylint: disable=C0115
     big_endian = 'big endian'
     small_endian = 'small endian'
 
@@ -365,8 +368,8 @@ def _fmt_chunk(file_to_read, endian):
         if ext_chunk_size >= 22:
             extensible_chunk_data = file_to_read.read(22)
             bytes_read += 22
-            valid_bits_per_sample = extensible_chunk_data[: 2]
-            channel_mask = extensible_chunk_data[2: 2 + 4]
+            # unused: valid_bits_per_sample = extensible_chunk_data[: 2]
+            # unused: channel_mask = extensible_chunk_data[2: 2 + 4]
             raw_guid = extensible_chunk_data[2 + 4:2 + 4 + 16]
 
             # GUID template {XXXXXXXX-0000-0010-8000-00AA00389B71} (RFC-2361)
@@ -413,7 +416,7 @@ def _fmt_chunk(file_to_read, endian):
 
 
 def _data_chunk(file_to_read, format_tag, channels, bit_depth, endian, samplerate,
-                block_align, offset, duration):
+                block_align, offset, duration): # pylint: disable=R0912
     if endian == Endian.big_endian:
         fmt = '>'
     else:
@@ -483,9 +486,8 @@ def _data_chunk(file_to_read, format_tag, channels, bit_depth, endian, samplerat
 
     if dtype == 'V1':
         # Rearrange raw bytes into smallest compatible numpy dtype
-        dt = f'{fmt}i4' if bytes_per_sample == 3 else f'{fmt}i8'
-        a = np.zeros((len(data) // bytes_per_sample, np.dtype(dt).itemsize),
-                     dtype='V1')
+        dt = f'{fmt}i4' if bytes_per_sample == 3 else f'{fmt}i8' # pylint: disable=C0103
+        a = np.zeros((len(data) // bytes_per_sample, np.dtype(dt).itemsize), dtype='V1') # pylint: disable=C0103
         if endian == Endian.big_endian:
             a[:, :bytes_per_sample] = data.reshape((-1, bytes_per_sample))
         else:
