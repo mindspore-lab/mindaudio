@@ -24,10 +24,10 @@ def calculate_gain(nonlinearity, param=None):
                 param, int) or isinstance(param, float):
             neg_slope = param
         else:
-            raise ValueError("neg_slope {} not a valid number".format(param))
+            raise ValueError(f"neg_slope {param} not a valid number")
         res = math.sqrt(2.0 / (1 + neg_slope**2))
     else:
-        raise ValueError("Unsupported nonlinearity {}".format(nonlinearity))
+        raise ValueError(f"Unsupported nonlinearity {nonlinearity}")
     return res
 
 
@@ -56,8 +56,7 @@ def _calculate_correct_fan(tensor, mode):
     mode = mode.lower()
     valid_modes = ['fan_in', 'fan_out']
     if mode not in valid_modes:
-        raise ValueError("Unsupported mode {}, please use one of {}".format(
-            mode, valid_modes))
+        raise ValueError(f"Unsupported mode {mode}, please use one of {valid_modes}")
     fan_in, fan_out = _calculate_fan_in_and_fan_out(tensor)
     return fan_in if mode == 'fan_in' else fan_out
 
@@ -73,11 +72,11 @@ def kaiming_normal(inputs_shape,
 
 
 def kaiming_uniform(inputs_shape,
-                    a=0.,
+                    gain=0.,
                     mode='fan_in',
                     nonlinearity='leaky_relu'):
     fan = _calculate_correct_fan(inputs_shape, mode)
-    gain = calculate_gain(nonlinearity, a)
+    gain = calculate_gain(nonlinearity, gain)
     std = gain / math.sqrt(fan)
     bound = math.sqrt(
         3.0) * std  # Calculate uniform bounds from standard deviation

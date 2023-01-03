@@ -152,14 +152,13 @@ def compute_mask_indices2(
         mask_length,
 ) -> np.ndarray:
     """compute mask indices2"""
-    B, T = shape
-    mask = np.full((B, T), False)
-    mask_valid = np.full((B, T), False)
-    n_mask = int(mask_prob * T / float(mask_length) + 0.35)
-    for i in range(B):
-        real_wav_len = T - padding_mask[i].astype(int).sum().item()
-        TI = T
-        span = TI // n_mask
+    batch, length = shape
+    mask = np.full((batch, length), False)
+    mask_valid = np.full((batch, length), False)
+    n_mask = int(mask_prob * length / float(mask_length) + 0.35)
+    for i in range(batch):
+        real_wav_len = length - padding_mask[i].astype(int).sum().item()
+        span = length // n_mask
         for j in range(n_mask):
             start = j * span + np.random.randint(span - mask_length)
             mask[i][start:start + mask_length] = True

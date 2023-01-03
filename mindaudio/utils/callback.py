@@ -93,14 +93,14 @@ class TimeMonitorTacotron2(Callback):
     def epoch_end(self, run_context):
         epoch_seconds = (time.time() - self.epoch_time)
         per_step_seconds = epoch_seconds / self.data_size
-        print("epoch time: %.4f, per step time: %.4f" % (epoch_seconds, per_step_seconds), flush=True)
+        print(f"epoch time: {epoch_seconds}, per step time: {per_step_seconds}", flush=True)
 
     def step_begin(self, run_context):
         self.step_time = time.time()
 
     def step_end(self, run_context):
         step_seconds = (time.time() - self.step_time)
-        print('step time %.4f' % (step_seconds), flush=True)
+        print(f'step time {step_seconds}', flush=True)
 
 
 class EvalCallBack(Callback):
@@ -151,9 +151,9 @@ class EvalCallBack(Callback):
             file1.write('\n')
 
         self.network.acc_net.set_train(True)
-        logging.warning(f"total_num {total_num}, accuracy{acc}")
+        logging.warning("total_num %.4f, accuracy %.4f" % (total_num, acc))
 
-        ckpt_file_name = "best_model_{}.ckpt".format(cb_params.cur_step_num)
+        ckpt_file_name = f"best_model_{cb_params.cur_step_num}.ckpt"
         ckpt_file_name = os.path.join(self.directory, ckpt_file_name)
         if len(self.model_dict) < self.keep_checkpoint_max:
             save_checkpoint(self.network, ckpt_file_name)
@@ -253,6 +253,7 @@ class BaseCallback(Callback):
                 os.remove(os.path.join(lock_dir, file))
 
     def real_run(self, run_func: Callable) -> None:
+        """running start interface"""
         if self.only_device_0:
             self.device_0_run(run_func)
         else:
@@ -409,7 +410,7 @@ class EvalCallback(BaseCallback):
         if ckpt_infos:
             info_file_name = f'{prefix}.yaml'
             info_path = os.path.join(self.save_ckpt_path, info_file_name)
-            with open(info_path, 'w') as f_out:
+            with open(info_path, 'w', encoding='utf-8') as f_out:
                 f_out.write(yaml.dump(ckpt_infos))
 
         logger.info('[EvalCallback] Successfully save %s to %s.', ckpt_name, self.save_ckpt_path)
@@ -462,7 +463,7 @@ class EvalCallback(BaseCallback):
         for loss_ckpt in self.loss_ckpt_record[:self.num_best_ckpt]:
             ckpt_path = loss_ckpt['ckpt_path']
             param_dict = load_checkpoint(ckpt_path)
-            for param_key in param_dict:
+            for param_key, _ in param_dict.items():
                 if not param_key.startswith('moment'):
                     if param_key not in model_params:
                         model_params[param_key] = []
