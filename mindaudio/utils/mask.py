@@ -1,27 +1,10 @@
-# Copyright (c) 2019 Shigeki Karita
-#               2020 Mobvoi Inc (Binbin Zhang)
-# 2022.07 - Modified the code to support Mindspore
-#           Huawei Technologies Co., Ltd
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 """mask function"""
 
 from typing import List
 import numpy as np
 
 import mindspore
-import mindspore.ops as ops
+from mindspore import ops
 
 TILE_FUNC = ops.Tile()
 CAT_FUNC = ops.Concat(axis=1)
@@ -169,14 +152,14 @@ def compute_mask_indices2(
         mask_length,
 ) -> np.ndarray:
     """compute mask indices2"""
-    b, t = shape
-    mask = np.full((b, t), False)
-    mask_valid = np.full((b, t), False)
-    n_mask = int(mask_prob * t / float(mask_length) + 0.35)
-    for i in range(b):
-        real_wav_len = t - padding_mask[i].astype(int).sum().item()
-        ti = t
-        span = ti // n_mask
+    B, T = shape
+    mask = np.full((B, T), False)
+    mask_valid = np.full((B, T), False)
+    n_mask = int(mask_prob * T / float(mask_length) + 0.35)
+    for i in range(B):
+        real_wav_len = T - padding_mask[i].astype(int).sum().item()
+        TI = T
+        span = TI // n_mask
         for j in range(n_mask):
             start = j * span + np.random.randint(span - mask_length)
             mask[i][start:start + mask_length] = True

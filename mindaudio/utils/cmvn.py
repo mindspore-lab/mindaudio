@@ -15,6 +15,8 @@
 
 import json
 import math
+import logging
+import sys
 
 import numpy as np
 
@@ -26,8 +28,8 @@ def _load_json_cmvn(json_cmvn_file):
     Returns:
         a numpy array of [means, vars]
     """
-    with open(json_cmvn_file) as f:
-        cmvn_stats = json.load(f)
+    with open(json_cmvn_file, encoding='utf-8') as file1:
+        cmvn_stats = json.load(file1)
 
     means = cmvn_stats['mean_stat']
     variance = cmvn_stats['var_stat']
@@ -53,7 +55,7 @@ def _load_kaldi_cmvn(kaldi_cmvn_file):
     """
     means = []
     variance = []
-    with open(kaldi_cmvn_file, 'r') as fid:
+    with open(kaldi_cmvn_file, 'r', encoding='utf-8') as fid:
         # kaldi binary file start with '\0B'
         if fid.read(2) == '\0B':
             logging.error('kaldi cmvn binary file is not supported, please '
@@ -83,6 +85,12 @@ def _load_kaldi_cmvn(kaldi_cmvn_file):
 
 
 def load_cmvn(cmvn_file, is_json):
+    """ Wrap api
+    Args:
+        cmvn_file: cmvn file
+    Returns:
+        means, vars
+    """
     if is_json:
         cmvn = _load_json_cmvn(cmvn_file)
     else:

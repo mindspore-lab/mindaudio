@@ -33,9 +33,10 @@ class TimeMonitor(Callback):
         ValueError: If data_size is not positive int.
     """
     def __init__(self, steps_size):
-        super(TimeMonitor, self).__init__()
+        super().__init__()
         self.step = 0
         self.steps_size = steps_size
+        self.step_time = None
 
     def step_begin(self, run_context):
         """step begin function"""
@@ -81,8 +82,10 @@ class TimeMonitorTacotron2(Callback):
     """
 
     def __init__(self, data_size):
-        super(TimeMonitor, self).__init__()
+        super().__init__()
         self.data_size = data_size
+        self.epoch_time = None
+        self.step_time = None
 
     def epoch_begin(self, run_context):
         self.epoch_time = time.time()
@@ -90,20 +93,20 @@ class TimeMonitorTacotron2(Callback):
     def epoch_end(self, run_context):
         epoch_seconds = (time.time() - self.epoch_time)
         per_step_seconds = epoch_seconds / self.data_size
-        print("epoch time: {}, per step time: {}".format(epoch_seconds, per_step_seconds), flush=True)
+        print("epoch time: %.4f, per step time: %.4f" % (epoch_seconds, per_step_seconds), flush=True)
 
     def step_begin(self, run_context):
         self.step_time = time.time()
 
     def step_end(self, run_context):
         step_seconds = (time.time() - self.step_time)
-        print("step time {}".format(step_seconds), flush=True)
+        print('step time %.4f' % (step_seconds), flush=True)
 
 
 class EvalCallBack(Callback):
     """Evaluation callback"""
     def __init__(self, network, dataset, save_ckpt_step, columns_type, keep_checkpoint_max=5, directory=""):
-        super(EvalCallBack, self).__init__()
+        super().__init__()
         self.network = network
         self.model_dict = {}
         self.keep_checkpoint_max = keep_checkpoint_max
@@ -143,12 +146,12 @@ class EvalCallBack(Callback):
             rec_num += 1
             total_acc += one_acc
         acc = total_acc / rec_num
-        with open("./callback_eval.log", "a+") as f:
-            f.write("total_num {}, accuracy{:.6f}".format(total_num, acc))
-            f.write('\n')
+        with open("./callback_eval.log", "a+", encoding='utf-8') as file1:
+            file1.write(f"total_num {total_num}, accuracy {acc}")
+            file1.write('\n')
 
         self.network.acc_net.set_train(True)
-        logging.warning("total_num {}, accuracy{:.6f}".format(total_num, acc))
+        logging.warning(f"total_num {total_num}, accuracy{acc}")
 
         ckpt_file_name = "best_model_{}.ckpt".format(cb_params.cur_step_num)
         ckpt_file_name = os.path.join(self.directory, ckpt_file_name)
@@ -176,7 +179,7 @@ class LossCallBack(Callback):
         per_print_times (int): Print loss every times. Default: 1.
     """
     def __init__(self, dataset_size=-1):
-        super(LossCallBack, self).__init__()
+        super().__init__()
         self._dataset_size = dataset_size
 
     def step_end(self, run_context):
@@ -189,22 +192,22 @@ class LossCallBack(Callback):
             if percent == 0:
                 percent = 1
                 epoch_num -= 1
-            print("epoch: {}, current epoch percent: {}, step: {}, outputs are {}"
-                  .format(int(epoch_num), "%.3f" % percent, cb_params.cur_step_num, str(cb_params.net_outputs)),
-                  flush=True)
+            print(f"epoch: {int(epoch_num)}, current epoch percent: {percent}, "
+                  "step: {cb_params.cur_step_num}, outputs are {str(cb_params.net_outputs)}", flush=True)
         else:
-            print("epoch: {}, step: {}, outputs are {}".format(cb_params.cur_epoch_num, cb_params.cur_step_num,
-                                                               str(cb_params.net_outputs)), flush=True)
+            print(f"epoch: {cb_params.cur_epoch_num}, step: {cb_params.cur_step_num}, "
+                  "outputs are {str(cb_params.net_outputs)}", flush=True)
 
 
 class BaseCallback(Callback):
     """Base class for implementing the rank 0 runtime program and other rank
-    wait functions."""
+    wait functions.
+    """
     _call_num = 0
     _call_lock = '/tmp/call.lock.'
 
     def __init__(self, only_device_0: bool = True):
-        super(BaseCallback, self).__init__()
+        super().__init__()
         self.only_device_0 = only_device_0
 
         try:
@@ -257,7 +260,8 @@ class BaseCallback(Callback):
 
 
 class MemoryStartTimeCallback(Callback):
-
+    """ MemoryStartTimeCallback
+    """
     def begin(self, run_context: RunContext) -> None:
         cb_params = run_context.original_args()
         cb_params.begin_start_time = time.time()
@@ -349,7 +353,7 @@ class EvalCallback(BaseCallback):
                  average_model_flag: bool = True,
                  num_best_ckpt: int = 30,
                  only_device_0: bool = True) -> None:
-        super(EvalCallback, self).__init__(only_device_0)
+        super().__init__(only_device_0)
 
         self.network = network
         self.dataset = dataset
@@ -398,12 +402,12 @@ class EvalCallback(BaseCallback):
 
     def save_ckpt(self, prefix: str, ckpt_infos: Dict) -> str:
         """Save the checkpoint file."""
-        ckpt_name = '{}.ckpt'.format(prefix)
+        ckpt_name = f'{prefix}.ckpt'
         ckpt_path = os.path.join(self.save_ckpt_path, ckpt_name)
         save_checkpoint(self.save_ckpt_network, ckpt_path)
 
         if ckpt_infos:
-            info_file_name = '{}.yaml'.format(prefix)
+            info_file_name = f'{prefix}.yaml'
             info_path = os.path.join(self.save_ckpt_path, info_file_name)
             with open(info_path, 'w') as f_out:
                 f_out.write(yaml.dump(ckpt_infos))
@@ -418,7 +422,7 @@ class EvalCallback(BaseCallback):
         _ = cb_params.network
 
         def begin_run() -> None:
-            ckpt_prefix = '{}_init'.format(self.ckpt_prefix)
+            ckpt_prefix = f'{self.ckpt_prefix}_init'
             self.save_ckpt(ckpt_prefix, {})
 
         self.real_run(begin_run)
@@ -440,7 +444,7 @@ class EvalCallback(BaseCallback):
             logger.info('[EvalCallback] Epoch %d/%d, Average Eval Loss: %.4f, Eval Spend Time: %dm %ds.', cur_epoch_num,
                         epoch_num, avg_loss, int(eval_time // 60), int(eval_time % 60))
 
-            ckpt_prefix = '{}_{}_{}'.format(self.ckpt_prefix, cur_epoch_num, cur_step_num)
+            ckpt_prefix = f'{self.ckpt_prefix}_{cur_epoch_num}_{cur_step_num}'
             ckpt_infos = {'loss': avg_loss, 'time': eval_time}
             ckpt_path = self.save_ckpt(ckpt_prefix, ckpt_infos)
 
@@ -458,7 +462,7 @@ class EvalCallback(BaseCallback):
         for loss_ckpt in self.loss_ckpt_record[:self.num_best_ckpt]:
             ckpt_path = loss_ckpt['ckpt_path']
             param_dict = load_checkpoint(ckpt_path)
-            for param_key in param_dict.keys():
+            for param_key in param_dict:
                 if not param_key.startswith('moment'):
                     if param_key not in model_params:
                         model_params[param_key] = []
@@ -466,13 +470,13 @@ class EvalCallback(BaseCallback):
 
         # average params
         avg_model = []
-        for k, v in model_params.items():
+        for key, val in model_params.items():
             avg_param = {}
-            avg_param['name'] = k
-            avg_param['data'] = Parameter(np.mean(np.array(v), axis=0), name=k)
+            avg_param['name'] = key
+            avg_param['data'] = Parameter(np.mean(np.array(val), axis=0), name=key)
             avg_model.append(avg_param)
 
-        avg_ckpt_name = '{}_avg_{}.ckpt'.format(self.ckpt_prefix, self.num_best_ckpt)
+        avg_ckpt_name = f'{self.ckpt_prefix}_avg_{self.num_best_ckpt}.ckpt'
         avg_ckpt_path = os.path.join(self.save_ckpt_path, avg_ckpt_name)
         save_checkpoint(avg_model, avg_ckpt_path)
 
