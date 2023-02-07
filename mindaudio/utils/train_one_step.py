@@ -1,6 +1,6 @@
 """Loss scale cell for loss scale training."""
 
-from mindspore import nn
+import mindspore.nn as nn
 from mindspore.ops import operations as P
 from mindspore.ops import functional as F
 from mindspore.ops import composite as C
@@ -38,7 +38,7 @@ def _clip_grad(clip_type, clip_value, grad):
     """
     if clip_type not in (0, 1):
         return grad
-    dt = F.dtype(grad) # pylint: disable=C0103
+    dt = F.dtype(grad)
     if clip_type == 0:
         new_grad = C.clip_by_value(
             grad, F.cast(F.tuple_to_array((-clip_value,)), dt),
@@ -51,12 +51,12 @@ def _clip_grad(clip_type, clip_value, grad):
 
 
 @_grad_scale.register("Tensor", "Tensor")
-def tensor_grad_scale(scale, grad): # pylint: disable=C0116
+def tensor_grad_scale(scale, grad):
     return grad * F.cast(reciprocal(scale), F.dtype(grad))
 
 
 @_grad_scale.register("Tensor", "RowTensor")
-def tensor_grad_scale_row_tensor(scale, grad): # pylint: disable=C0116
+def tensor_grad_scale_row_tensor(scale, grad):
     return RowTensor(
         grad.indices,
         grad.values * F.cast(reciprocal(scale), F.dtype(grad.values)),
@@ -119,7 +119,7 @@ class DynamicLossScaleUpdateCell(Cell):
     Dynamic Loss scale update cell.
 
     For loss scaling training, the initial loss scaling value will be set to be `loss_scale_value`.
-    In each training step, the loss scaling value will be updated by loss scaling value/`scale_factor`
+    In each training step, the loss scaling value  will be updated by loss scaling value/`scale_factor`
     when there is an overflow. And it will be increased by loss scaling value * `scale_factor` if there is no
     overflow for a continuous `scale_window` steps. This cell is used for Graph mode training in which all
     logic will be executed on device side(Another training mode is normal(non-sink) mode in which some logic will be
@@ -172,7 +172,7 @@ class DynamicLossScaleUpdateCell(Cell):
         >>> output = train_network(input, labels)
     """
     def __init__(self, loss_scale_value, scale_factor, scale_window):
-        super().__init__()
+        super(DynamicLossScaleUpdateCell, self).__init__()
 
         self.scale_window = Tensor(scale_window, dtype=mstype.int32)
         self.scale_factor = Tensor(scale_factor, dtype=mstype.float32)
@@ -192,7 +192,7 @@ class DynamicLossScaleUpdateCell(Cell):
         self.logic_or = P.LogicalOr()
         self.const_true = Tensor(True, dtype=mstype.bool_)
 
-    def get_loss_scale(self): # pylint: disable=C0116
+    def get_loss_scale(self):
         return self.loss_scale_value
 
     def construct(self, loss_scale, overflow):
@@ -261,10 +261,10 @@ class FixedLossScaleUpdateCell(Cell):
         >>> output = train_network(input, labels)
     """
     def __init__(self, loss_scale_value):
-        super().__init__()
+        super(FixedLossScaleUpdateCell, self).__init__()
         self.loss_scale_value = loss_scale_value
 
-    def get_loss_scale(self):  # pylint: disable=C0116
+    def get_loss_scale(self):
         return self.loss_scale_value
 
     def construct(self, _, overflow):
@@ -347,9 +347,9 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
         >>> output = train_network(inputs, label)
     """
     def __init__(self, network, optimizer, scale_sense):
-        super().__init__(network,
-                        optimizer,
-                        sens=None)
+        super(TrainOneStepWithLossScaleCell, self).__init__(network,
+                                                            optimizer,
+                                                            sens=None)
         self.hyper_map = C.HyperMap()
         self.base = Tensor(1, mstype.float32)
         self.reduce_sum = P.ReduceSum(keep_dims=False)
@@ -368,12 +368,12 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
                 self.scale_sense = Parameter(scale_sense, name='scale_sense')
             else:
                 raise ValueError(
-                    f"The shape of scale_sense must be (1,) or (), but got {scale_sense.shape}"
-                )
+                    "The shape of scale_sense must be (1,) or (), but got {}".
+                    format(scale_sense.shape))
         else:
             raise TypeError(
-                f"The scale_sense must be Cell or Tensor, but got {type(scale_sense)}"
-            )
+                "The scale_sense must be Cell or Tensor, but got {}".format(
+                    type(scale_sense)))
 
     def construct(self, *inputs):
         """construct a TrainOneStepWithLossScaleCell """
@@ -407,7 +407,8 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
         if self.scale_sense and isinstance(sens, Tensor):
             self.scale_sense.set_data(sens)
         else:
-            raise TypeError(f"The input type must be Tensor, but got {type(sens)}")
+            raise TypeError("The input type must be Tensor, but got {}".format(
+                type(sens)))
 
     def start_overflow_check(self, pre_cond, compute_input):
         """
@@ -492,7 +493,7 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
         return overflow
 
 
-class TrainAccumulationAllReduceEachWithLossScaleCell(nn.Cell): # pylint: disable=R0902
+class TrainAccumulationAllReduceEachWithLossScaleCell(nn.Cell):
     """
     Encapsulation class of network training.
 
@@ -517,7 +518,8 @@ class TrainAccumulationAllReduceEachWithLossScaleCell(nn.Cell): # pylint: disabl
                  scale_update_cell=None,
                  accumulation_steps=1,
                  enable_global_norm=False):
-        super().__init__(auto_prefix=False)
+        super(TrainAccumulationAllReduceEachWithLossScaleCell,
+              self).__init__(auto_prefix=False)
         self.network = network
         self.network.set_grad()
         self.weights = optimizer.parameters

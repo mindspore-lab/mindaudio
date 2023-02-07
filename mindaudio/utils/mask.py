@@ -4,7 +4,7 @@ from typing import List
 import numpy as np
 
 import mindspore
-from mindspore import ops
+import mindspore.ops as ops
 
 TILE_FUNC = ops.Tile()
 CAT_FUNC = ops.Concat(axis=1)
@@ -152,13 +152,14 @@ def compute_mask_indices2(
         mask_length,
 ) -> np.ndarray:
     """compute mask indices2"""
-    batch, length = shape
-    mask = np.full((batch, length), False)
-    mask_valid = np.full((batch, length), False)
-    n_mask = int(mask_prob * length / float(mask_length) + 0.35)
-    for i in range(batch):
-        real_wav_len = length - padding_mask[i].astype(int).sum().item()
-        span = length // n_mask
+    b, t = shape
+    mask = np.full((b, t), False)
+    mask_valid = np.full((b, t), False)
+    n_mask = int(mask_prob * t / float(mask_length) + 0.35)
+    for i in range(b):
+        real_wav_len = t - padding_mask[i].astype(int).sum().item()
+        ti = t
+        span = ti // n_mask
         for j in range(n_mask):
             start = j * span + np.random.randint(span - mask_length)
             mask[i][start:start + mask_length] = True
