@@ -3,6 +3,7 @@ import numpy as np
 import scipy.io
 from scipy.io import wavfile
 
+
 def test_read_2chanel():
     from os.path import dirname, join as pjoin
     from mindaudio.data.io import read
@@ -30,6 +31,7 @@ def test_read_2chanel():
     plt.ylabel("Amplitude")
     plt.show()
 
+
 def test_read_write():
     from mindaudio.data.io import read, write
     data_dir = os.path.join(os.path.dirname(scipy.io.__file__), 'tests', 'data')
@@ -45,6 +47,7 @@ def test_read_write():
     y_fromtest, sr_fromtest = read('test_wav')
     assert np.allclose(y_fromtest, y)
     assert sr_fromtest == sr
+
 
 if __name__ == "__main__":
     test_read_2chanel()

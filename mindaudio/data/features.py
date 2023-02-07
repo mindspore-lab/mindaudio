@@ -159,7 +159,6 @@ def compute_deltas(specgram, win_length=5, pad_mode="edge"):
     return compute_deltas_ms(specgram)
 
 
-#to-do: check the difference between melscale in MindSpore and fbank matrix in Speechbrain
 def fbank(waveforms, deltas=False, context=False, n_mels=40, n_fft=400, sample_rate=16000, f_min=0.0, f_max=None,
           left_frames=5, right_frames=5, win_length=None, hop_length=None, window="hann"):
     """
@@ -207,7 +206,6 @@ def fbank(waveforms, deltas=False, context=False, n_mels=40, n_fft=400, sample_r
     return fbanks
 
 
-#to-do: check the difference between melscale in MindSpore and fbank matrix in Speechbrain
 def mfcc(waveforms, deltas=True, context=True, n_mels=23, n_mfcc=20, n_fft=400, sample_rate=16000, f_min=0.0,
            f_max=None, left_frames=5, right_frames=5, win_length=None, hop_length=None, norm="ortho", log_mels=False):
     """Generate Mel-frequency cepstrum coefficients (MFCC) features from input audio signal.

@@ -22,7 +22,6 @@ __all__ = [
 ]
 
 
-# Todo: converts all the operations in MindSpore to achieve a better performance.
 def amplitude_to_dB(S, stype="power", ref=1.0, amin=1e-10, top_db=80.0):
     """
     Turn a spectrogram from the amplitude/power scale to decibel scale.
@@ -487,6 +486,7 @@ def melspectrogram(waveforms, n_fft=400, win_length=None, hop_length=None, pad=0
     specgram = spectrogram(waveforms)
 
     return melscale(specgram)
+
 
 def magphase(s, power, iscomplex):
     """

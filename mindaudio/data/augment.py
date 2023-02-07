@@ -15,6 +15,7 @@ __all__ = [
     'add_reverb',
 ]
 
+
 def frequencymasking(waveform, iid_masks=False, frequency_mask_param=0, mask_start=0, mask_value=0.0):
     """
     Apply masking to a spectrogram in the frequency domain.

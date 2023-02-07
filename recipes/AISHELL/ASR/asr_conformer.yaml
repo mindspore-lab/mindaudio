@@ -1,0 +1,56 @@
+# base config
+base_config: ['asr_config.yaml']
+
+# network architecture
+# encoder related
+encoder: conformer
+encoder_conf:
+    output_size: 256    # dimension of attention
+    attention_heads: 4
+    linear_units: 2048  # the number of units of position-wise feed forward
+    num_blocks: 12      # the number of encoder blocks
+    dropout_rate: 0.1
+    positional_dropout_rate: 0.1
+    attention_dropout_rate: 0.0
+    input_layer: conv2d # encoder input type, you can chose conv2d, conv2d6 and conv2d8
+    normalize_before: True
+    cnn_module_kernel: 15
+    activation_type: 'swish'
+    pos_enc_layer_type: 'rel_pos'
+    feature_norm : True
+
+# hybrid CTC/attention
+model_conf:
+    ctc_weight: 0.3     # Mindspore has some errors for CTC loss computation
+
+# feature extraction
+collate_conf:
+    batch_size: 32
+    # data augmentation config
+    use_speed_perturb: True
+    speeds: [0.9, 1.0, 1.1]
+    use_spec_aug: True
+    spec_aug_conf:
+        warp_for_time: False
+        num_t_mask: 2
+        num_f_mask: 2
+        prop_mask_t: 0.1
+        prop_mask_f: 0.1
+        max_t: 50
+        max_f: 10
+        max_w: 80
+
+# train option
+grad_clip: 5
+accum_grad: 1
+# max_epoch: 1
+max_epoch: 240
+log_interval: 100
+
+# scheduler
+optim: adam
+optim_conf:
+    lr: 0.001
+scheduler: warmuplr
+scheduler_conf:
+    warmup_steps: 25000

@@ -3,11 +3,13 @@ import mindaudio.data.io as io
 import mindaudio.data.spectrum as spectrum
 import mindaudio.data.augment as augment
 
+
 def test_frequencymasking():
     waveform, _ = io.read('./samples/ASR/BAC009S0002W0122.wav')
     orignal = spectrum.spectrogram(waveform)
     masked = augment.frequencymasking(orignal, frequency_mask_param=80)
     print(masked.shape)
+
 
 def test_timemasking():
     waveform, _ = io.read('./samples/ASR/BAC009S0002W0122.wav')
@@ -23,6 +25,7 @@ def test_reverberate():
     rirs, _ = io.read('./samples/ASR/1089-134686-0001.wav')
     addnoise = augment.reverberate(samples, rirs)
     print(addnoise.shape)
+
 
 def test_1d():
     read_wav_dir = './samples/ASR/BAC009S0002W0122.wav'
