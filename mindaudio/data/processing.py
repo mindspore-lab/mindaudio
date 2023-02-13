@@ -542,8 +542,8 @@ def insert_in_background(waveform, offset_factor, seed, background_audio):
     if seed is None or seed is np.random:
         random_generator = np.random.mtrand._rand
     if isinstance(seed, numbers.Integral):
-        random_generator = np.random.RandomState(seed)
-    if isinstance(seed, (np.random.RandomState, np.random.Generator)):
+        random_generator = np.random.mtrand.RandomState(seed)
+    if isinstance(seed, (np.random.mtrand.RandomState, np.random.Generator)):
         random_generator = seed
 
     if background_audio is None:
