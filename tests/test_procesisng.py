@@ -57,6 +57,39 @@ def test_sliding_window_cmn():
     print(after_CMN)
 
 
+def test_invert_channels():
+    waveform = np.array([[1, 2, 3], [2, 3, 4], [3, 4, 5]])
+    out_waveform = processing.invert_channels(waveform)
+    print(out_waveform)
+
+
+def test_loop():
+    waveform = np.array([[1, 2, 3], [2, 3, 4], [3, 4, 5]])
+    times = 3
+    out_waveform = processing.loop(waveform, times)
+    print(out_waveform)
+
+
+def test_clip():
+    waveform = np.array([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                         [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]])
+    offset_factor = 0.1
+    duration_factor = 0.3
+    out_waveform = processing.clip(waveform, offset_factor, duration_factor)
+    print(out_waveform)
+
+
+def test_insert_in_background():
+    waveform = np.array([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                         [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]])
+    offset_factor = 0.2
+    seed = None
+    background_audio = np.array([[0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+                                 [0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1]])
+    out_waveform = processing.insert_in_background(waveform, offset_factor, seed, background_audio)
+    print(out_waveform)
+
+
 if __name__ == "__main__":
     test_normalize()
     test_unitarize()
@@ -66,3 +99,7 @@ if __name__ == "__main__":
     test_trim()
     test_split()
     test_sliding_window_cmn()
+    test_invert_channels()
+    test_loop()
+    test_clip()
+    test_insert_in_background()

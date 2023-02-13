@@ -53,6 +53,12 @@ def test_angle():
     print(angle)
 
 
+def test_harmonic():
+    waveform, sr = io.read('./samples/ASR/BAC009S0002W0122.wav')
+    harm = features.harmonic(waveform)
+    print(harm)
+
+
 if __name__ == "__main__":
     test_spectral_centroid()
     test_context_window()
@@ -60,5 +66,6 @@ if __name__ == "__main__":
     test_fbank()
     test_mfcc()
     test_angle()
+    test_harmonic()
 
 
