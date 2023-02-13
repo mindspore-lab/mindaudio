@@ -55,6 +55,7 @@ def notch_filter(notch_freq, filter_width=101, notch_width=0.05):
 
 
 def cal_filter_by_coffs(waveform, b, a):
+    # pylint: disable=C,R,W,E,F
     if waveform.ndim == 1:
         changed_waveform = waveform
         o2 = 0.
@@ -94,6 +95,7 @@ def cal_filter_by_coffs(waveform, b, a):
 
 
 def low_pass_filter(waveform, sample_rate, cutoff_freq):
+    # pylint: disable=C,R,W,E,F
     """
     Allows audio signals with a frequency lower than the given cutoff to pass through
     and attenuates signals with frequencies higher than the cutoff frequency
@@ -133,6 +135,7 @@ def low_pass_filter(waveform, sample_rate, cutoff_freq):
 
 
 def peaking_equalizer(waveform, sample_rate, center_freq, gain, q=0.707):
+    # pylint: disable=C,R,W,E,F
     """
     Applies a two-pole peaking equalization filter. The signal-level at and around
     `center_hz` can be increased or decreased, while all other frequencies are unchanged
