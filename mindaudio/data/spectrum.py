@@ -234,36 +234,32 @@ def _pad_center(data, size, axis=-1):
     return np.pad(data, lengths)
 
 
-def overlap_add(y, ytmp, hop_length):
-    # numba-accelerated overlap add for inverse stft
-    # y is the pre-allocated output buffer
-    # ytmp is the windowed inverse-stft frames
-    # hop_length is the hop-length of the STFT analysis
-
-    n_fft = ytmp.shape[-2]
-    for frame in range(ytmp.shape[-1]):
+def overlap_add(output_buffer, frames, hop_length):
+    n_fft = frames.shape[-2]
+    for frame in range(frames.shape[-1]):
         sample = frame * hop_length
-        y[..., sample : (sample + n_fft)] += ytmp[..., frame]
+        output_buffer[..., sample : (sample + n_fft)] += frames[..., frame]
 
 
 def fix_length(data, *, size, axis=-1, **kwargs):
     kwargs.setdefault("mode", "constant")
 
-    n = data.shape[axis]
-    if n > size:
+    length = data.shape[axis]
+    if length > size:
         slices = [slice(None)] * data.ndim
         slices[axis] = slice(0, size)
         return data[tuple(slices)]
 
-    elif n < size:
+    elif length < size:
         lengths = [(0, 0)] * data.ndim
-        lengths[axis] = (0, size - n)
+        lengths[axis] = (0, size - length)
         return np.pad(data, lengths, **kwargs)
 
     return data
 
 
 def istft(stft_matrix, n_fft=None, win_length=None, hop_length=None, window="hann", center=True, length=None):
+    # pylint: disable=C,R,W,E,F
     """
     Inverse short-time Fourier transform (ISTFT).
 
