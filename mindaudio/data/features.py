@@ -460,6 +460,6 @@ def harmonic(y_input, **kwargs):
     stft_harm = hpss(y_stft, **kwargs)[0]
 
     # Invert the STFTs
-    y_harm = istft(stft_harm, length=y.shape[-1])
+    y_harm = istft(stft_harm, length=y_input.shape[-1])
 
     return y_harm
