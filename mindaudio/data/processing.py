@@ -1,3 +1,4 @@
+import numbers
 import numpy as np
 import mindspore as ms
 from mindspore.dataset.audio import ResampleMethod
@@ -13,6 +14,10 @@ __all__ = [
     'stereo_to_mono',
     'trim',
     'split',
+    'invert_channels',
+    'loop',
+    'clip',
+    'insert_in_background',
 ]
 
 
@@ -420,3 +425,141 @@ def sliding_window_cmn(x, cmn_window=600, min_cmn_window=100, center=False, norm
     """
     sliding_window_cmn_ms = msaudio.SlidingWindowCmn(cmn_window, min_cmn_window, center, norm_vars)
     return sliding_window_cmn_ms(x)
+
+
+def invert_channels(waveform):
+    """
+    Inverts channels of the audio.
+    If the audio has only one channel, no change is applied.
+    Otherwise, it inverts the order of the channels, eg for 4 channels,
+    it returns channels in order [3, 2, 1, 0].
+    @param waveform: the path to the audio or a variable of type np.ndarray that
+        will be augmented
+
+    @returns: np.ndarray, the waveform after invert channels
+
+    Examples:
+        >>> import numpy as np
+        >>> import mindaudio.data.processing as processing
+        >>> waveform = np.array([[1, 2, 3], [2, 3, 4], [3, 4, 5]])
+        >>> out_waveform = processing.invert_channels(waveform)
+    """
+    if waveform.ndim > 1:
+        row = waveform.shape[0] - 1
+        waveform[[0, row], :] = waveform[[row, 0], :]
+
+    return waveform
+
+
+def loop(waveform, times):
+    """
+    Loops the audio times
+    @param waveform: the path to the audio or a variable of type np.ndarray that
+        will be augmented
+    @param n: the number of times the audio will be looped
+
+    @returns: np.ndarray, the waveform after loop n times
+
+    Examples:
+        >>> import numpy as np
+        >>> import mindaudio.data.processing as processing
+        >>> waveform = np.array([[1, 2, 3], [2, 3, 4], [3, 4, 5]])
+        >>> times = 3
+        >>> out_waveform = processing.loop(waveform, times)
+    """
+    if times > 1:
+        backup = waveform
+        while times > 1:
+            waveform = np.append(waveform, backup, axis=1)
+            times -= 1
+
+    return waveform
+
+
+def clip(waveform, offset_factor, duration_factor):
+    """
+    Clips the audio using the specified offset and duration factors
+    @param waveform: the path to the audio or a variable of type np.ndarray that
+        will be augmented
+    @param offset_factor: start point of the crop relative to the audio duration
+        (this parameter is multiplied by the audio duration)
+    @param duration_factor: the length of the crop relative to the audio duration
+        (this parameter is multiplied by the audio duration)
+
+    @returns: np.ndarray, the waveform after clip
+
+    Examples:
+        >>> import numpy as np
+        >>> import mindaudio.data.processing as processing
+        >>> waveform = np.array([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        >>>                 [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]])
+        >>> offset_factor = 0.1
+        >>> duration_factor = 0.3
+        >>> out_waveform = processing.clip(waveform, offset_factor, duration_factor)
+    """
+    if offset_factor + duration_factor < 0.0 or offset_factor + duration_factor > 1.0:
+        print("Combination of offset and duration factors exceed audio length.")
+        return waveform
+
+    num_samples = waveform.shape[-1]
+    start = int(offset_factor * num_samples)
+    end = int((offset_factor + duration_factor) * num_samples)
+    out_waveform = waveform[..., start:end]
+    return out_waveform
+
+
+def insert_in_background(waveform, offset_factor, seed, background_audio):
+    """
+    Inserts audio into a background clip in a non-overlapping manner.
+    @param waveform: the path to the audio or a variable of type np.ndarray that
+        will be augmented
+    @param offset_factor: insert point relative to the background duration
+        (this parameter is multiplied by the background duration)
+    @param background_audio: the path to the background audio or a variable of type
+        np.ndarray containing the background audio. If set to `None`, the background
+        audio will be white noise, with the same duration as the audio.
+    @param seed: a NumPy random generator (or seed) such that the results
+        remain reproducible
+
+    @returns: np.ndarray, the waveform after insert background audio
+
+    Examples:
+        >>> import numpy as np
+        >>> import mindaudio.data.processing as processing
+        >>> waveform = np.array([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        >>>                      [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]])
+        >>> offset_factor = 0.2
+        >>> seed = None
+        >>> background_audio = np.array([[0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+        >>>                             [0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1]])
+        >>> out_waveform = processing.insert_in_background(waveform, offset_factor, seed, background_audio)
+    """
+    if offset_factor < 0.0 or offset_factor > 1.0:
+        print('Offset factor number exceed range [0, 1].')
+        return waveform
+
+    random_generator = None
+    if seed is None or seed is np.random:
+        random_generator = np.random.mtrand._rand
+    if isinstance(seed, numbers.Integral):
+        random_generator = np.random.mtrand.RandomState(seed)
+    if isinstance(seed, (np.random.mtrand.RandomState, np.random.Generator)):
+        random_generator = seed
+
+    if background_audio is None:
+        background_audio = random_generator.standard_normal(waveform.shape)
+    else:
+        num_channels = 1 if waveform.ndim == 1 else waveform.shape[0]
+        bg_num_channels = 1 if background_audio.ndim == 1 else background_audio.shape[0]
+        if bg_num_channels != num_channels:
+            background_audio, _ = stereo_to_mono(background_audio)
+            if num_channels > 1:
+                background_audio = np.tile(background_audio, (num_channels, 1))
+
+    num_samples_bg = background_audio.shape[-1]
+    offset = int(offset_factor * num_samples_bg)
+    out_waveform = np.hstack(
+        [background_audio[..., :offset], waveform, background_audio[..., offset:]]
+    )
+
+    return out_waveform

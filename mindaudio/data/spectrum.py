@@ -234,7 +234,32 @@ def _pad_center(data, size, axis=-1):
     return np.pad(data, lengths)
 
 
-def istft(stft_matrix, n_fft=None, win_length=None, hop_length=None, window="hann", center=True):
+def overlap_add(output_buffer, frames, hop_length):
+    n_fft = frames.shape[-2]
+    for sample_frame in range(frames.shape[-1]):
+        sample = sample_frame * hop_length
+        output_buffer[..., sample : (sample + n_fft)] += frames[..., sample_frame]
+
+
+def fix_length(data, *, size, axis=-1, **kwargs):
+    kwargs.setdefault("mode", "constant")
+
+    length = data.shape[axis]
+    if length > size:
+        slices = [slice(None)] * data.ndim
+        slices[axis] = slice(0, size)
+        return data[tuple(slices)]
+
+    elif length < size:
+        lengths = [(0, 0)] * data.ndim
+        lengths[axis] = (0, size - length)
+        return np.pad(data, lengths, **kwargs)
+
+    return data
+
+
+def istft(stft_matrix, n_fft=None, win_length=None, hop_length=None, window="hann", center=True, length=None):
+    # pylint: disable=C,R,W,E,F
     """
     Inverse short-time Fourier transform (ISTFT).
 
@@ -260,6 +285,8 @@ def istft(stft_matrix, n_fft=None, win_length=None, hop_length=None, window="han
             samples) and outputs an array to be multiplied with each window before fft.
         center (bool): If True (default), the input will be padded on both sides so that the t-th frame is centered at
             time t*hop_length. Otherwise, the t-th frame begins at time t*hop_length.
+        length (int): int > 0, optional, If provided, the output ``y`` is zero-padded or clipped to exactly
+            ``length`` samples.
 
     Returns:
         np.ndarray, the time domain signal.
@@ -285,37 +312,73 @@ def istft(stft_matrix, n_fft=None, win_length=None, hop_length=None, window="han
 
     ifft_window = get_window(window, win_length, fftbins=True)
 
-    ifft_window = _pad_center(ifft_window, n_fft)
+    # Pad out to match n_fft, and add broadcasting axes
+    ifft_window = _pad_center(ifft_window, size=n_fft)
     ifft_window = np.expand_dims(ifft_window, axis=-1)
 
-    n_frames = stft_matrix.shape[-1]
+    # For efficiency, trim STFT frames according to signal length if available
+    if length:
+        if center:
+            padded_length = length + int(n_fft)
+        else:
+            padded_length = length
+        n_frames = min(stft_matrix.shape[-1], int(np.ceil(padded_length / hop_length)))
+    else:
+        n_frames = stft_matrix.shape[-1]
 
-    signal_len = n_fft + hop_length * (n_frames - 1)
+    shape = list(stft_matrix.shape[:-2])
+    expected_signal_len = n_fft + hop_length * (n_frames - 1)
+    shape.append(expected_signal_len)
+    y = np.zeros(shape, dtype=np.float_)
 
-    data = np.zeros(shape=stft_matrix.shape[:-2] + (signal_len,), dtype=np.float_)
-    data_temp = (ifft_window * fft.irfft(stft_matrix, n=n_fft, axis=-2))
+    n_columns = 2 ** 8 * 2 ** 10 // (
+        np.prod(stft_matrix.shape[:-1]) * stft_matrix.itemsize
+    )
+    n_columns = max(n_columns, 1)
 
-    # we need to deal with the overlap part, instead of directly assign case by case. We can calculate the square sum of
-    # windows, assign data_temp to data. Then devide the square sum of windows.
-    for i in range(n_frames):
-        start = i * hop_length
-        data[..., start: min(signal_len, start + n_fft)] += data_temp[..., i]
+    frame = 0
+    for bl_s in range(0, n_frames, n_columns):
+        bl_t = min(bl_s + n_columns, n_frames)
 
-    # implementation according to librosa
+        # invert the block and apply the window function
+        ytmp = ifft_window * fft.irfft(stft_matrix[..., bl_s:bl_t], n=n_fft, axis=-2)
+
+        # Overlap-add the istft block starting at the i'th frame
+        overlap_add(y[..., frame * hop_length :], ytmp, hop_length)
+
+        frame += bl_t - bl_s
+
+    # Normalize by sum of squared window
     ifft_window_sum = _window_sumsquare(
-        window,
-        n_frames,
+        window=window,
+        n_frames=n_frames,
         win_length=win_length,
         n_fft=n_fft,
         hop_length=hop_length,
     )
 
-    approx_nonzero_indixes = ifft_window_sum > 1e-9
-    data[..., approx_nonzero_indixes] /= ifft_window_sum[approx_nonzero_indixes]
+    approx_nonzero_indices = ifft_window_sum > 1e-9
+    y[..., approx_nonzero_indices] /= ifft_window_sum[approx_nonzero_indices]
 
-    if center:
-        data = data[..., int(n_fft // 2): -int(n_fft // 2)]
-    return data
+    if length is None:
+        # If we don't need to control length, just do the usual center trimming
+        # to eliminate padded data
+        if center:
+            y = y[..., int(n_fft // 2) : -int(n_fft // 2)]
+    else:
+        if center:
+            # If we're centering, crop off the first n_fft//2 samples
+            # and then trim/pad to the target length.
+            # We don't trim the end here, so that if the signal is zero-padded
+            # to a longer duration, the decay is smooth by windowing
+            start = int(n_fft // 2)
+        else:
+            # If we're not centering, start at 0 and trim/pad as necessary
+            start = 0
+
+        y = fix_length(y[..., start:], size=length)
+
+    return y
 
 
 def _window_sumsquare(window, n_frames, win_length, n_fft, hop_length):
