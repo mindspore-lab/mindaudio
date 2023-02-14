@@ -236,9 +236,9 @@ def _pad_center(data, size, axis=-1):
 
 def overlap_add(output_buffer, frames, hop_length):
     n_fft = frames.shape[-2]
-    for frame in range(frames.shape[-1]):
-        sample = frame * hop_length
-        output_buffer[..., sample : (sample + n_fft)] += frames[..., frame]
+    for sample_frame in range(frames.shape[-1]):
+        sample = sample_frame * hop_length
+        output_buffer[..., sample : (sample + n_fft)] += frames[..., sample_frame]
 
 
 def fix_length(data, *, size, axis=-1, **kwargs):
