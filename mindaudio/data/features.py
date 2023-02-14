@@ -332,6 +332,7 @@ def angle(x):
 
 
 def soft_mask(x, x_ref, *, power=1, split_zeros=False):
+    # pylint: disable=C,R,W,E,F
     if x.shape != x_ref.shape:
         raise TypeError("Shape mismatch: {}!={}".format(x.shape, x_ref.shape))
 
@@ -370,6 +371,7 @@ def soft_mask(x, x_ref, *, power=1, split_zeros=False):
 
 
 def mag_phase(d, *, power=1):
+    # pylint: disable=C,R,W,E,F
     mag = np.abs(d)
     mag **= power
     phase = np.exp(1.0j * np.angle(d))
@@ -378,6 +380,7 @@ def mag_phase(d, *, power=1):
 
 
 def hpss(s, *, kernel_size=31, power=2.0, mask=False, margin=1.0):
+    # pylint: disable=C,R,W,E,F
     if np.iscomplexobj(s):
         s, phase = mag_phase(s)
     else:
