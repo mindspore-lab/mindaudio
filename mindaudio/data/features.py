@@ -434,17 +434,17 @@ def hpss(s, *, kernel_size=31, power=2.0, mask=False, margin=1.0):
     return ((s * mask_harm) * phase, (s * mask_perc) * phase)
 
 
-def harmonic(y, **kwargs):
+def harmonic(y_input, **kwargs):
     """Extract harmonic elements from an audio time-series.
 
     Args
-        y : np.ndarray [shape=(..., n)]
+        y_input : np.ndarray [shape=(..., n)]
             audio time series. Multi-channel is supported.
         **kwargs : additional keyword arguments.
             See `librosa.decompose.hpss` for details.
 
     Returns
-        y_harmonic : np.ndarray [shape=(..., n)]
+        y_harm : np.ndarray [shape=(..., n)]
             audio time series of just the harmonic portion
 
     Examples
@@ -454,10 +454,10 @@ def harmonic(y, **kwargs):
         >>> harm = features.harmonic(waveform, margin=3.0)
     """
     # Compute the STFT matrix
-    stft_y = stft(y, n_fft=2048, pad_mode='constant')
+    y_stft = stft(y_input, n_fft=2048, pad_mode='constant')
 
     # Remove percussives
-    stft_harm = hpss(stft_y, **kwargs)[0]
+    stft_harm = hpss(y_stft, **kwargs)[0]
 
     # Invert the STFTs
     y_harm = istft(stft_harm, length=y.shape[-1])
