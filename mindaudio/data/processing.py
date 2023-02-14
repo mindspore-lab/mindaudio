@@ -451,9 +451,9 @@ def invert_channels(waveform):
     return waveform
 
 
-def loop(waveform, n):
+def loop(waveform, times):
     """
-    Loops the audio 'n' times
+    Loops the audio times
     @param waveform: the path to the audio or a variable of type np.ndarray that
         will be augmented
     @param n: the number of times the audio will be looped
@@ -464,14 +464,14 @@ def loop(waveform, n):
         >>> import numpy as np
         >>> import mindaudio.data.processing as processing
         >>> waveform = np.array([[1, 2, 3], [2, 3, 4], [3, 4, 5]])
-        >>> n = 3
-        >>> out_waveform = processing.loop(waveform, n)
+        >>> times = 3
+        >>> out_waveform = processing.loop(waveform, times)
     """
-    if n > 1:
+    if times > 1:
         backup = waveform
-        while n > 1:
+        while times > 1:
             waveform = np.append(waveform, backup, axis=1)
-            n -= 1
+            times -= 1
 
     return waveform
 
