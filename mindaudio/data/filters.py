@@ -5,6 +5,12 @@ __all__ = [
     'notch_filter',
     'low_pass_filter',
     'peaking_equalizer',
+    'contrast',
+    'riaa_biquad',
+    'treble_biquad',
+    'dcshift',
+    'filtfilt',
+    'mel'
 ]
 
 
@@ -177,3 +183,262 @@ def peaking_equalizer(waveform, sample_rate, center_freq, gain, q=0.707):
     a = np.array([a0, a1 / a0, a2 / a0])
 
     return cal_filter_by_coffs(waveform, b, a)
+
+
+def contrast(waveform, enhancement_amount=75.0):
+    """
+    Apply contrast effect for audio waveform.
+    Comparable with compression, this effect modifies an audio signal to make it sound louder.
+    Similar to `SoX <http://sox.sourceforge.net/sox.html>`_ implementation.
+
+    Args:
+        waveform(np.ndarray): The dimension of the audio waveform to be processed needs to be (..., time).
+        enhancement_amount (float, optional): Controls the amount of the enhancement,in range of [0, 100]. Default:
+            75.0. Note that `enhancement_amount` equal to 0 still gives a significant contrast enhancement
+
+    Returns:
+        contrast_wav(np.ndarray):The dimension of the audio waveform is (..., time)
+
+    Examples:
+        >>> import mindaudio.data.io as io
+        >>> import mindaudio.data.filters as filters
+        >>> waveform, sr = io.read('./samples/ASR/BAC009S0002W0122.wav')
+        >>> contrast_wav = filters.contrast(waveform)
+
+    """
+    effect = msaudio.Contrast(enhancement_amount)
+    contrast_wav = effect(waveform)
+    return contrast_wav
+
+
+def riaa_biquad(waveform, sample_rate=44100):
+    """
+    Apply RIAA vinyl playback equalization.
+    Similar to `SoX <http://sox.sourceforge.net/sox.html>`_ implementation.
+
+    Args:
+        waveform(np.ndarray): The dimension of the audio waveform to be processed needs to be (..., time).
+        sample_rate (int): sampling rate of the waveform, e.g. 44100 (Hz), can only be one of 44100, 48000, 88200,
+            96000.
+
+    Returns:
+        riaa_wav(np.ndarray): The dimension of the audio waveform is (..., time)
+
+    Examples:
+        >>> import mindaudio.data.io as io
+        >>> import mindaudio.data.filters as filters
+        >>> waveform, sr = io.read('./samples/ASR/BAC009S0002W0122.wav')
+        >>> riaa_wav = filters.riaa_biquad(waveform)
+    """
+    effect = msaudio.RiaaBiquad(sample_rate)
+    riaa_wav = effect(waveform)
+    return riaa_wav
+
+
+def treble_biquad(waveform, sample_rate, gain, central_freq=3000, Q=0.707):
+    """
+    Design a treble tone-control effect.
+    Similar to `SoX <http://sox.sourceforge.net/sox.html>`_ implementation.
+
+    Args:
+        waveform(np.ndarray): The dimension of the audio waveform to be processed needs to be (..., time).
+        sample_rate (int): Sampling rate (in Hz), which can't be zero.
+        gain (float): Desired gain at the boost (or attenuation) in dB.
+        central_freq (float): Central frequency (in Hz). Default: 3000.
+        Q (float): `Quality factor <https://en.wikipedia.org/wiki/Q_factor>`_ ,in range of (0, 1]. Default: 0.707.
+
+    Returns:
+        treble_wav(np.ndarray): The dimension of the audio waveform is (..., time)
+
+    Examples:
+        >>> import mindaudio.data.io as io
+        >>> import mindaudio.data.filters as filters
+        >>> waveform, sr = io.read('./samples/ASR/BAC009S0002W0122.wav')
+        >>> treble_wav = filters.treble_biquad(waveform, sample_rate=44100, gain=5)
+    """
+    effect = msaudio.TrebleBiquad(sample_rate, gain, central_freq, Q)
+    treble_wav = effect(waveform)
+    return treble_wav
+
+
+def dcshift(waveform, shift, limiter_gain):
+    """
+    Apply a DC shift to the audio. This can be useful to remove DC offset from audio.
+
+    Args:
+        waveform(np.ndarray): The dimension of the audio waveform to be processed needs to be (..., time).
+        shift (float): The amount to shift the audio, the value must be in the range [-2.0, 2.0].
+        limiter_gain (float, optional): Used only on peaks to prevent clipping, the value should be much less than 1,
+            such as 0.05 or 0.02.
+
+    Returns:
+        shifted_wav(np.ndarray): The dimension of the audio waveform is (..., time)
+
+    Examples:
+        >>> import mindaudio.data.io as io
+        >>> import mindaudio.data.filters as filters
+        >>> waveform, sr = io.read('./samples/ASR/BAC009S0002W0122.wav')
+        >>> treble_wav = filters.dcshift(waveform, shift=0.5, limiter_gain=0.02)
+    """
+    effect = msaudio.DCShift(shift, limiter_gain)
+    shifted_wav = effect(waveform)
+    return shifted_wav
+
+
+def filtfilt(waveform, N, Wn, btype):
+    """
+    Apply a DC shift to the audio. This can be useful to remove DC offset from audio.
+
+    Args:
+        waveform(np.ndarray): The dimension of the audio waveform to be processed needs to be (..., time).
+        N(int): The order of the filter.
+        Wn(float): Normalized cutoff frequency. The formula Wn=2* cutoff_frequency / sample_rate.
+        btype(str): {‘lowpass', ‘highpass', ‘bandpass', ‘bandstop'}.
+
+    Returns:
+        filted_wav(np.ndarray): The dimension of the audio waveform is (..., time)
+
+    Examples:
+        >>> import mindaudio.data.io as io
+        >>> import mindaudio.data.filters as filters
+        >>> waveform, sr = io.read('./samples/ASR/BAC009S0002W0122.wav')
+        >>> treble_wav = filters.filtfilt(waveform, N=8, Wn=0.02, btype='highpass')
+    """
+    from scipy import signal
+
+    b, a = signal.butter(N, Wn, btype)
+    filted_wav = signal.filtfilt(b, a, waveform)
+    return filted_wav
+
+
+def hz_to_mel(frequencies, htk=False):
+    frequencies = np.asanyarray(frequencies)
+
+    if htk:
+        mels: np.ndarray = 2595.0 * np.log10(1.0 + frequencies / 700.0)
+        return mels
+
+    # Fill in the linear part
+    f_min = 0.0
+    f_sp = 200.0 / 3
+
+    mels = (frequencies - f_min) / f_sp
+
+    # Fill in the log-scale part
+
+    min_log_hz = 1000.0  # beginning of log region (Hz)
+    min_log_mel = (min_log_hz - f_min) / f_sp  # same (Mels)
+    logstep = np.log(6.4) / 27.0  # step size for log region
+
+    if frequencies.ndim:
+        # If we have array data, vectorize
+        log_t = frequencies >= min_log_hz
+        mels[log_t] = min_log_mel + np.log(frequencies[log_t] / min_log_hz) / logstep
+    elif frequencies >= min_log_hz:
+        # If we have scalar data, heck directly
+        mels = min_log_mel + np.log(frequencies / min_log_hz) / logstep
+
+    return mels
+
+
+def mel_to_hz(mels, htk=False):
+
+    mels = np.asanyarray(mels)
+
+    if htk:
+        return 700.0 * (10.0 ** (mels / 2595.0) - 1.0)
+
+    # Fill in the linear scale
+    f_min = 0.0
+    f_sp = 200.0 / 3
+    freqs = f_min + f_sp * mels
+
+    # And now the nonlinear scale
+    min_log_hz = 1000.0  # beginning of log region (Hz)
+    min_log_mel = (min_log_hz - f_min) / f_sp  # same (Mels)
+    logstep = np.log(6.4) / 27.0  # step size for log region
+
+    if mels.ndim:
+        # If we have vector data, vectorize
+        log_t = mels >= min_log_mel
+        freqs[log_t] = min_log_hz * np.exp(logstep * (mels[log_t] - min_log_mel))
+    elif mels >= min_log_mel:
+        # If we have scalar data, check directly
+        freqs = min_log_hz * np.exp(logstep * (mels - min_log_mel))
+
+    return freqs
+
+
+def mel_frequencies(n_mels=128, fmin=0.0, fmax=11025.0, htk=False):
+    min_mel = hz_to_mel(fmin, htk=htk)
+    max_mel = hz_to_mel(fmax, htk=htk)
+
+    mels = np.linspace(min_mel, max_mel, n_mels)
+
+    hz: np.ndarray = mel_to_hz(mels, htk=htk)
+    return hz
+
+
+def fft_frequencies(sr=22050, n_fft=2048):
+    return np.fft.rfftfreq(n=n_fft, d=1.0 / sr)
+
+
+def mel(sr, n_fft, n_mels=128, fmin=0.0, fmax=None,
+        norm: Optional[Union[Literal["slaney"], float]] = "slaney"):
+    """Create a Mel filter-bank.
+    This produces a linear transformation matrix to project FFT bins onto Mel-frequency bins.
+
+    Args:
+        sr(int): sampling rate of the incoming signal
+        n_fft(int): number of FFT components
+        n_mels(int): number of Mel bands to generate
+        fmin(float): lowest frequency (in Hz)
+        fmax(float): highest frequency (in Hz).If `None`, use ``fmax = sr / 2.0``
+        norm({None, 'slaney', or number} [scalar]): If 'slaney', divide the triangular mel weights by the width of the
+        mel band(area normalization).If numeric, use `librosa.util.normalize` to normalize each filter by to unit
+        l_p norm.
+
+    Returns:
+        M (np.ndarray): [shape=(n_mels, 1 + n_fft/2)] Mel transform matrix
+
+    Examples:
+        >>> import mindaudio.data.filters as filters
+        >>> melfb = filters.mel(sr=22050, n_fft=2048)
+    """
+
+    if fmax is None:
+        fmax = float(sr) / 2
+
+    # Initialize the weights
+    n_mels = int(n_mels)
+    weights = np.zeros((n_mels, int(1 + n_fft // 2)), dtype=np.float32)
+
+    # Center freqs of each FFT bin
+
+    fftfreqs = fft_frequencies(sr=sr, n_fft=n_fft)
+
+    # 'Center freqs' of mel bands - uniformly spaced between limits
+    mel_f = mel_frequencies(n_mels + 2, fmin=fmin, fmax=fmax)
+
+    fdiff = np.diff(mel_f)
+    ramps = np.subtract.outer(mel_f, fftfreqs)
+
+    for i in range(n_mels):
+        # lower and upper slopes for all bins
+        lower = -ramps[i] / fdiff[i]
+        upper = ramps[i + 2] / fdiff[i + 1]
+
+        # .. then intersect them with each other and zero
+        weights[i] = np.maximum(0, np.minimum(lower, upper))
+
+    if isinstance(norm, str):
+        if norm == "slaney":
+            # Slaney-style mel is scaled to be approx constant energy per channel
+            enorm = 2.0 / (mel_f[2: n_mels + 2] - mel_f[:n_mels])
+            weights *= enorm[:, np.newaxis]
+
+    else:
+        import mindaudio.data.processing as processing
+        weights = processing.normalize(weights, norm=norm, axis=-1)
+
+    return weights

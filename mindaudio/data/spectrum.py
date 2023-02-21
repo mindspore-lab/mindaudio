@@ -19,6 +19,7 @@ __all__ = [
     'melspectrogram',
     'magphase',
     'melscale',
+    'resynthesize'
 ]
 
 
@@ -616,3 +617,47 @@ def melscale(spec, n_mels=128, sample_rate=16000, f_min=0, f_max=None, n_stft=20
     mel_scale = msaudio.MelScale(n_mels, sample_rate, f_min, f_max, n_stft, norm, mel_type)
     return mel_scale(spec)
 
+
+def resynthesize(enhanced_mag, noisy_inputs, normalize_wavs=True):
+    """Function for resynthesizing waveforms from enhanced mags.
+
+    Arguments:
+        enhanced_mag (np.ndarray): Predicted spectral magnitude, should be two dimensional.
+        noisy_inputs (np.ndarray): The noisy waveforms before any processing, to extract phase.
+        normalize_wavs (bool): Whether to normalize the output wavs before returning them.
+
+    Returns:
+        enhanced_wav (np.ndarray): The resynthesized waveforms of the enhanced magnitudes with noisy phase.
+
+    Examples:
+        >>> waveform1, _ = io.read('./samples/ASR/BAC009S0002W0122.wav')
+        >>> D = spectrum.stft(waveform1, return_complex=False)
+        >>> mag, _ = spectrum.magphase(D, power=1.0, iscomplex=False)
+        >>> enhanced_wav = spectrum.resynthesize(mag, waveform1, normalize_wavs=False)
+    """
+
+    # Extract noisy phase from inputs
+    noisy_feats = stft(noisy_inputs, return_complex=False)
+    noisy_phase = np.arctan2(noisy_feats[:, :, 1], noisy_feats[:, :, 0])
+
+    pre_stack = np.stack(
+            [
+                np.cos(noisy_phase),
+                np.sin(noisy_phase),
+            ],
+            axis=-1,
+        )
+    # Combine with enhanced magnitude
+    #complex_predictions = np.dot(
+    complex_predictions = np.expand_dims(enhanced_mag, -1) * pre_stack
+    result = complex_predictions[:, :, 0] + 1j * complex_predictions[:, :, 1]
+
+    pred_wavs = istft(result)
+
+
+    # Normalize. Since we're using peak amplitudes, ignore lengths
+    if normalize_wavs:
+        from .processing import normalize
+        pred_wavs = normalize(pred_wavs, norm="max")
+
+    return pred_wavs
