@@ -13,6 +13,10 @@ __all__ = [
     'reverberate',
     'add_noise',
     'add_reverb',
+    'add_babble',
+    'drop_freq',
+    'speed_perturb',
+    'drop_chunk',
 ]
 
 
@@ -370,6 +374,322 @@ def add_reverb(samples, rirlist, reverb_prob=1.0):
         res = np.squeeze(res, axis=0)
 
     return res
+
+
+def add_babble(waveforms, lengths, speaker_count=3, snr_low=0, snr_high=0, mix_prob=1.0):
+    """
+        Simulate babble noise by mixing the signals in a batch.
+
+        Args:
+            waveforms(np.ndarray): A batch of audio signals to process, with shape `[batch, time]` or
+                `[batch, time, channels]`.
+            lengths(np.ndarray): The length of each audio in the batch, with shape `[batch]`.
+            speaker_count(int): The number of signals to mix with the original signal.
+            snr_low(int): The low end of the mixing ratios, in decibels.
+            snr_high(int): The high end of the mixing ratios, in decibels.
+            mix_prob(float): The probability that the batch of signals will bemixed with babble noise.
+                By default, every signal is mixed.
+
+        Returns:
+            waveforms(np.ndarray):array with processed waveforms.
+
+        Examples:
+            >>> import mindaudio.data.io as io
+            >>> import mindaudio.data.augment as augment
+            >>> wav_list = ['./samples/ASR/BAC009S0002W0122.wav',
+            >>>        './samples/ASR/BAC009S0002W0123.wav',
+            >>>        './samples/ASR/BAC009S0002W0124.wav',]
+            >>> wav_num = 0
+            >>> maxlen = 0
+            >>> lenlist = []
+            >>> for wavdir in wav_list:
+            >>>     wav, _ = io.read(wavdir)
+            >>>     wavlen = len(wav)
+            >>>     lenlist.append(wavlen)
+            >>>     maxlen = max(wavlen, maxlen)
+            >>>     if wav_num == 0:
+            >>>         waveforms = np.expand_dims(wav, axis=0)
+            >>>     else:
+            >>>         wav = np.expand_dims(np.pad(wav, (0, maxlen-wavlen), 'constant'), axis=0)
+            >>>         waveforms = np.concatenate((waveforms, wav), axis=0)
+            >>>     wav_num += 1
+            >>> lengths = np.array(lenlist)/maxlen
+            >>> noisy_mindaudio = augment.add_babble(waveforms, lengths, speaker_count=3, snr_low=0, snr_high=0)
+
+    """
+    babbled_waveform = waveforms.copy()
+    lengths = np.expand_dims(lengths * waveforms.shape[1], axis=1)
+    batch_size = len(waveforms)
+
+    if np.random.rand(1) > mix_prob:
+        return babbled_waveform
+
+    # Pick an SNR and use it to compute the mixture amplitude factors
+    clean_amplitude = compute_amplitude(waveforms, lengths)
+    SNR = np.random.rand(batch_size, 1)
+    SNR = SNR * (snr_high - snr_low) + snr_low
+    noise_amplitude_factor = 1 / (dB_to_amplitude(SNR, 1, 1) + 1)
+    new_noise_amplitude = noise_amplitude_factor * clean_amplitude
+
+    # Scale clean signal appropriately
+    babbled_waveform *= 1 - noise_amplitude_factor
+
+    # For each speaker in the mixture, roll and add
+    babble_waveform = np.roll(waveforms, 1, axis=0)
+    babble_len = np.roll(lengths, 1, axis=0)
+    for i in range(1, speaker_count):
+        babble_waveform += np.roll(waveforms, 1+i, axis=0)
+        babble_len = np.maximum(babble_len, np.roll(babble_len, 1, axis=0))
+
+    # Rescale and add to mixture
+    babble_amplitude = compute_amplitude(babble_waveform, babble_len)
+    babble_waveform *= new_noise_amplitude / (babble_amplitude + 1e-14)
+    babbled_waveform += babble_waveform
+
+    return babbled_waveform
+
+
+def drop_freq(waveforms, drop_freq_low=1e-14, drop_freq_high=1, drop_count_low=1, drop_count_high=2,
+              drop_width=0.05, drop_prob=1):
+    """
+    Drops a random frequency from the signal.To teach models to learn to rely on all parts of the signal,
+    not just a few frequency bands.
+
+    Args:
+        waveforms(np.ndarray): A batch of audio signals to process, with shape `[batch, time]` or
+            `[batch, time, channels]`.
+        drop_freq_low(float): The low end of frequencies that can be dropped,as a fraction of the sampling rate / 2.
+        drop_freq_high(float): The high end of frequencies that can be dropped, as a fraction of the
+            sampling rate / 2.
+        drop_count_low(int): The low end of number of frequencies that could be dropped.
+        drop_count_high(int): The high end of number of frequencies that could be dropped.
+        drop_width(float): The width of the frequency band to drop, as a fraction of the sampling_rate / 2.
+        drop_prob(float): The probability that the batch of signals will  have a frequency dropped. By default,
+            every batch has frequencies dropped.
+
+    Returns:
+        ndarray of shape `[batch, time]` or `[batch, time, channels]`
+
+    Examples:
+        >>> import mindaudio.data.io as io
+        >>> import mindaudio.data.augment as augment
+        >>> signal = io.read('./samples/ASR/1089-134686-0000.wav')
+        >>> dropped_signal_mindaudio = augment.drop_freq(signal)
+
+    """
+    # Don't drop (return early) 1-`drop_prob` portion of the batches
+    orig_shapelen = len(waveforms.shape)
+    dropped_waveform = waveforms.copy()
+    if np.random.rand(1) > drop_prob:
+        return dropped_waveform
+
+    # Add channels dimension
+    if len(waveforms.shape) == 1:
+        dropped_waveform = np.expand_dims(np.expand_dims(dropped_waveform, 0), 2)
+    elif len(waveforms.shape) == 2:
+        dropped_waveform = np.expand_dims(dropped_waveform, axis=2)
+
+    # Pick number of frequencies to drop
+    drop_count = np.random.randint(
+        low=drop_count_low, high=drop_count_high + 1, size=(1,)
+    )
+    drop_count = drop_count[0]
+
+    # Pick a frequency to drop
+    drop_range = drop_freq_high - drop_freq_low
+    drop_frequency = (
+            np.random.rand(drop_count) * drop_range + drop_freq_low
+    )
+
+    # Filter parameters
+    filter_length = 101
+    pad = filter_length // 2
+
+    # Start with delta function
+    drop_filter = np.zeros([1, filter_length, 1])
+    drop_filter[0, pad, 0] = 1
+
+    # Subtract each frequency
+    for frequency in drop_frequency:
+        notch_kernel = notch_filter(
+            frequency, filter_length, drop_width,
+        )
+        drop_filter = convolve1d(drop_filter, notch_kernel, pad)
+
+    # Apply filter
+    dropped_waveform = convolve1d(dropped_waveform, drop_filter, pad)
+
+    # Remove channels dimension if added
+    if orig_shapelen == 2:
+        dropped_waveform = np.squeeze(dropped_waveform, axis=2)
+    elif orig_shapelen == 1:
+        dropped_waveform = np.squeeze(np.squeeze(dropped_waveform, axis=2), axis=0)
+    return dropped_waveform
+
+
+def speed_perturb(waveform, orig_freq, speeds=[90, 100, 110], perturb_prob=1.0):
+    """
+    Slightly speed up or slow down an audio signal.Resample the audio signal at a rate that is similar to the
+    original rate, to achieve a slightly slower or slightly faster signal.
+
+    Args:
+        waveforms(np.ndarray): Shape should be `[batch, time]` or `[batch, time, channels]`.
+        lengths(np.ndarray): Shape should be a single dimension, `[batch]`.
+        orig_freq(int): The frequency of the original signal.
+        speeds(list): The speeds that the signal should be changed to, as a percentage of the original signal
+        (i.e. `speeds` is divided by 100 to get a ratio).
+        perturb_prob(float): The chance that the batch will be speed-perturbed. By default, every batch is perturbed.
+
+    Returns:
+        perturbed_waveform(np.ndarray): Shape `[batch, time]` or `[batch, time, channels]`.
+
+    Example:
+        >>> import mindaudio.data.io as io
+        >>> import mindaudio.data.augment as augment
+        >>> signal = io.read('./samples/ASR/1089-134686-0000.wav')
+        >>> perturbed_mindaudio = augment.speed_perturb(signal, orig_freq=16000, speeds=[90])
+    """
+
+    # Don't perturb (return early) 1-`perturb_prob` portion of the batches
+    if np.random.rand(1) > perturb_prob:
+        return waveform.copy()
+
+    # Perform a random perturbation
+    samp_index = np.random.randint(0, len(speeds), (1,))[0]
+    speed = speeds[samp_index]
+    new_freq = orig_freq * speed // 100
+    perturbed_waveform = resample(waveform, orig_freq, new_freq)
+    return perturbed_waveform
+
+
+def drop_chunk(waveforms, lengths, drop_length_low=100, drop_length_high=1000, drop_count_low=1, drop_count_high=10,
+               drop_start=0, drop_end=None, drop_prob=1, noise_factor=0.0):
+    """
+    This class drops portions of the input signal.Using `drop_chunk` as an augmentation strategy helps a models learn
+    to rely on all parts of the signal, since it can't expect a given part to be present.
+
+    Args:
+        waveforms(np.ndarray): Shape should be `[batch, time]` or `[batch, time, channels]`.
+        lengths(np.ndarray): Shape should be a single dimension, `[batch]`.
+        drop_length_low(int): The low end of lengths for which to set the signal to zero, in samples.
+        drop_length_high(int): The high end of lengths for which to set the signal to zero, in samples.
+        drop_count_low(int): The low end of number of times that the signal can be dropped to zero.
+        drop_count_high(int): The high end of number of times that the signal can be dropped to zero.
+        drop_start(int): The first index for which dropping will be allowed.
+        drop_end(int): The last index for which dropping will be allowed.
+        drop_prob(float): The probability that the batch of signals will have a portion dropped. By default, every
+        batch has portions dropped.
+        noise_factor(float): The factor relative to average amplitude of an utterance to use for scaling the white
+        noise inserted. 1 keeps the average amplitude the same, while 0 inserts all 0's.
+
+    Returns:
+        dropped_waveform(np.ndarray): Shape `[batch, time]` or `[batch, time, channels]`
+
+    Example:
+        >>> import mindaudio.data.io as io
+        >>> import mindaudio.data.augment as augment
+        >>> wav_list = ['./samples/ASR/BAC009S0002W0122.wav',
+        >>>        './samples/ASR/BAC009S0002W0123.wav',
+        >>>        './samples/ASR/BAC009S0002W0124.wav',]
+        >>> wav_num = 0
+        >>> maxlen = 0
+        >>> lenlist = []
+        >>> for wavdir in wav_list:
+        >>>     wav, _ = io.read(wavdir)
+        >>>     wavlen = len(wav)
+        >>>     lenlist.append(wavlen)
+        >>>     maxlen = max(wavlen, maxlen)
+        >>>     if wav_num == 0:
+        >>>         waveforms = np.expand_dims(wav, axis=0)
+        >>>     else:
+        >>>         wav = np.expand_dims(np.pad(wav, (0, maxlen-wavlen), 'constant'), axis=0)
+        >>>         waveforms = np.concatenate((waveforms, wav), axis=0)
+        >>>     wav_num += 1
+        >>> lengths = np.array(lenlist)/maxlen
+        >>> dropped_waveform = augment.drop_chunk(waveforms, lengths, drop_start=100, drop_end=200, noise_factor=0.0)
+
+
+    """
+
+    # Validate low < high
+    if drop_length_low > drop_length_high:
+        raise ValueError("Low limit must not be more than high limit")
+    if drop_count_low > drop_count_high:
+        raise ValueError("Low limit must not be more than high limit")
+
+    # Make sure the length doesn't exceed end - start
+    if drop_end is not None and drop_end >= 0:
+        if drop_start > drop_end:
+            raise ValueError("Low limit must not be more than high limit")
+
+        drop_range = drop_end - drop_start
+        drop_length_low = min(drop_length_low, drop_range)
+        drop_length_high = min(drop_length_high, drop_range)
+
+    # Reading input list
+    lengths = (lengths * waveforms.shape[1])
+    batch_size = waveforms.shape[0]
+    dropped_waveform = waveforms.copy()
+
+    # Don't drop (return early) 1-`drop_prob` portion of the batches
+    if np.random.rand(1) > drop_prob:
+        return dropped_waveform
+
+    # Store original amplitude for computing white noise amplitude
+    clean_amplitude = compute_amplitude(waveforms, np.expand_dims(lengths, axis=1))
+
+    # Pick a number of times to drop
+    drop_times = np.random.randint(
+        low=drop_count_low,
+        high=drop_count_high + 1,
+        size=(batch_size,),
+    )
+
+    # Iterate batch to set mask
+    for i in range(batch_size):
+        if drop_times[i] == 0:
+            continue
+
+        # Pick lengths
+        length = np.random.randint(
+            low=drop_length_low,
+            high=drop_length_high + 1,
+            size=(drop_times[i],),
+        )
+
+        # Compute range of starting locations
+        start_min = drop_start
+        if start_min < 0:
+            start_min += lengths[i]
+        start_max = drop_end
+        if start_max is None:
+            start_max = lengths[i]
+        if start_max < 0:
+            start_max += lengths[i]
+        start_max = max(0, start_max - length.max())
+
+        # Pick starting locations
+        start = np.random.randint(
+            low=start_min, high=start_max + 1, size=(drop_times[i],),
+        )
+
+        end = start + length
+
+        # Update waveform
+        if not noise_factor:
+            for j in range(drop_times[i]):
+                dropped_waveform[i, start[j]: end[j]] = 0.0
+        else:
+            # Uniform distribution of -2 to +2 * avg amplitude should
+            # preserve the average for normalization
+            noise_max = 2 * clean_amplitude[i] * noise_factor
+            for j in range(drop_times[i]):
+                # zero-center the noise distribution
+                noise_vec = np.random.rand(length[j])
+                noise_vec = 2 * noise_max * noise_vec - noise_max
+                dropped_waveform[i, start[j]: end[j]] = noise_vec
+
+    return dropped_waveform
 
 
 

@@ -77,6 +77,60 @@ def test_3d():
     print(addrir.shape)
 
 
+def test_add_babble():
+    wav_list = ['./samples/ASR/BAC009S0002W0122.wav',
+                './samples/ASR/BAC009S0002W0123.wav',
+                './samples/ASR/BAC009S0002W0124.wav',]
+    wav_num = 0
+    maxlen = 0
+    lenlist = []
+    for wavdir in wav_list:
+        wav, _ = io.read(wavdir)
+        wavlen = len(wav)
+        lenlist.append(wavlen)
+        maxlen = max(wavlen, maxlen)
+        if wav_num == 0:
+            waveforms = np.expand_dims(wav, axis=0)
+        else:
+            wav = np.expand_dims(np.pad(wav, (0, maxlen-wavlen), 'constant'), axis=0)
+            waveforms = np.concatenate((waveforms, wav), axis=0)
+        wav_num += 1
+    lengths = np.array(lenlist)/maxlen
+    noisy_mindaudio = augment.add_babble(waveforms, lengths, speaker_count=3, snr_low=0, snr_high=0, mix_prob=1.0)
+
+
+def test_drop_freq():
+    signal, _ = io.read('./samples/ASR/1089-134686-0000.wav')
+    dropped_signal_mindaudio = augment.drop_freq(signal)
+
+
+def test_speed_perturb():
+    signal, _ = io.read('./samples/ASR/1089-134686-0000.wav')
+    perturbed_mindaudio = augment.speed_perturb(signal, orig_freq=16000, speeds=[90])
+
+
+def test_drop_chunk():
+    wav_list = ['./samples/ASR/BAC009S0002W0122.wav',
+                './samples/ASR/BAC009S0002W0123.wav',
+                './samples/ASR/BAC009S0002W0124.wav', ]
+    wav_num = 0
+    maxlen = 0
+    lenlist = []
+    for wavdir in wav_list:
+        wav, _ = io.read(wavdir)
+        wavlen = len(wav)
+        lenlist.append(wavlen)
+        maxlen = max(wavlen, maxlen)
+        if wav_num == 0:
+            waveforms = np.expand_dims(wav, axis=0)
+        else:
+            wav = np.expand_dims(np.pad(wav, (0, maxlen - wavlen), 'constant'), axis=0)
+            waveforms = np.concatenate((waveforms, wav), axis=0)
+        wav_num += 1
+    lengths = np.array(lenlist) / maxlen
+    dropped_waveform = augment.drop_chunk(waveforms, lengths, drop_start=100, drop_end=200, noise_factor=0.0)
+
+
 if __name__ == "__main__":
     test_frequencymasking()
     test_timemasking()
@@ -84,3 +138,7 @@ if __name__ == "__main__":
     test_1d()
     test_2d()
     test_3d()
+    test_add_babble()
+    test_drop_freq()
+    test_speed_perturb()
+    test_drop_chunk()

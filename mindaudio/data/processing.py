@@ -18,6 +18,7 @@ __all__ = [
     'loop',
     'clip',
     'insert_in_background',
+    'overlap_and_add',
 ]
 
 
@@ -563,3 +564,55 @@ def insert_in_background(waveform, offset_factor, seed, background_audio):
     )
 
     return out_waveform
+
+
+def overlap_and_add(signal, frame_step):
+    """
+    Taken from https://github.com/kaituoxu/Conv-TasNet/blob/master/src/utils.py
+    Adds potentially overlapping frames of a signal with shape`[..., frames, frame_length]`, offsetting subsequent
+    frames by `frame_step`.
+    The resulting tensor has shape `[..., output_size]` where output_size = (frames - 1) * frame_step + frame_length
+
+    Args:
+        signal(mindspore.tensor): Shape of [..., frames, frame_length]. All dimensions may be unknown,
+            and rank must be at least 2.
+        frame_step(int): An integer denoting overlap offsets. Must be less than or equal to frame_length.
+
+    Returns:
+        overlapped(mindspore.tensor): With shape [..., output_size] containing the overlap-added frames of signal's
+            inner-most two dimensions. output_size = (frames - 1) * frame_step + frame_length
+    Based on
+    https://github.com/tensorflow/tensorflow/blob/r1.12/tensorflow/contrib/signal/python/ops/reconstruction_ops.py
+
+    Example:
+        >>> import mindspore as ms
+        >>> signal = ms.Tensor(np.random.randn(5, 20), ms.float32)
+        >>> overlapped = overlap_and_add(signal, 20)
+        >>> overlapped.shape
+    """
+
+    outer_dimensions = signal.shape[:-2]
+    frames, frame_length = signal.shape[-2:]
+
+    subframe_length = math.gcd(
+        frame_length, frame_step
+    )  # gcd=Greatest Common Divisor
+    subframe_step = frame_step // subframe_length
+    subframes_per_frame = frame_length // subframe_length
+    output_size = frame_step * (frames - 1) + frame_length
+    output_subframes = output_size // subframe_length
+
+    subframe_signal = signal.view(*outer_dimensions, -1, subframe_length)
+
+    frame = np.lib.stride_tricks.sliding_window_view(np.arange(0, output_subframes),
+                                                     subframes_per_frame)[::subframe_step, :]
+    frame = Tensor(frame.reshape(-1), ms.int32)
+
+    new_zeros = ops.Zeros()
+    result = new_zeros(
+        (*outer_dimensions, output_subframes, subframe_length), ms.float32
+    )
+    # result.index_add_(-2, frame, subframe_signal)
+    result = ops.index_add(Parameter(result), frame, subframe_signal, 1)
+    result = result.view(*outer_dimensions, -1)
+    return result
