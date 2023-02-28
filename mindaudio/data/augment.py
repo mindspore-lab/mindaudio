@@ -4,8 +4,9 @@ import mindspore as ms
 import mindspore.dataset.audio as msaudio
 from mindspore.nn import Conv1d
 from .io import read
-from .spectrum import compute_amplitude
-from .processing import rescale
+from .spectrum import compute_amplitude, dB_to_amplitude
+from .processing import rescale, resample
+from .filters import notch_filter
 
 __all__ = [
     'frequencymasking',
@@ -148,7 +149,7 @@ def reverberate(waveforms, rir_waveform, rescale_amp="avg"):
     return waveforms
 
 
-def convolve1d(waveforms, kernel, padding=0, pad_type="constant", stride=1, groups=1, use_fft=False, rotation_index=0):
+def convolve1d(waveforms, kernel, padding=0, pad_type="constant", stride=1, groups=1, use_fft=True, rotation_index=0):
     """Use mindspore.conv1d to perform 1d padding and convolution.
 
     Args:

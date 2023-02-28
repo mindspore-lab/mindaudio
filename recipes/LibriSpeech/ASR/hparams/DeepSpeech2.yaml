@@ -1,0 +1,43 @@
+TrainingConfig:
+    epochs: 70
+
+DataConfig:
+    train_manifest: '/disk0/zjc/audio/libri_train_manifest.json'
+    batch_size: 64
+    SpectConfig:
+        sample_rate: 16000,
+        window_size: 0.02,
+        window_stride: 0.01,
+        window: "hamming"
+
+AugmentationConfig:
+    speed_volume_perturb: False,
+    spec_augment: False,
+    noise_dir: '',
+    noise_prob: 0.4,
+    noise_min: 0.0,
+    noise_max: 0.5,
+
+ModelConfig:
+    rnn_type: "LSTM",
+    hidden_size: 1024,
+    hidden_layers: 5,
+    lookahead_context: 20,
+
+OptimConfig:
+    learning_rate: 3e-4,
+    learning_anneal: 1.1,
+    weight_decay: 1e-5,
+    momentum: 0.9,
+    eps: 1e-8,
+    betas: (0.9, 0.999),
+    loss_scale: 1024,
+    epsilon: 0.00001
+
+CheckpointConfig:
+    ckpt_file_name_prefix: 'DeepSpeech',
+    ckpt_path: './checkpoint',
+    keep_checkpoint_max: 10
+
+labels: ["'", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+         "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", " ", "_"]

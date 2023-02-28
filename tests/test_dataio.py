@@ -2,6 +2,8 @@ import os
 import numpy as np
 import scipy.io
 from scipy.io import wavfile
+import sys
+sys.path.append('.')
 
 
 def test_read_2chanel():
