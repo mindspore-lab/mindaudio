@@ -104,14 +104,16 @@ def low_pass_filter(waveform, sample_rate, cutoff_freq):
     # pylint: disable=C,R,W,E,F
     """
     Allows audio signals with a frequency lower than the given cutoff to pass through
-    and attenuates signals with frequencies higher than the cutoff frequency
-    @param waveform: the path to the audio or a variable of type np.ndarray that
-        will be augmented
-    @param sample_rate: the audio sample rate of the inputted audio
-    @param cutoff_freq: frequency (in Hz) where signals with higher frequencies will
-        begin to be reduced by 6dB per octave (doubling in frequency) above this point
+    and attenuates signals with frequencies higher than the cutoff frequency.
 
-    @returns: np.ndarray, the waveform after low pass equalizer
+    Args:
+        waveform(np.ndarray): A batch of data in shape (n,) or (n, n_channel).
+        sample_rate: the audio sample rate of the inputted audio.
+        cutoff_freq: frequency (in Hz) where signals with higher frequencies will
+            begin to be reduced by 6dB per octave (doubling in frequency) above this point.
+
+    Returns:
+        np.ndarray, the waveform after low pass equalizer.
 
     Examples:
         >>> import numpy as np
@@ -144,17 +146,19 @@ def peaking_equalizer(waveform, sample_rate, center_freq, gain, q=0.707):
     # pylint: disable=C,R,W,E,F
     """
     Applies a two-pole peaking equalization filter. The signal-level at and around
-    `center_hz` can be increased or decreased, while all other frequencies are unchanged
-    @param waveform: the path to the audio or a variable of type np.ndarray that
-        will be augmented
-    @param sample_rate: the audio sample rate of the inputted audio
-    @param center_freq: point in the frequency spectrum at which EQ is applied
-    @param q: ratio of center frequency to bandwidth; bandwidth is inversely
-        proportional to Q, meaning that as you raise Q, you narrow the bandwidth
-    @param gain: amount of gain (boost) or reduction (cut) that is applied at a
-        given frequency. Beware of clipping when using positive gain
+    `center_freq` can be increased or decreased, while all other frequencies are unchanged
 
-    @returns: np.ndarray, the waveform after peaking equalizer
+    Args:
+        waveform(np.ndarray): A batch of data in shape (n,) or (n, n_channel).
+        sample_rate: the audio sample rate of the inputted audio.
+        center_freq: point in the frequency spectrum at which EQ is applied.
+        gain: amount of gain (boost) or reduction (cut) that is applied at a
+            given frequency. Beware of clipping when using positive gain.
+        q: ratio of center frequency to bandwidth; bandwidth is inversely
+            proportional to Q, meaning that as you raise Q, you narrow the bandwidth.
+
+    Returns:
+        np.ndarray, the waveform after peaking equalizer
 
     Examples:
         >>> import numpy as np

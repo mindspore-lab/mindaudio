@@ -12,20 +12,14 @@ def test_notch_filter():
 
 
 def test_low_pass_filter():
-    waveform = np.array([[0.8236, 0.2049, 0.3335], [0.5933, 0.9911, 0.2482],
-                         [0.3007, 0.9054, 0.7598], [0.5394, 0.2842, 0.5634], [0.6363, 0.2226, 0.2288]])
-
-    sample_rate = 44100
+    waveform, sample_rate = io.read('./samples/ASR/BAC009S0002W0122.wav')
     cutoff_freq = 1500
     out_waveform = filters.low_pass_filter(waveform, sample_rate, cutoff_freq)
     print(out_waveform)
 
 
 def test_peaking_equalizer():
-    waveform = np.array([[0.8236, 0.2049, 0.3335], [0.5933, 0.9911, 0.2482],
-                         [0.3007, 0.9054, 0.7598], [0.5394, 0.2842, 0.5634], [0.6363, 0.2226, 0.2288]])
-
-    sample_rate = 44100
+    waveform, sample_rate = io.read('./samples/ASR/BAC009S0002W0122.wav')
     center_freq = 1500
     gain = 3.0
     quality_factor = 0.707
