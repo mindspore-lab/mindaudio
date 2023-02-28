@@ -1,4 +1,6 @@
 import numpy as np
+import sys
+sys.path.append('.')
 import mindaudio.data.io as io
 import mindaudio.data.processing as processing
 import mindaudio.data.spectrum as spectrum

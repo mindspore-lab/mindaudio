@@ -1,4 +1,6 @@
 import numpy as np
+import sys
+sys.path.append('.')
 import mindaudio.data.io as io
 import mindaudio.data.filters as filters
 from mindaudio.data.augment import convolve1d
