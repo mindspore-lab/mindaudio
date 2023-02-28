@@ -1,4 +1,7 @@
 import numpy as np
+import mindspore.dataset.audio as msaudio
+from typing import Optional, Union
+from typing_extensions import Literal
 
 
 __all__ = [
