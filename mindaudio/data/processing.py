@@ -212,7 +212,7 @@ def resample(waveform, orig_freq=16000, new_freq=16000, resample_method=Resample
         >>> print(y_8k.shape)
     """
     resample_function = msaudio.Resample(orig_freq=orig_freq, new_freq=new_freq, resample_method=resample_method,
-             lowpass_filter_width=lowpass_filter_width, rolloff=rolloff, beta=beta)
+                                         lowpass_filter_width=lowpass_filter_width, rolloff=rolloff, beta=beta)
     return resample_function(waveform)
 
 
@@ -430,14 +430,15 @@ def sliding_window_cmn(x, cmn_window=600, min_cmn_window=100, center=False, norm
 
 def invert_channels(waveform):
     """
-    Inverts channels of the audio.
-    If the audio has only one channel, no change is applied.
-    Otherwise, it inverts the order of the channels, eg for 4 channels,
-    it returns channels in order [3, 2, 1, 0].
-    @param waveform: the path to the audio or a variable of type np.ndarray that
-        will be augmented
+    Inverts channels of the audio signal. If the audio has only one channel, no change is applied,
+    Otherwise, it inverts the order of the channels.
+    eg: for 4 channels, it returns channels in order [3, 2, 1, 0].
 
-    @returns: np.ndarray, the waveform after invert channels
+    Args:
+        waveform(np.ndarray): A batch of data in shape (n,) or (n, n_channel).
+
+    Returns:
+        np.ndarray, the waveform after invert channels.
 
     Examples:
         >>> import numpy as np
@@ -446,20 +447,22 @@ def invert_channels(waveform):
         >>> out_waveform = processing.invert_channels(waveform)
     """
     if waveform.ndim > 1:
-        row = waveform.shape[0] - 1
-        waveform[[0, row], :] = waveform[[row, 0], :]
+        col = waveform.shape[1] - 1
+        waveform[:, [0, col]] = waveform[:, [col, 0]]
 
     return waveform
 
 
 def loop(waveform, times):
     """
-    Loops the audio times
-    @param waveform: the path to the audio or a variable of type np.ndarray that
-        will be augmented
-    @param n: the number of times the audio will be looped
+    Loops the audio signal times.
 
-    @returns: np.ndarray, the waveform after loop n times
+    Args:
+        waveform(np.ndarray): A batch of data in shape (n,) or (n, n_channel).
+        times: the number of times the audio will be looped.
+
+    Returns:
+        np.ndarray, the waveform after loop n times.
 
     Examples:
         >>> import numpy as np
@@ -471,7 +474,7 @@ def loop(waveform, times):
     if times > 1:
         backup = waveform
         while times > 1:
-            waveform = np.append(waveform, backup, axis=1)
+            waveform = np.append(waveform, backup, axis=0)
             times -= 1
 
     return waveform
@@ -479,15 +482,15 @@ def loop(waveform, times):
 
 def clip(waveform, offset_factor, duration_factor):
     """
-    Clips the audio using the specified offset and duration factors
-    @param waveform: the path to the audio or a variable of type np.ndarray that
-        will be augmented
-    @param offset_factor: start point of the crop relative to the audio duration
-        (this parameter is multiplied by the audio duration)
-    @param duration_factor: the length of the crop relative to the audio duration
-        (this parameter is multiplied by the audio duration)
+    Clips the audio using the specified offset and duration factors.
 
-    @returns: np.ndarray, the waveform after clip
+    Args:
+        waveform(np.ndarray): A batch of data in shape (n,) or (n, n_channel).
+        offset_factor: start point of the crop relative to the audio duration.
+        duration_factor: the length of the crop relative to the audio duration.
+
+    Returns:
+        np.ndarray, the waveform after clip.
 
     Examples:
         >>> import numpy as np
@@ -502,66 +505,62 @@ def clip(waveform, offset_factor, duration_factor):
         print("Combination of offset and duration factors exceed audio length.")
         return waveform
 
-    num_samples = waveform.shape[-1]
+    num_samples = waveform.shape[0]
     start = int(offset_factor * num_samples)
     end = int((offset_factor + duration_factor) * num_samples)
-    out_waveform = waveform[..., start:end]
+    out_waveform = waveform[start:end, ...]
     return out_waveform
 
 
-def insert_in_background(waveform, offset_factor, seed, background_audio):
+def insert_in_background(waveform, offset_factor, background_audio):
     """
-    Inserts audio into a background clip in a non-overlapping manner.
-    @param waveform: the path to the audio or a variable of type np.ndarray that
-        will be augmented
-    @param offset_factor: insert point relative to the background duration
-        (this parameter is multiplied by the background duration)
-    @param background_audio: the path to the background audio or a variable of type
-        np.ndarray containing the background audio. If set to `None`, the background
-        audio will be white noise, with the same duration as the audio.
-    @param seed: a NumPy random generator (or seed) such that the results
-        remain reproducible
+    Inserts audio signal into a background clip in a non-overlapping manner.
 
-    @returns: np.ndarray, the waveform after insert background audio
+    Args:
+        waveform(np.ndarray): A batch of data in shape (n,) or (n, n_channel).
+        offset_factor: insert point relative to the background duration.
+        background_audio(np.ndarray): A batch of data in shape (n,) or (n, n_channel),If set to `None`,
+            the background audio will be white noise, with the same duration as the audio.
+
+    Returns:
+        np.ndarray, the waveform after insert background audio.
 
     Examples:
         >>> import numpy as np
         >>> import mindaudio.data.processing as processing
         >>> waveform = np.array([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-        >>>                      [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]])
+        >>>                      [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]).T
         >>> offset_factor = 0.2
-        >>> seed = None
         >>> background_audio = np.array([[0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
-        >>>                             [0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1]])
-        >>> out_waveform = processing.insert_in_background(waveform, offset_factor, seed, background_audio)
+        >>>                             [0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1]]).T
+        >>> out_waveform = processing.insert_in_background(waveform, offset_factor, background_audio)
     """
     if offset_factor < 0.0 or offset_factor > 1.0:
         print('Offset factor number exceed range [0, 1].')
         return waveform
 
-    random_generator = None
-    if seed is None or seed is np.random:
-        random_generator = np.random.mtrand._rand
-    if isinstance(seed, numbers.Integral):
-        random_generator = np.random.mtrand.RandomState(seed)
-    if isinstance(seed, (np.random.mtrand.RandomState, np.random.Generator)):
-        random_generator = seed
-
     if background_audio is None:
+        random_generator = np.random.mtrand._rand
         background_audio = random_generator.standard_normal(waveform.shape)
     else:
-        num_channels = 1 if waveform.ndim == 1 else waveform.shape[0]
-        bg_num_channels = 1 if background_audio.ndim == 1 else background_audio.shape[0]
+        num_channels = 1 if waveform.ndim == 1 else waveform.shape[1]
+        bg_num_channels = 1 if background_audio.ndim == 1 else background_audio.shape[1]
         if bg_num_channels != num_channels:
-            background_audio, _ = stereo_to_mono(background_audio)
+            background_audio = stereo_to_mono(background_audio)
             if num_channels > 1:
-                background_audio = np.tile(background_audio, (num_channels, 1))
+                background_audio = np.expand_dims(background_audio, axis=1)
+                background_audio = np.tile(background_audio, (1, num_channels))
 
-    num_samples_bg = background_audio.shape[-1]
+    num_samples_bg = background_audio.shape[0]
     offset = int(offset_factor * num_samples_bg)
-    out_waveform = np.hstack(
-        [background_audio[..., :offset], waveform, background_audio[..., offset:]]
-    )
+    if num_channels > 1:
+        out_waveform = np.vstack(
+            [background_audio[:offset, ...], waveform, background_audio[:offset, ...]]
+        )
+    else:
+        out_waveform = np.hstack(
+            [background_audio[..., :offset], waveform, background_audio[..., :offset]]
+        )
 
     return out_waveform
 

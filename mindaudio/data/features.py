@@ -331,97 +331,93 @@ def angle(x):
     return angle_ms(x)
 
 
-def soft_mask(x, x_ref, *, power=1, split_zeros=False):
+def soft_mask(x_input, x_ref, *, power=1, split_zeros=False):
     # pylint: disable=C,R,W,E,F
-    if x.shape != x_ref.shape:
-        raise TypeError("Shape mismatch: {}!={}".format(x.shape, x_ref.shape))
+    if np.any(x_input < 0) or np.any(x_ref < 0):
+        raise TypeError("x_input and x_ref must be non-negative")
 
-    if np.any(x < 0) or np.any(x_ref < 0):
-        raise TypeError("x and x_ref must be non-negative")
+    if x_input.shape != x_ref.shape:
+        raise TypeError("x_input and x_ref shape mismatch.")
 
     if power <= 0:
-        raise TypeError("power must be strictly positive")
+        raise TypeError("power must be strictly positive.")
 
-    # We're working with ints, cast to float.
-    dtype = x.dtype
-    if not np.issubdtype(dtype, np.floating):
-        dtype = np.float32
+    input_type = x_input.dtype
+    if not np.issubdtype(input_type, np.floating):
+        input_type = np.float32
 
-    # Re-scale the input arrays relative to the larger value
-    z = np.maximum(x, x_ref).astype(dtype)
-    bad_idx = z < np.finfo(dtype).tiny
+    z = np.maximum(x_input, x_ref).astype(input_type)
+    bad_idx = z < np.finfo(input_type).tiny
     z[bad_idx] = 1
 
-    # For finite power, compute the soft_mask
-    if np.isfinite(power):
-        mask = (x / z) ** power
+    if not np.isfinite(power):
+        mask = x_input > x_ref
+    else:
+        mask = (x_input / z) ** power
         ref_mask = (x_ref / z) ** power
         good_idx = ~bad_idx
         mask[good_idx] /= mask[good_idx] + ref_mask[good_idx]
-        # Wherever energy is below energy in both inputs, split the mask
-        if split_zeros:
-            mask[bad_idx] = 0.5
-        else:
+
+        if not split_zeros:
             mask[bad_idx] = 0.0
-    else:
-        # Otherwise, compute the hard mask
-        mask = x > x_ref
+        else:
+            mask[bad_idx] = 0.5
 
     return mask
 
 
-def mag_phase(d, *, power=1):
+def mag_phase(spectrogram, *, power=1):
     # pylint: disable=C,R,W,E,F
-    mag = np.abs(d)
+    mag = np.abs(spectrogram)
     mag **= power
-    phase = np.exp(1.0j * np.angle(d))
+    phase = np.exp(1.0j * np.angle(spectrogram))
 
     return mag, phase
 
 
-def hpss(s, *, kernel_size=31, power=2.0, mask=False, margin=1.0):
+def hpss(spectrogram, *, kernel_size=31, power=2.0, mask=False, margin=1.0):
     # pylint: disable=C,R,W,E,F
-    if np.iscomplexobj(s):
-        s, phase = mag_phase(s)
-    else:
+    if not np.iscomplexobj(spectrogram):
         phase = 1
-
-    if np.isscalar(kernel_size):
-        win_harm = kernel_size
-        win_perc = kernel_size
     else:
-        win_harm = kernel_size[0]
-        win_perc = kernel_size[1]
+        spectrogram, phase = mag_phase(spectrogram)
 
-    if np.isscalar(margin):
-        margin_harm = margin
-        margin_perc = margin
-    else:
-        margin_harm = margin[0]
+    if not np.isscalar(margin):
+        margin_harmonic = margin[0]
         margin_perc = margin[1]
+    else:
+        margin_harmonic = margin
+        margin_perc = margin
+
+    if not np.isscalar(kernel_size):
+        win_harmonic = kernel_size[0]
+        win_perc = kernel_size[1]
+    else:
+        win_harmonic = kernel_size
+        win_perc = kernel_size
 
     # margin minimum is 1.0
-    if margin_harm < 1 or margin_perc < 1:
+    if margin_harmonic < 1 or margin_perc < 1:
         raise TypeError("Margins must be >= 1.0. " "A typical range is between 1 and 10.")
 
     # shape for kernels
-    harm_shape = [1 for _ in s.shape]
-    harm_shape[-1] = win_harm
-
-    perc_shape = [1 for _ in s.shape]
+    perc_shape = [1 for _ in spectrogram.shape]
     perc_shape[-2] = win_perc
 
+    harmonic_shape = [1 for _ in spectrogram.shape]
+    harmonic_shape[-1] = win_harmonic
+
     # Compute median filters. Pre-allocation here preserves memory layout.
-    harm = np.empty_like(s)
-    harm[:] = median_filter(s, size=harm_shape, mode="reflect")
+    harm = np.empty_like(spectrogram)
+    harm[:] = median_filter(spectrogram, size=harmonic_shape, mode="reflect")
 
-    perc = np.empty_like(s)
-    perc[:] = median_filter(s, size=perc_shape, mode="reflect")
+    perc = np.empty_like(spectrogram)
+    perc[:] = median_filter(spectrogram, size=perc_shape, mode="reflect")
 
-    split_zeros = margin_harm == 1 and margin_perc == 1
+    split_zeros = margin_harmonic == 1 and margin_perc == 1
 
-    mask_harm = soft_mask(
-        harm, perc * margin_harm, power=power, split_zeros=split_zeros
+    mask_harmonic = soft_mask(
+        harm, perc * margin_harmonic, power=power, split_zeros=split_zeros
     )
 
     mask_perc = soft_mask(
@@ -429,37 +425,35 @@ def hpss(s, *, kernel_size=31, power=2.0, mask=False, margin=1.0):
     )
 
     if mask:
-        return mask_harm, mask_perc
+        return mask_harmonic, mask_perc
 
-    return ((s * mask_harm) * phase, (s * mask_perc) * phase)
+    return (spectrogram * mask_harmonic) * phase, (spectrogram * mask_perc) * phase
 
 
 def harmonic(y_input, **kwargs):
-    """Extract harmonic elements from an audio time-series.
+    """
+    Extract harmonic elements from an audio time-series.
 
-    Args
-        y_input : np.ndarray [shape=(..., n)]
-            audio time series. Multi-channel is supported.
+    Args:
+        y_input(np.ndarray): A batch of data in shape (,n) or (n_channel,n).
         **kwargs : additional keyword arguments.
-            See `librosa.decompose.hpss` for details.
 
-    Returns
-        y_harm : np.ndarray [shape=(..., n)]
-            audio time series of just the harmonic portion
+    Returns:
+        np.ndarray, the waveform after harmonic,A batch of data in shape (,n) or (n_channel,n).
 
-    Examples
+    Examples:
         >>> waveform, sr = io.read('./samples/ASR/BAC009S0002W0122.wav')
         >>> harm = features.harmonic(waveform)
         >>> # Use a margin > 1.0 for greater harmonic separation
         >>> harm = features.harmonic(waveform, margin=3.0)
     """
-    # Compute the STFT matrix
+    # STFT
     y_stft = stft(y_input, n_fft=2048, pad_mode='constant')
 
-    # Remove percussives
+    # Remove percussive
     stft_harm = hpss(y_stft, **kwargs)[0]
 
-    # Invert the STFTs
+    # Inverse STFT
     y_harm = istft(stft_harm, length=y_input.shape[-1])
 
     return y_harm

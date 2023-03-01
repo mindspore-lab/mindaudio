@@ -60,36 +60,65 @@ def test_sliding_window_cmn():
 
 
 def test_invert_channels():
-    waveform = np.array([[1, 2, 3], [2, 3, 4], [3, 4, 5]])
+    waveform = np.array([1, 2, 3])
     out_waveform = processing.invert_channels(waveform)
+    print(out_waveform)
+
+    waveform1 = np.array([[1, 2, 3], [2, 3, 4]])
+    out_waveform = processing.invert_channels(waveform1)
     print(out_waveform)
 
 
 def test_loop():
-    waveform = np.array([[1, 2, 3], [2, 3, 4], [3, 4, 5]])
     times = 3
+
+    waveform = np.array([1, 2, 3])
+    out_waveform = processing.loop(waveform, times)
+    print(out_waveform)
+
+    waveform = np.array([[1, 2, 3], [2, 3, 4]])
     out_waveform = processing.loop(waveform, times)
     print(out_waveform)
 
 
 def test_clip():
-    waveform = np.array([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-                         [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]])
     offset_factor = 0.1
     duration_factor = 0.3
+
+    waveform = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    out_waveform = processing.clip(waveform, offset_factor, duration_factor)
+    print(out_waveform)
+
+    waveform = np.array([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]).T
     out_waveform = processing.clip(waveform, offset_factor, duration_factor)
     print(out_waveform)
 
 
 def test_insert_in_background():
-    waveform = np.array([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-                         [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]])
     offset_factor = 0.2
-    seed = None
-    background_audio = np.array([[0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
-                                 [0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1]])
-    out_waveform = processing.insert_in_background(waveform, offset_factor, seed, background_audio)
-    print(out_waveform)
+    waveform1 = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    background_audio1 = np.array([0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0])
+    out_waveform1 = processing.insert_in_background(waveform1, offset_factor, background_audio1)
+    print(out_waveform1)
+
+    waveform2 = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    background_audio2 = np.array([[0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+                                 [0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1]]).T
+    out_waveform2 = processing.insert_in_background(waveform2, offset_factor, background_audio2)
+    print(out_waveform2)
+
+    waveform3 = np.array([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                         [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]).T
+    background_audio3 = np.array([1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0])
+    out_waveform3 = processing.insert_in_background(waveform3, offset_factor, background_audio3)
+    print(out_waveform3)
+
+    waveform4 = np.array([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                         [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]).T
+    background_audio4 = np.array([[0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+                                 [0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1]]).T
+    out_waveform4 = processing.insert_in_background(waveform4, offset_factor, background_audio4)
+    print(out_waveform4)
 
 
 if __name__ == "__main__":
