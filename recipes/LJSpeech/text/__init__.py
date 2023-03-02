@@ -1,7 +1,7 @@
 """ from https://github.com/keithito/tacotron """
 import re
-from text import cleaners
-from text.symbols import all_symbols
+from recipes.LJSpeech.text import cleaners
+from recipes.LJSpeech.text.symbols import all_symbols
 
 
 # Mappings from symbol to numeric ID and vice versa:

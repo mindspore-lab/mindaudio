@@ -179,7 +179,7 @@ def main():
         callbacks.append(summary_collector)
 
     model = ms.Model(network=net)
-    # model.train(num_epochs, ds, dataset_sink_mode=False, callbacks=callbacks, initial_epoch=global_step // ds.get_dataset_size())
+    model.train(num_epochs, ds, dataset_sink_mode=False, callbacks=callbacks, initial_epoch=global_step // ds.get_dataset_size())
 
 
 if __name__ == '__main__':

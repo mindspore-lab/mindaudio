@@ -6,7 +6,7 @@ from mindspore import ops
 
 from modules.transformer import constants
 from modules.transformer.layers import FFTBlock
-from text.symbols import all_symbols
+from recipes.LJSpeech.text import all_symbols
 from utils import get_sinusoid_encoding_table
 
 
