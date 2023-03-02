@@ -11,7 +11,6 @@ from mindspore import SummaryCollector
 import argparse
 import ast
 
-from openi import move_from_to
 from recipes.LJSpeech.tts import WaveGradWithLoss
 from dataset import create_wavegrad_dataset
 from hparams import hps
@@ -19,7 +18,6 @@ from hparams import hps
 
 def parse_args():
     parser = argparse.ArgumentParser(description='WaveGrad training')
-    parser.add_argument('--is_openi', type=ast.literal_eval, default=False)
     parser.add_argument('--is_distributed', type=ast.literal_eval, default=False)
     parser.add_argument('--device_target', type=str, default="CPU", choices=("GPU", "CPU", 'Ascend'))
     parser.add_argument('--device_id', '-i', type=int, default=0)
@@ -80,7 +78,6 @@ class SaveCallBack(Callback):
                  global_step=None,
                  optimiser=None,
                  checkpoint_path=None,
-                 is_openi=False,
                  train_url=''
     ):
         super().__init__()
@@ -90,7 +87,6 @@ class SaveCallBack(Callback):
         self.optimiser = optimiser
         self.save_dir = save_dir
         self.global_step = global_step
-        self.is_openi = is_openi
         self.train_url = train_url
         os.makedirs(save_dir, exist_ok=True)
 
@@ -101,21 +97,13 @@ class SaveCallBack(Callback):
             return
         model_save_name = 'model'
         optimiser_save_name = 'optimiser'
-        cp = '/home/work/user-job-dir/outputs/model/'
         for module, name in zip([self.model, self.optimiser], [model_save_name, optimiser_save_name]):
             name = os.path.join(self.save_dir, name)
-            if self.is_openi:
-                os.makedirs(cp, exist_ok=True)
-                name = os.path.join(cp, name)
             ms.save_checkpoint(module, name + '_%d.ckpt' % cur_step, append_dict={'cur_step': cur_step})
-        if self.is_openi:
-            move_from_to(cp, self.train_url)
 
 
 def main():
     args = parse_args()
-    if args.is_openi:
-        move_from_to(args.data_url, '.')
 
     mode = ms.context.PYNATIVE_MODE if args.context_mode == 'py' else ms.context.GRAPH_MODE
     ms.context.set_context(mode=mode, device_target=args.device_target)
@@ -172,7 +160,6 @@ def main():
             global_step=global_step,
             save_dir=hps.save_dir,
             optimiser=optimiser,
-            is_openi=args.is_openi,
             train_url=args.train_url
         )
         callbacks.append(save)
