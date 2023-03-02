@@ -16,8 +16,8 @@ import mindspore.ops as ops
 
 from mindaudio.models.deepspeech2 import DeepSpeechModel
 from mindaudio.scheduler.lr_generator import get_lr
+from hparams.hparams import parse_args
 from ..librispeech import create_base_dataset, train_data_pipeline
-from .hparams.hparams import parse_args
 
 
 class NetWithLossClass(nn.Cell):

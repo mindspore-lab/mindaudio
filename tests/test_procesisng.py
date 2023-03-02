@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import sys
 sys.path.append('.')
 import mindaudio.data.io as io
@@ -13,7 +14,9 @@ def test_normalize():
 
 
 def test_unitarize():
-    waveform, _ = io.read('./samples/ASR/BAC009S0002W0122.wav')
+    root_path = os.sys.path[0]
+    data_path = os.path.join(root_path, 'samples', 'ASR', 'BAC009S0002W0122.wav')
+    waveform, sr = io.read(data_path)
     waveforms = processing.unitarize(waveform)
     print(waveforms)
 
@@ -26,7 +29,9 @@ def test_resample():
 
 
 def test_rescale():
-    waveform, _ = io.read('./samples/ASR/BAC009S0002W0122.wav')
+    root_path = sys.path[0]
+    data_path = os.path.join(root_path, 'samples', 'ASR', 'BAC009S0002W0122.wav')
+    waveform, sr = io.read(data_path)
     ori_apm = spectrum.compute_amplitude(waveform)
     print(ori_apm)
     target_lvl = 2
@@ -57,6 +62,7 @@ def test_sliding_window_cmn():
     waveform = np.random.random([1, 20, 10])
     after_CMN = processing.sliding_window_cmn(waveform, 500, 200)
     print(after_CMN)
+
 
 
 def test_invert_channels():
