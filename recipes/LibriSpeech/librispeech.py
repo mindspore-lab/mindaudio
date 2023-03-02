@@ -27,8 +27,8 @@ LIBRI_SPEECH_URLS = {
 }
 
 
-TRAIN_INPUT_PAD_LENGTH = 1600#1250
-TRAIN_LABEL_PAD_LENGTH = 500#350
+TRAIN_INPUT_PAD_LENGTH = 1600
+TRAIN_LABEL_PAD_LENGTH = 500
 TEST_INPUT_PAD_LENGTH = 4000
 BLANK_ID = 28
 
@@ -107,8 +107,9 @@ class AudioTextBaseDataset():
         for data in wav_txts:
             audio_path = os.path.join(root_path, data["wav_path"])
             audio, _ = mindaudio.read(str(audio_path))
+            transcript = data["transcript"]
             transcript =list(filter(None, [self.labels.get(x) for x in list(transcript)]))
-            self.bins.apepnd([audio, transcript])
+            self.bins.append([audio, transcript])
 
     def __getitem__(self, index):
         audio, trans = self.bins[index]
@@ -122,16 +123,17 @@ def create_base_dataset(manifest_path, labels, rank=0, group_size=1):
     """
 
     Args:
-        manifest_path:
-        labels:
-        rank:
-        group_size:
+        manifest_path(str): the path of json file
+        labels(list): To translate text
+        rank(int): For distributed computation
+        group_size(int): For distributed computation
 
     Returns:
+        Base dataset contained the path of audio and text
 
     """
     input_columns = ["audio", "text"]
-    dataset = AudioTextBaseDataset()
+    dataset = AudioTextBaseDataset(manifest_path, labels)
     sampler = DistributedSampler(dataset, rank, group_size, shuffle=True)
     ds = de.GeneratorDataset(
         dataset,
@@ -182,14 +184,14 @@ def get_feature(audio, sample_rate, window_size, window_stride):
 
 
 def train_data_pipeline(dataset, batch_size, audio_conf):
-    ds = dataset.map(lambda x:get_feature(x, audio_conf.sample_rate, audio_conf.window_size, audio_conf.window_stride),
+    ds = dataset.map(lambda x: get_feature(x, audio_conf.sample_rate, audio_conf.window_size, audio_conf.window_stride),
                      input_columns=["audio"],
                      num_parallel_wokers=cpu_count())
 
     ds = ds.batch(batch_size,
                   per_batch_map=pad_txt_wav_train,
                   input_columns=["audio", "text"],
-                  output_columns = ["inputs", "input_length", "target_indices", "label_values"])
+                  output_columns=["inputs", "input_length", "target_indices", "label_values"])
     return ds
 
 
