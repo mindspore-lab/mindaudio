@@ -61,9 +61,6 @@ class LJSpeech():
         return True
 
     def collect_data(self):
-        for i in range(10):
-            self.bins.append(['/Users/dyz/Desktop/wavegrad/results/1000000_predicted_LJ010-0142_1000.wav', '/Users/dyz/Desktop/wavegrad/results/a.txt'])
-        return
         if not os.path.exists(self.manifest_path):
             return
         with open(self.manifest_path) as file:

@@ -25,6 +25,6 @@ def load_hparams(path):
     hps.noise_schedule = np.linspace(hps.noise_schedule_start, hps.noise_schedule_end, hps.noise_schedule_S)
     return hps
 
-hps = load_hparams('recipes/LJSpeech/tts/wavegrad/base.yaml')
+hps = load_hparams('recipes/LJSpeech/tts/wavegrad/wavegrad_base.yaml')
 assert hps.dblock.init_conv_kernels * np.prod(hps.dblock.factor) == hps.hop_samples
 assert np.prod(hps.ublock.factor) == hps.hop_samples

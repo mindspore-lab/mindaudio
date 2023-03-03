@@ -17,7 +17,6 @@ from hparams import hps
 
 def parse_args():
     parser = argparse.ArgumentParser(description='WaveGrad training')
-    parser.add_argument('--is_openi', type=ast.literal_eval, default=False)
     parser.add_argument('--device_target', type=str, default="CPU", choices=("GPU", "CPU", 'Ascend'))
     parser.add_argument('--device_id', '-i', type=int, default=0)
     parser.add_argument('--save', '-s', type=str, default='results')
