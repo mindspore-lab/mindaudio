@@ -22,14 +22,13 @@ from dataset import (
     all_postfix,
 )
 
-
 def read_wav(filename):
     filename = str(filename).replace('b\'', '').replace('\'', '')
     audio, _ = read(filename)
     signed_int16_max = 2**15
     if audio.dtype == np.int16:
         audio = audio.astype(np.float32) / signed_int16_max
-    audio = audio / np.max(np.abs(audio))
+    audio = (audio / np.max(np.abs(audio))).astype(np.float32)
     return audio, audio, filename
 
 stft_fn = Spectrogram(
@@ -119,8 +118,8 @@ def preprocess_ljspeech(data_path, manifest_path, is_train):
             writer.write(str(x['base']) + '\n')
         for k in feature_columns:
             np.save(os.path.join(data_path, all_dirs[k], base + all_postfix[k]), x[k].asnumpy())
-        pitch_min, pitch_max = min(x['pitch'], pitch_min), max(x['pitch'], pitch_max)
-        energy_min, energy_max = min(x['energy'], energy_min), max(x['energy'], energy_max)
+        pitch_min, pitch_max = min(x['pitch'].min(), pitch_min), max(x['pitch'].max(), pitch_max)
+        energy_min, energy_max = min(x['energy'].min(), energy_min), max(x['energy'].max(), energy_max)
     np.save('stats.npy', np.array([pitch_min, pitch_max, energy_min, energy_max]))
 
 

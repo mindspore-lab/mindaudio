@@ -9,7 +9,7 @@ eps: 0.000000001
 
 max_grad_norm: 1.0
 
-save_step: 405
+save_step: 40000
 save_dir: '.'
 
 # Data params
