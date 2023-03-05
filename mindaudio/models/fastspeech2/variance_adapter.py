@@ -1,13 +1,8 @@
-from utils import get_mask_from_lengths, pad
-
 import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
-import mindspore.ops as ops
-from math import log as ln
 
-import os
-import json
+from utils import get_mask_from_lengths, pad
 
 
 class LengthRegulator(nn.Cell):
@@ -97,7 +92,8 @@ class VarianceAdaptor(nn.Cell):
         n_bins = hps.model.variance_embedding.n_bins
         assert pitch_quantization in ["linear", "log"]
         assert energy_quantization in ["linear", "log"]
-        pitch_min, pitch_max, energy_min, energy_max = np.load('stats.npy')
+        pitch_min, pitch_max = hps.pitch.pitch_min, hps.pitch.pitch_max
+        energy_min, energy_max = hps.energy.energy_min, hps.pitch.pitch_max
 
         if pitch_quantization == "log":
             self.pitch_bins = ms.Parameter(

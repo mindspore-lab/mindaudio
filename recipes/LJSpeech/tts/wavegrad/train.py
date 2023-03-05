@@ -11,7 +11,7 @@ from mindspore import SummaryCollector
 import argparse
 import ast
 
-from recipes.LJSpeech.tts import WaveGradWithLoss
+from mindaudio.models import WaveGradWithLoss
 from dataset import create_wavegrad_dataset
 from hparams import hps
 

@@ -1,7 +1,7 @@
 from mindspore import nn
 
-from modules.transformer.sublayers import MultiHeadAttention
-from modules.transformer.sublayers import PositionwiseFeedForward
+from sublayers import MultiHeadAttention
+from sublayers import PositionwiseFeedForward
 
 
 class FFTBlock(nn.Cell):

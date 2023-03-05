@@ -1,3 +1,4 @@
+from .config import *
 from .data import *
 from .loss import *
 from .models import *

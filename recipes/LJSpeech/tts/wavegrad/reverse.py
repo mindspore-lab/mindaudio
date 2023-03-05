@@ -11,7 +11,7 @@ import argparse
 import ast
 import os
 
-from recipes.LJSpeech.tts import WaveGrad
+from mindaudio.models import WaveGrad
 from hparams import hps
 
 

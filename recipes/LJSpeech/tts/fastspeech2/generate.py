@@ -9,11 +9,24 @@ import numpy as np
 from g2p_en import G2p
 from pypinyin import pinyin, Style
 
-from recipes.LJSpeech.text import text_to_sequence
+from recipes.text import text_to_sequence
 
 import mindspore as ms
-from modules.fastspeech2_v190 import FastSpeech2
-from hparams import hps
+import mindaudio
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='FastSpeech2 training')
+    parser.add_argument('--device_target', type=str, default="GPU", choices=("GPU", "CPU", 'Ascend'))
+    parser.add_argument('--device_id', '-i', type=int, default=0)
+    parser.add_argument('--context_mode', type=str, default='py', choices=['py', 'graph'])
+    parser.add_argument('--config', '-c', type=str, default='recipes/LJSpeech/tts/fastspeech2/fastspeech2.yaml')
+    parser.add_argument('--text', '-t', type=str, default='this is a test text')
+    parser.add_argument('--restore', '-r', type=str, default='')
+    parser.add_argument('--data_url', default='')
+    parser.add_argument('--train_url', default='')
+    args = parser.parse_args()
+    return args
 
 
 def read_lexicon(lex_path):
@@ -46,8 +59,6 @@ def preprocess_english(text, hps):
 
     print("Raw Text Sequence: {}".format(text))
     print("Phoneme Sequence:", (phones))
-    # a, b = phones.split('OW1 P AH0 N')
-    # phones = a + 'OW1 P AH0 N sp' + b
     sequence = np.array(
         text_to_sequence(
             phones, ["english_cleaners"]
@@ -94,28 +105,16 @@ def synthesize(model, batchs):
             d_control=1.,
             **batch
         )
-        for k, v in output.items():
-            print(k, ':', v.shape)
         mel_len = output['mel_len'].asnumpy()
         mel_prediction = output['mel_predictions'].asnumpy()
         np.save('msfs2_%s.npy' % i, mel_prediction)
 
-def parse_args():
-    parser = argparse.ArgumentParser(description='FastSpeech2 training')
-    parser.add_argument('--device_target', type=str, default="GPU", choices=("GPU", "CPU", 'Ascend'))
-    parser.add_argument('--device_id', '-i', type=int, default=0)
-    parser.add_argument('--context_mode', type=str, default='py', choices=['py', 'graph'])
-    parser.add_argument('--text', '-t', type=str, default='this is a test text')
-    parser.add_argument('--restore', '-r', type=str, default='')
-    parser.add_argument('--data_url', default='')
-    parser.add_argument('--train_url', default='')
-    args = parser.parse_args()
-    return args
-
 def main():
     args = parse_args()
-
-    hps.model.transformer.encoder_dropout = hps.model.transformer.decoder_dropout = 0.
+    hps = mindaudio.load_hparams(args.config)
+    hps.model.transformer.encoder_dropout = 0.
+    hps.model.transformer.decoder_dropout = 0.
+    hps.model.variance_predictor.dropout = 0.
 
     mode = ms.context.PYNATIVE_MODE if args.context_mode == 'py' else ms.context.GRAPH_MODE
     ms.context.set_context(mode=mode, device_target=args.device_target)
@@ -127,12 +126,8 @@ def main():
     np.random.seed(0)
     ms.set_seed(0)
 
-    model = FastSpeech2(hps)
-    if os.path.exists(args.restore):
-        print('[info] restore model from', args.restore)
-        ms.load_checkpoint(args.restore, model, strict_load=True)
+    model, _ = mindaudio.create_model('FastSpeech2', hps, args.restore, is_train=False)
 
-    ids = raw_texts = [args.text[:100]]
     speakers = ms.Tensor([0])
     texts = ms.Tensor([preprocess_english(args.text, hps)])
     text_lens = ms.Tensor([len(texts[0])])
