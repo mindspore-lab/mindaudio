@@ -2,7 +2,7 @@ import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
 
-from utils import get_mask_from_lengths, pad
+from mindaudio.models.fastspeech2.utils import get_mask_from_lengths, pad
 
 
 class LengthRegulator(nn.Cell):

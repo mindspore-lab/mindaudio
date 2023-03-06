@@ -4,7 +4,6 @@ import numpy as np
 import mindspore as ms
 import mindspore.ops as ops
 import mindspore.nn as nn
-from mindspore.train.callback import Callback
 from mindspore.communication import init
 from mindspore.amp import all_finite
 from mindspore import SummaryCollector
@@ -14,7 +13,7 @@ import argparse
 import ast
 
 import mindaudio
-from dataset import create_dataset
+from recipes.LJSpeech.tts.fastspeech2.dataset import create_dataset
 
 
 def parse_args():
@@ -71,47 +70,6 @@ class MyTrainOneStepCell(nn.TrainOneStepCell):
         return losses, overflow, self.t - t2
 
 
-class SaveCallBack(Callback):
-    def __init__(self,
-                 model,
-                 save_step,
-                 save_dir,
-                 global_step=None,
-                 optimiser=None,
-                 checkpoint_path=None,
-                 train_url=''
-    ):
-        super().__init__()
-        self.save_step = save_step
-        self.checkpoint_path = checkpoint_path
-        self.model = model
-        self.optimiser = optimiser
-        self.save_dir = save_dir
-        self.global_step = global_step
-        self.train_url = train_url
-        os.makedirs(save_dir, exist_ok=True)
-
-    def step_end(self, run_context):
-        cb_params = run_context.original_args()
-        losses, overflow, dt = cb_params.net_outputs
-
-        info = '[epoch] %d' % cb_params.cur_epoch_num
-        info += ' [step] %d' % cb_params.cur_step_num
-        info += ' [step time] %.2fs' % dt
-        info += ' [overflow] %s' % overflow
-        for name, loss in zip(cb_params.train_network.network.loss_fn.names, losses):
-            info += ' [%s] %.2f' % (name, loss)
-        print(info)#, cb_params['train_network'].network.scale)
-        cur_step = cb_params.cur_step_num + self.global_step
-        if cur_step % self.save_step != 0:
-            return
-        model_save_name = 'model'
-        optimiser_save_name = 'optimiser'
-        for module, name in zip([self.model, self.optimiser], [model_save_name, optimiser_save_name]):
-            name = os.path.join(self.save_dir, name)
-            ms.save_checkpoint(module, name + '_%d.ckpt' % cur_step, append_dict={'cur_step': cur_step})
-
-
 def main():
     profiler = ms.Profiler(output_path='./')
     args = parse_args()
@@ -152,8 +110,8 @@ def main():
     optimiser = nn.Adam(model.trainable_params(), learning_rate=lr, beta1=hps.beta1, beta2=hps.beta2, eps=hps.eps)
     global_step = 0
     if ckpt is not None:
-        if global_step in ckpt:
-            global_step = int(ckpt['global_step'].asnumpy())
+        if 'cur_step' in ckpt:
+            global_step = int(ckpt['cur_step'].asnumpy())
     print('[info] global_step:', global_step)
 
     network = MyTrainOneStepCell(model, optimiser, max_grad_norm=hps.max_grad_norm)
@@ -165,7 +123,7 @@ def main():
     callbacks = []
     if rank == args.device_id:
         callbacks.append(ms.TimeMonitor())
-        save = SaveCallBack(
+        save = mindaudio.callbacks.SaveCallBack(
             model,
             save_step=hps.save_step,
             global_step=global_step,

@@ -5,7 +5,7 @@ from mindspore import ops
 from mindspore.common.initializer import Normal
 from mindspore.common.initializer import initializer
 
-from score_function import ScaledDotProductAttention
+from mindaudio.models.transformer.score_function import ScaledDotProductAttention
 
 
 class MultiHeadAttention(nn.Cell):

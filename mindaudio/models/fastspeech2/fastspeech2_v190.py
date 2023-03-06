@@ -3,11 +3,10 @@ import mindspore as ms
 import mindspore.nn as nn
 from mindspore.amp import DynamicLossScaler
 
-import sys
 from mindaudio.models.transformer.models import Encoder, Decoder
-from variance_adapter import VarianceAdaptor
-from utils import get_mask_from_lengths
-from loss import FastSpeech2Loss
+from mindaudio.models.fastspeech2.variance_adapter import VarianceAdaptor
+from mindaudio.models.fastspeech2.utils import get_mask_from_lengths
+from mindaudio.models.fastspeech2.loss import FastSpeech2Loss
 
 
 class FastSpeech2(nn.Cell):

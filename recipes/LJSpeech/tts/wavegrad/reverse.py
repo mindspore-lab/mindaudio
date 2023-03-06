@@ -1,18 +1,15 @@
 import numpy as np
 from tqdm import tqdm
-
-from preprocess import read_wav, stft, mel, _normalize
-from scipy.io import wavfile
-from scipy import signal
-
-import mindspore as ms
-
 import argparse
 import ast
 import os
 
-from mindaudio.models import WaveGrad
-from hparams import hps
+import mindspore as ms
+from mindspore.dataset.audio import Spectrogram, MelScale
+
+import mindaudio
+from mindaudio.data.io import write
+from recipes.LJSpeech.tts.wavegrad.preprocess import read_wav, _normalize
 
 
 def parse_args():
@@ -21,6 +18,7 @@ def parse_args():
     parser.add_argument('--device_id', '-i', type=int, default=0)
     parser.add_argument('--save', '-s', type=str, default='results')
     parser.add_argument('--plot', '-p', type=ast.literal_eval, default=True)
+    parser.add_argument('--config', '-c', type=str, default='recipes/LJSpeech/tts/wavegrad/wavegrad_base.yaml')
     parser.add_argument('--restore', '-r', type=str, default='')
     parser.add_argument('--restore_url', '-u', type=str, default='')
     parser.add_argument('--wav', '-w', type=str, default='data/LJspeech-1.1/wavs')
@@ -31,8 +29,25 @@ def parse_args():
     return args
 
 args = parse_args()
+hps = mindaudio.load_config(args.config)
 os.makedirs(args.save, exist_ok=True)
 ms.context.set_context(mode=ms.context.PYNATIVE_MODE, device_target=args.device_target, device_id=args.device_id)
+
+stft = Spectrogram(
+    n_fft=hps.n_fft,
+    win_length=hps.hop_samples * 4,
+    hop_length=hps.hop_samples,
+    power=1.,
+    center=True,
+)
+
+mel = MelScale(
+    n_mels=hps.n_mels,
+    sample_rate=hps.sample_rate,
+    f_min=20., 
+    f_max=hps.sample_rate / 2.0,
+    n_stft=hps.n_fft // 2 + 1,
+)
 
 if args.mel is not None:
     wav = None
@@ -56,14 +71,15 @@ feature = ms.Tensor(feature)
 print('old:', old)
 print('feature:', feature.shape)
 
-model = WaveGrad(hps)
-cur_step = ms.load_checkpoint(args.restore, model, strict_load=True)['cur_step'].asnumpy()
-print('restore:', cur_step)
+model, ckpt = mindaudio.create_model('WaveGrad', hps, args.restore, is_train=False)
+if ckpt is not None:
+    if 'cur_step' in ckpt:
+        global_step = int(ckpt['cur_step'].asnumpy())
+print('restore:', global_step)
 
 beta = hps.noise_schedule
 alpha = 1 - beta
 alpha_cum = np.cumprod(alpha).astype(np.float32)
-print('alpha_cum:', alpha_cum.shape, alpha_cum.dtype)
 
 audio = np.random.normal(0, 1, [feature.shape[0], hps.hop_samples * feature.shape[-1]]).astype(np.float32)
 print('audio:', audio.shape)
@@ -84,12 +100,8 @@ for m in tqdm(range(S)):
         audio += sigma * noise
 
     if (m + 1) > (S - 50) and (m + 1) % 5 == 0:
-        wavfile.write(args.save + '/%d_predicted_%s_%d.wav' % (cur_step, old, m + 1), hps.sample_rate, audio[0])
+        write(args.save + '/%d_predicted_%s_%d.wav' % (global_step, old, m + 1), hps.sample_rate, audio[0])
         wavs.append(audio[0])
-        # de = signal.lfilter([1], [1, -hps.preemph_coef], audio[0]).astype(np.float32)
-        # wavfile.write(args.save + '/%d_predicted_de_%s.wav' % (cur_step, old), hps.sample_rate, de)
-        # pre = signal.lfilter([1, -hps.preemph_coef], [1], audio[0]).astype(np.float32)
-        # wavfile.write(args.save + '/%d_predicted_pre_%s.wav' % (cur_step, old), hps.sample_rate, pre)
 
 
 # BELOW: plots gif for last steps of reverse diffusion process
@@ -119,11 +131,11 @@ for i, subfig in enumerate(subfigs):
     axes.append(ax)
 
 if gtwav is not None:
-    display.waveshow(gtwav, sr=22050, ax=axes[0][0])
+    display.waveshow(gtwav, sr=hps.sample_rate, ax=axes[0][0])
 axes[0][1].imshow(gtmel, origin="lower")
 
 def plot(wav, mel, frame):
-    display.waveshow(wav, sr=22050, ax=axes[1][0], label='%s' % frame)
+    display.waveshow(wav, sr=hps.sample_rate, ax=axes[1][0], label='%s' % frame)
     axes[1][0].legend()
     img = axes[1][1].imshow(mel, origin="lower")
     return img, 
@@ -147,7 +159,7 @@ ani = FuncAnimation(
 )
 
 ani.save(
-    args.save + '/%d_%s.gif' % (cur_step, old),
+    args.save + '/%d_%s.gif' % (global_step, old),
     fps=2,
     writer='imagemagick'
 )

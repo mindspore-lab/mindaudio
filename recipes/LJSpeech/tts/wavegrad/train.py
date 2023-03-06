@@ -4,16 +4,14 @@ import numpy as np
 import mindspore as ms
 import mindspore.ops as ops
 import mindspore.nn as nn
-from mindspore.train.callback import Callback
 from mindspore.communication import init
 from mindspore import SummaryCollector
 
 import argparse
 import ast
 
-from mindaudio.models import WaveGradWithLoss
 from dataset import create_wavegrad_dataset
-from hparams import hps
+import mindaudio
 
 
 def parse_args():
@@ -22,6 +20,7 @@ def parse_args():
     parser.add_argument('--device_target', type=str, default="CPU", choices=("GPU", "CPU", 'Ascend'))
     parser.add_argument('--device_id', '-i', type=int, default=0)
     parser.add_argument('--context_mode', type=str, default='graph', choices=['py', 'graph'])
+    parser.add_argument('--config', '-c', type=str, default='recipes/LJSpeech/tts/wavegrad/wavegrad_base.yaml')
     parser.add_argument('--restore', '-r', type=str, default='')
     parser.add_argument('--data_url', default='')
     parser.add_argument('--train_url', default='')
@@ -69,41 +68,9 @@ class MyTrainOneStepCell(nn.TrainOneStepWithLossScaleCell):
 
         return loss, cond, scaling_sens
 
-
-class SaveCallBack(Callback):
-    def __init__(self,
-                 model,
-                 save_step,
-                 save_dir,
-                 global_step=None,
-                 optimiser=None,
-                 checkpoint_path=None,
-                 train_url=''
-    ):
-        super().__init__()
-        self.save_step = save_step
-        self.checkpoint_path = checkpoint_path
-        self.model = model
-        self.optimiser = optimiser
-        self.save_dir = save_dir
-        self.global_step = global_step
-        self.train_url = train_url
-        os.makedirs(save_dir, exist_ok=True)
-
-    def step_end(self, run_context):
-        cb_params = run_context.original_args()
-        cur_step = cb_params.cur_step_num + self.global_step
-        if cur_step % self.save_step != 0:
-            return
-        model_save_name = 'model'
-        optimiser_save_name = 'optimiser'
-        for module, name in zip([self.model, self.optimiser], [model_save_name, optimiser_save_name]):
-            name = os.path.join(self.save_dir, name)
-            ms.save_checkpoint(module, name + '_%d.ckpt' % cur_step, append_dict={'cur_step': cur_step})
-
-
 def main():
     args = parse_args()
+    hps = mindaudio.load_config(args.config)
 
     mode = ms.context.PYNATIVE_MODE if args.context_mode == 'py' else ms.context.GRAPH_MODE
     ms.context.set_context(mode=mode, device_target=args.device_target)
@@ -118,10 +85,8 @@ def main():
     np.random.seed(0)
     ms.set_seed(0)
 
-    wavegrad = WaveGradWithLoss(hps)
     ds = create_wavegrad_dataset(
-        data_path=hps.data_path,
-        manifest_path=hps.manifest_path,
+        hps=hps,
         batch_size=hps.batch_size // group,
         is_train=True,
         rank=rank,
@@ -135,13 +100,11 @@ def main():
         1000,
         is_stair=True
     )
+    wavegrad, ckpt = mindaudio.create_model('wavegrad', hps, args.restore, is_train=True)
     optimiser = nn.Adam(wavegrad.trainable_params(), learning_rate=lr)
     global_step = 0
-    if os.path.exists(args.restore):
-        print('[info] restore model from', args.restore)
-        ms.load_checkpoint(args.restore, wavegrad, strict_load=True)
-        print('[info] restore optimiser from', args.restore.replace('model', 'optimiser'))
-        global_step = int(ms.load_checkpoint(args.restore.replace('model', 'optimiser'), optimiser, filter_prefix='learning_rate')['global_step'].asnumpy())
+    if 'cur_step' in ckpt:
+        global_step = int(ckpt['cur_step'].asnumpy())
 
     scale_sense = nn.DynamicLossScaleUpdateCell(loss_scale_value=2**12, scale_factor=2, scale_window=1000)
     net = MyTrainOneStepCell(wavegrad, optimiser, max_grad_norm=hps.max_grad_norm, scale_sense=scale_sense)
@@ -151,10 +114,10 @@ def main():
 
     num_epochs = hps.num_epochs
     callbacks = []
-    if rank == args.device_id:
+    if rank == 0:
         callbacks.append(ms.LossMonitor(1))
         callbacks.append(ms.TimeMonitor())
-        save = SaveCallBack(
+        save = mindaudio.callbacks.SaveCallBack(
             wavegrad,
             save_step=hps.save_step,
             global_step=global_step,

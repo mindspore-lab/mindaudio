@@ -1,19 +1,14 @@
 import numpy as np
 from multiprocessing import cpu_count
-from hparams import hps
 
 from recipes.LJSpeech import LJSpeech
 from recipes.LJSpeech.tts import create_ljspeech_tts_dataset
 FEATURE_POSTFIX = '_feature.npy'
 WAV_POSTFIX = '_wav.npy'
 
-beta = hps.noise_schedule
-noise_level = np.cumprod(1 - beta) ** 0.5
-noise_level = np.concatenate([[1.0], noise_level], axis=0).astype(np.float32)
 
-
-def diffuse(x):
-    s = np.random.randint(1, hps.noise_schedule_S + 1)
+def diffuse(x, S, noise_level):
+    s = np.random.randint(1, S + 1)
     l_a, l_b = noise_level[s - 1], noise_level[s]
     r = np.random.rand()
     noise_scale = (l_a + r * (l_b - l_a)).astype(np.float32)
@@ -23,10 +18,10 @@ def diffuse(x):
     return noisy_audio.astype(np.float32), noise_scale, noise
 
 
-def create_wavegrad_dataset(data_path, manifest_path, batch_size, is_train=True, rank=0, group_size=1):
+def create_wavegrad_dataset(hps, batch_size, is_train=True, rank=0, group_size=1):
     ds = LJSpeech(
-        data_path=data_path,
-        manifest_path=manifest_path,
+        data_path=hps.data_path,
+        manifest_path=hps.manifest_path,
         is_train=is_train,
     )
     ds = create_ljspeech_tts_dataset(ds, rank=rank, group_size=group_size)
@@ -46,6 +41,11 @@ def create_wavegrad_dataset(data_path, manifest_path, batch_size, is_train=True,
         num_parallel_workers=cpu_count(),
     )
 
+    hps.noise_schedule = np.linspace(hps.noise_schedule_start, hps.noise_schedule_end, hps.noise_schedule_S)
+    beta = hps.noise_schedule
+    noise_level = np.cumprod(1 - beta) ** 0.5
+    noise_level = np.concatenate([[1.0], noise_level], axis=0).astype(np.float32)
+
     output_columns = ['noisy_audio', 'noise_scale', 'noise', 'spectrogram']
     def batch_collate(audio, spectrogram, unused_batch_info=None):
         batch_noisy_audio, batch_noise_scale, batch_noise, batch_spectrogram = [], [],  [], []
@@ -61,7 +61,7 @@ def create_wavegrad_dataset(data_path, manifest_path, batch_size, is_train=True,
             x = x[start: end]
             x = np.pad(x, (0, (end-start) - len(x)), mode='constant')
 
-            noisy_audio, noise_scale, noise = diffuse(x)
+            noisy_audio, noise_scale, noise = diffuse(x, hps.noise_schedule_S, noise_level)
 
             batch_noisy_audio.append(noisy_audio)
             batch_noise_scale.append(noise_scale)

@@ -22,5 +22,4 @@ def load_hparams(path):
     with open(path) as stream:
         hps = yaml.load(stream, yaml.Loader)
     hps = Config(hps)
-    hps.noise_schedule = np.linspace(hps.noise_schedule_start, hps.noise_schedule_end, hps.noise_schedule_S)
     return hps

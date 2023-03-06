@@ -7,11 +7,12 @@ from mindspore.dataset.audio import Spectrogram, MelScale
 import mindspore as ms
 
 sys.path.append('.')
-from hparams import hps
+
 from dataset import FEATURE_POSTFIX, WAV_POSTFIX
 from mindaudio.data.io import read
 from recipes.LJSpeech import LJSpeech
 from recipes.LJSpeech.tts import create_ljspeech_tts_dataset
+import mindaudio
 
 
 def read_wav(filename):
@@ -23,32 +24,16 @@ def read_wav(filename):
     audio = audio / np.max(np.abs(audio))
     return audio, audio, filename
 
-stft = Spectrogram(
-    n_fft=hps.n_fft,
-    win_length=hps.hop_samples * 4,
-    hop_length=hps.hop_samples,
-    power=1.,
-    center=True,
-)
-
-mel = MelScale(
-    n_mels=hps.n_mels,
-    sample_rate=hps.sample_rate,
-    f_min=20., 
-    f_max=hps.sample_rate / 2.0,
-    n_stft=hps.n_fft // 2 + 1,
-)
-
 def _normalize(S):
     S = 20 * np.log10(np.clip(S, 1e-5, None)) - 20
     S = np.clip((S + 100) / 100, 0.0, 1.0)
     return S
 
 
-def create_prep_dataset(data_path, manifest_path, is_train):
+def create_prep_dataset(hps, is_train):
     ds = LJSpeech(
-        data_path=data_path,
-        manifest_path=manifest_path,
+        data_path=hps.data_path,
+        manifest_path=hps.manifest_path,
         is_train=is_train
     )
     ds = create_ljspeech_tts_dataset(ds, rank=0, group_size=1)
@@ -60,6 +45,22 @@ def create_prep_dataset(data_path, manifest_path, is_train):
         column_order=['audio', 'mel', 'filename'],
         operations=read_wav,
         num_parallel_workers=cpu_count(),
+    )
+
+    stft = Spectrogram(
+        n_fft=hps.n_fft,
+        win_length=hps.hop_samples * 4,
+        hop_length=hps.hop_samples,
+        power=1.,
+        center=True,
+    )
+
+    mel = MelScale(
+        n_mels=hps.n_mels,
+        sample_rate=hps.sample_rate,
+        f_min=20., 
+        f_max=hps.sample_rate / 2.0,
+        n_stft=hps.n_fft // 2 + 1,
     )
 
     ds = ds.map(
@@ -102,13 +103,6 @@ if __name__ == '__main__':
     parser.add_argument('--device_id', '-i', type=int, default=0)
     args = parser.parse_args()
     ms.context.set_context(mode=ms.context.PYNATIVE_MODE, device_target=args.device_target, device_id=args.device_id)
-    preprocess_ljspeech(
-        data_path=hps.data_path,
-        manifest_path=hps.manifest_path,
-        is_train=True
-    )
-    preprocess_ljspeech(
-        data_path=hps.data_path,
-        manifest_path=hps.manifest_path,
-        is_train=False
-    )
+    hps = mindaudio.load_config(args.config)
+    preprocess_ljspeech(hps=hps, is_train=True)
+    preprocess_ljspeech(hps=hps, is_train=False)

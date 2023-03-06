@@ -4,9 +4,9 @@ from mindspore import dtype as mstype
 from mindspore import nn
 from mindspore import ops
 
-from transformer import constants
-from transformer.layers import FFTBlock
-from positional_encoding import get_sinusoid_encoding_table
+from mindaudio.models.transformer import constants
+from mindaudio.models.transformer.layers import FFTBlock
+from mindaudio.models.transformer.positional_encoding import get_sinusoid_encoding_table
 
 
 class Encoder(nn.Cell):
