@@ -3,6 +3,7 @@ import os
 import wget
 import zipfile
 import mindaudio.data.io as io
+from mindaudio.data.processing import stereo_to_mono
 from mindaudio.data.augment import add_reverb, add_babble, add_noise, drop_freq, speed_perturb, drop_chunk
 
 OPENRIR_URL = "http://www.openslr.org/resources/28/rirs_noises.zip"
@@ -238,11 +239,9 @@ def _prepare_openrir(folder, reverb_csv, noise_csv, max_noise_len):
     if not os.path.exists(filepath):
         wget.download(OPENRIR_URL, filepath)
 
-    rirs_path_dir = os.path.join(folder, "RIRS_NOISES")
-    if not os.path.isdir(rirs_path_dir):
+    if not os.path.isdir(os.path.join(folder, "RIRS_NOISES")):
         file = zipfile.ZipFile(filepath)
-        os.makedirs(rirs_path_dir)
-        file.extractall(rirs_path_dir)
+        file.extractall(folder)
         file.close()
 
     # Prepare reverb csv if necessary
@@ -284,12 +283,12 @@ def _prepare_csv(folder, filelist, csv_file, max_length=None):
             signal, rate = io.read(filename)
 
             # Ensure only one channel
-            if signal.shape[0] > 1:
-                signal = signal[0].unsqueeze(0)
-                io.read(filename, signal, rate)
+            if len(signal.shape) > 1:
+                signal = stereo_to_mono(signal)
+                io.write(filename, signal, rate)
 
             wav_id, ext = os.path.basename(filename).split(".")
-            duration = signal.shape[1] / rate
+            duration = signal.shape[0] / rate
 
             # Handle long waveforms
             if max_length is not None and duration > max_length:
@@ -303,8 +302,8 @@ def _prepare_csv(folder, filelist, csv_file, max_length=None):
                     new_filename = (
                             filename[: -len(f".{ext}")] + f"_{i}.{ext}"
                     )
-                    io.read(
-                        new_filename, signal[:, start:stop], rate
+                    io.write(
+                        new_filename, signal[start:stop], rate
                     )
                     csv_row = (
                         f"{wav_id}_{i}",
