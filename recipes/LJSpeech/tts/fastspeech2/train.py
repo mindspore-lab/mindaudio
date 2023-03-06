@@ -59,6 +59,10 @@ class MyTrainOneStepCell(nn.TrainOneStepCell):
             grads = ops.clip_by_global_norm(grads[1], clip_norm=self.max_grad_norm)
         grads = self.grad_reducer(grads)
 
+        info = '[fastspeech2 loss]'
+        for name, loss in zip(self.network.loss_fn.names, losses):
+            info += ' [%s] %.2f' % (name, loss)
+        print(info)
         # cond = self.get_overflow_status(status, grads)
         # overflow = self.process_loss_scale(cond)
         overflow = all_finite(grads) and False
@@ -71,9 +75,8 @@ class MyTrainOneStepCell(nn.TrainOneStepCell):
 
 
 def main():
-    profiler = ms.Profiler(output_path='./')
     args = parse_args()
-    hps = mindaudio.load_hparams(args.config)
+    hps = mindaudio.load_config(args.config)
 
     model, ckpt = mindaudio.create_model('FastSpeech2', hps, args.restore, is_train=True)
 
@@ -121,7 +124,7 @@ def main():
 
     num_epochs = hps.num_epochs
     callbacks = []
-    if rank == args.device_id:
+    if rank == 0:
         callbacks.append(ms.TimeMonitor())
         save = mindaudio.callbacks.SaveCallBack(
             model,
@@ -129,7 +132,6 @@ def main():
             global_step=global_step,
             save_dir=hps.save_dir,
             optimiser=optimiser,
-            train_url=args.train_url
         )
         callbacks.append(save)
         specified = {
@@ -149,7 +151,6 @@ def main():
 
     model = ms.Model(network=network)
     model.train(num_epochs, ds, dataset_sink_mode=False, callbacks=callbacks, initial_epoch=global_step // ds.get_dataset_size())
-    profiler.analyse()
 
 if __name__ == '__main__':
     main()

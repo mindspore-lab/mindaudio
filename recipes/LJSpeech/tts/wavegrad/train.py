@@ -17,7 +17,7 @@ import mindaudio
 def parse_args():
     parser = argparse.ArgumentParser(description='WaveGrad training')
     parser.add_argument('--is_distributed', type=ast.literal_eval, default=False)
-    parser.add_argument('--device_target', type=str, default="CPU", choices=("GPU", "CPU", 'Ascend'))
+    parser.add_argument('--device_target', type=str, default="GPU", choices=("GPU", "CPU", 'Ascend'))
     parser.add_argument('--device_id', '-i', type=int, default=0)
     parser.add_argument('--context_mode', type=str, default='graph', choices=['py', 'graph'])
     parser.add_argument('--config', '-c', type=str, default='recipes/LJSpeech/tts/wavegrad/wavegrad_base.yaml')
@@ -77,8 +77,8 @@ def main():
     if args.is_distributed:
         init()
         ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.DATA_PARALLEL, gradients_mean=True)
-    rank = int(os.getenv('DEVICE_ID', '0'))
-    group = int(os.getenv('RANK_SIZE', '1'))
+    rank = int(os.getenv('DEVICE_ID', '0')) if args.is_distributed else 0
+    group = int(os.getenv('RANK_SIZE', '1')) if args.is_distributed else 1
     print('[info] rank: %d group: %d batch: %d' % (rank, group, hps.batch_size // group))
     ms.context.set_context(device_id=rank if args.is_distributed else args.device_id)
 
@@ -103,8 +103,9 @@ def main():
     wavegrad, ckpt = mindaudio.create_model('wavegrad', hps, args.restore, is_train=True)
     optimiser = nn.Adam(wavegrad.trainable_params(), learning_rate=lr)
     global_step = 0
-    if 'cur_step' in ckpt:
-        global_step = int(ckpt['cur_step'].asnumpy())
+    if ckpt is not None:
+        if 'cur_step' in ckpt:
+            global_step = int(ckpt['cur_step'].asnumpy())
 
     scale_sense = nn.DynamicLossScaleUpdateCell(loss_scale_value=2**12, scale_factor=2, scale_window=1000)
     net = MyTrainOneStepCell(wavegrad, optimiser, max_grad_norm=hps.max_grad_norm, scale_sense=scale_sense)
@@ -123,7 +124,6 @@ def main():
             global_step=global_step,
             save_dir=hps.save_dir,
             optimiser=optimiser,
-            train_url=args.train_url
         )
         callbacks.append(save)
         specified = {

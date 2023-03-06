@@ -28,7 +28,7 @@ parser.add_argument('--device_target', '-d', type=str, default="CPU", choices=("
 parser.add_argument('--device_id', '-i', type=int, default=0)
 parser.add_argument('--config', '-c', type=str, default='recipes/LJSpeech/tts/fastspeech2/fastspeech2.yaml')
 args = parser.parse_args()
-hps = mindaudio.load_hparams(args.config)
+hps = mindaudio.load_config(args.config)
 
 def read_wav(filename):
     filename = str(filename).replace('b\'', '').replace('\'', '')
@@ -58,7 +58,7 @@ mel_fn = MelScale(
 def _normalize(S):
     S = 20 * np.log10(np.clip(S, 1e-5, None)) - 20
     S = np.clip((S + 100) / 100, 0.0, 1.0)
-    return S
+    return S.astype(np.float32)
 
 # process text: file -> phoneme
 def get_fs2_features(audio, text):

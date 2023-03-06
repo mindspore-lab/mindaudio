@@ -27,7 +27,7 @@ def read_wav(filename):
 def _normalize(S):
     S = 20 * np.log10(np.clip(S, 1e-5, None)) - 20
     S = np.clip((S + 100) / 100, 0.0, 1.0)
-    return S
+    return S.astype(np.float32)
 
 
 def create_prep_dataset(hps, is_train):
@@ -73,8 +73,8 @@ def create_prep_dataset(hps, is_train):
     return ds
 
 
-def preprocess_ljspeech(data_path, manifest_path, is_train):
-    ds = create_prep_dataset(data_path, manifest_path, is_train)
+def preprocess_ljspeech(hps, is_train):
+    ds = create_prep_dataset(hps, is_train)
     it = ds.create_dict_iterator()
 
     results = []
@@ -100,6 +100,7 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--device_target', '-d', type=str, default="CPU", choices=("GPU", "CPU", 'Ascend'))
+    parser.add_argument('--config', '-c', type=str, default='recipes/LJSpeech/tts/wavegrad/wavegrad_base.yaml')
     parser.add_argument('--device_id', '-i', type=int, default=0)
     args = parser.parse_args()
     ms.context.set_context(mode=ms.context.PYNATIVE_MODE, device_target=args.device_target, device_id=args.device_id)

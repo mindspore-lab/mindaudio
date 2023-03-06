@@ -92,7 +92,7 @@ def create_dataset(data_path, manifest_path, batch_size, is_train=True, rank=0, 
         B = len(xs)
         T = max(x.shape[0] for x in xs)
         shape = [B, T] + list(xs[0].shape[1:])
-        ys = np.zeros(shape)
+        ys = np.zeros(shape, dtype=np.float32)
         lengths = np.zeros(B, np.int32)
         for i, x in enumerate(xs):
             ys[i, : x.shape[0]] = x

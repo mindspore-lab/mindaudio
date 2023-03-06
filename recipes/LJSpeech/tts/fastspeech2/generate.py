@@ -111,7 +111,7 @@ def synthesize(model, batchs):
 
 def main():
     args = parse_args()
-    hps = mindaudio.load_hparams(args.config)
+    hps = mindaudio.load_config(args.config)
     hps.model.transformer.encoder_dropout = 0.
     hps.model.transformer.decoder_dropout = 0.
     hps.model.variance_predictor.dropout = 0.

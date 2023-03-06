@@ -72,11 +72,13 @@ print('old:', old)
 print('feature:', feature.shape)
 
 model, ckpt = mindaudio.create_model('WaveGrad', hps, args.restore, is_train=False)
+global_step = 0
 if ckpt is not None:
     if 'cur_step' in ckpt:
         global_step = int(ckpt['cur_step'].asnumpy())
 print('restore:', global_step)
 
+hps.noise_schedule = np.linspace(hps.noise_schedule_start, hps.noise_schedule_end, hps.noise_schedule_S)
 beta = hps.noise_schedule
 alpha = 1 - beta
 alpha_cum = np.cumprod(alpha).astype(np.float32)

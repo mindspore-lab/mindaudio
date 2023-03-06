@@ -4,11 +4,11 @@ import mindspore as ms
 from mindaudio.models.wavegrad import WaveGrad, WaveGradWithLoss
 from mindaudio.models.fastspeech2 import FastSpeech2, FastSpeech2WithLoss
 from mindaudio.models.deepspeech2 import DeepSpeechModel
-from mindaudio.config import Config, load_hparams
+from mindaudio.config import Config, load_config
 
 _registry = {
     'wavegrad': [WaveGrad, WaveGradWithLoss, 'models/wavegrad/wavegrad.yaml'], 
-    'fastspeech': [FastSpeech2, FastSpeech2WithLoss, 'models/fastspeech2/fastspeech2.yaml'],
+    'fastspeech2': [FastSpeech2, FastSpeech2WithLoss, 'models/fastspeech2/fastspeech2.yaml'],
     'deepspeech2': [DeepSpeechModel, DeepSpeechModel, 'models/deepspeech2/deepspeech2.yaml'],
 }
 
@@ -29,7 +29,7 @@ def create_model(
 
     print(f'[mindaudio] creating model {model_name}')
     if config is None:
-        config = load_hparams(_registry[model_name][2])
+        config = load_config(_registry[model_name][2])
     model = model(config)
 
     ckpt = None
