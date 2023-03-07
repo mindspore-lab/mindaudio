@@ -107,21 +107,21 @@ def dataio_prep():
 
     train_data = train_data.map(lambda wav, start, stop: audio_pipeline(wav, start, stop),
                                 input_columns=["wav", "start", "stop"],
-                                output_columns=["sig"])
+                                output_columns=["sig"], column_order=["ID", "sig"])
     train_data = train_data.project(columns=["ID", "sig"])
 
     train_data = train_data.batch(batch_size=hparams.eval_batch_size)
 
     enrol_data = enrol_data.map(lambda wav, start, stop: audio_pipeline(wav, start, stop),
                                 input_columns=["wav", "start", "stop"],
-                                output_columns=["sig"])
+                                output_columns=["sig"], column_order=["ID", "sig"])
     enrol_data = enrol_data.project(columns=["ID", "sig"])
 
     enrol_data = enrol_data.batch(batch_size=hparams.eval_batch_size)
 
     test_data = test_data.map(lambda wav, start, stop: audio_pipeline(wav, start, stop),
                               input_columns=["wav", "start", "stop"],
-                              output_columns=["sig"])
+                              output_columns=["sig"], column_order=["ID", "sig"])
     test_data = test_data.project(columns=["ID", "sig"])
 
     test_data = test_data.batch(batch_size=hparams.eval_batch_size)

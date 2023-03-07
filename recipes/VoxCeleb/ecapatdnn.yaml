@@ -1,8 +1,8 @@
 # Basic parameters
 output_folder: /home/abc000/data/data_aug/
 save_folder: /home/abc000/data/data_aug/save/
-feat_folder: /disk1/huangyu/data/feat_train/ # path to store single file train feature
-feat_folder_merge: /disk1/huangyu/data/feat_train_merge/ # path to store merged train feature
+feat_folder: /home/abc000/data/feat_train/                   # path to store single file train feature
+feat_folder_merge: /home/abc000/data/feat_train_merge/       # path to store merged train feature
 
 # Data files
 data_folder: /home/abc000/data/voxceleb12  # e.g. data folder
@@ -45,28 +45,28 @@ base_lrate: 0.000001                                            # base learning 
 max_lrate: 0.0001                                               # max learning rate of cyclic LR
 momentum: 0.95                                                  # weight decay for optimizer
 weight_decay: 0.000002                                          # momentum for optimizer
-num_epochs: 3                                                   # training epoch
+num_epochs: 20                                                  # training epoch
 minibatch_size: 192                                             # batch size
 emb_size: 192                                                   # embedding dim
 step_size: 65000                                                # steps to achieve max learning rate cyclic LR
 class_num: 7205                                                 # speaker num pf voxceleb1&2
 pre_trained: False                                              # if pre-trained model exist
 
-train_data_path: "/disk2/huangyu/data/feat_train_merge/"        # path to fbank training data
-keep_checkpoint_max: 20
+train_data_path: "/home/abc000/data/feat_train_merge/"        # path to fbank training data
+keep_checkpoint_max: 30
 checkpoint_path: "train_ecapa_vox2_full-2_664204.ckpt"          # path to pre-trained model
 ckpt_save_dir: "./ckpt/"                                        # path to store train model
 
 
 # Basic parameters
-feat_eval_folder: /disk1/huangyu/data/feat_eval/ # dir to store eval feature
-feat_norm_folder: /disk1/huangyu/data/feat_norm/ # dir to store norm feature
+feat_eval_folder: /home/abc000/data/feat_eval/ # dir to store eval feature
+feat_norm_folder: /home/abc000/data/feat_norm/ # dir to store norm feature
 eval_data_folder: /home/abc000/data/voxceleb12/ # data folder
 eval_output_folder: /home/abc000/data/data_aug_eval/
 eval_save_folder: /home/abc000/data/data_aug_eval/save/
 device: 'cpu'
 
-verification_file_bleeched: /disk1/huangyu/data/feat_eval/veri_test_bleeched.txt
+verification_file_bleeched: /home/abc000/data/feat_eval/veri_test_bleeched.txt
 
 # csv files
 train_data: /home/abc000/data/data_aug_eval/save/train.csv
@@ -79,13 +79,13 @@ n_train_snts: 400000 # used for normalization stats
 
 
 # eval
-eval_data_path: "/disk0/huangyu/data/feat_eval/"                  # path to eval fbank data
-veri_file_path: "/disk0/huangyu/data/feat_eval/veri_test_bleeched.txt"      # trials
-cut_wav: false                                                    # cut wav to 3s (cut wav to 3s, same as train data)
-model_path: "/disk0/huangyu/data/ckpt/train_ecapa_vox12-2_6396.ckpt"    # path of eval model
-train_norm_path: "/disk0/huangyu/data/feat_norm/"                         # fbank data for norm
-cohort_size: 20000                                                # max number of utts to do norm
-npy_file_path: '/disk0/huangyu/data/npys/'                                # dir to save intermediate result
+eval_data_path: "/home/abc000/data/feat_eval/"                            # path to eval fbank data
+veri_file_path: "/home/abc000/data/feat_eval/veri_test_bleeched.txt"      # trials
+cut_wav: false                                                            # cut wav to 3s (cut wav to 3s, same as train data)
+model_path: "/home/abc000/data/ckpt/train_ecapa_vox12-20_0.ckpt"          # path of eval model
+train_norm_path: "/home/abc000/data/feat_norm/"                           # fbank data for norm
+cohort_size: 20000                                                        # max number of utts to do norm
+npy_file_path: '/home/abc000/data/npys/'                                  # dir to save intermediate result
 
 
 
