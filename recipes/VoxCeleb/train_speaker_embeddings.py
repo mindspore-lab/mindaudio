@@ -86,10 +86,10 @@ def dataio_prep():
 
     train_data = train_data.map(lambda duration, wav, start, stop: audio_pipeline(duration, wav, start, stop),
                                 input_columns=["duration", "wav", "start", "stop"],
-                                output_columns=["sig"])
+                                output_columns=["sig"], column_order=["ID", "sig", "spk_id"])
 
     train_data = train_data.map(operations=[label_pipeline], input_columns=["spk_id"],
-                                output_columns=["spk_id", "spk_id_encoded"])
+                                output_columns=["spk_id_encoded"], column_order=["ID", "sig", "spk_id_encoded"])
 
     train_data = train_data.project(columns=["sig", "spk_id_encoded"])
 
