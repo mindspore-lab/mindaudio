@@ -18,7 +18,7 @@ This system achieves:
 
 These results are all obtained with the official verification split of voxceleb1 (veri\_test2.txt)
 
-Below you can find the results from model trained on VoxCeleb 2 dev set and tested on VoxSRC derivatives. Note that however, the models are trained on (8 * Ascend910).
+Below you can find the results from model trained on VoxCeleb 2 dev set and tested on VoxSRC derivatives. Note that however, the models are trained on Ascend910 with 8 cards.
 
 # VoxCeleb2 preparation
 Voxceleb2 audio files are released in m4a format. All the files must be converted in wav files before
