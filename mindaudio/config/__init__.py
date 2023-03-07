@@ -18,11 +18,8 @@ class Config:
         return self.__str__()
 
 
-def load_hparams(path):
+def load_config(path):
     with open(path) as stream:
         hps = yaml.load(stream, yaml.Loader)
     hps = Config(hps)
     return hps
-
-
-hps = load_hparams('recipes/LJSpeech/tts/fastspeech2/fastspeech2.yaml')

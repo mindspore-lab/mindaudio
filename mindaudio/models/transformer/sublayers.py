@@ -5,7 +5,7 @@ from mindspore import ops
 from mindspore.common.initializer import Normal
 from mindspore.common.initializer import initializer
 
-from modules.transformer.modules import ScaledDotProductAttention
+from mindaudio.models.transformer.score_function import ScaledDotProductAttention
 
 
 class MultiHeadAttention(nn.Cell):
@@ -77,14 +77,12 @@ class MultiHeadAttention(nn.Cell):
         k = self.reshape(self.transpose(k, (2, 0, 1, 3)), (-1, len_q, d_k))  # (n*b) x lk x dk
         v = self.reshape(self.transpose(v, (2, 0, 1, 3)), (-1, len_v, d_v))  # (n*b) x lv x dv
 
-        # mask = self.tile(mask.astype(mstype.float32), (n_head, 1, 1))
-        # output = self.attention(q, k, v, mask=mask.astype(mstype.bool_))
         output = self.attention(q, k, v, mask=mask)
 
         output = self.reshape(output, (n_head, sz_b, len_q, d_v))
         output = self.reshape(self.transpose(output, (1, 2, 0, 3)), (sz_b, len_q, -1))  # b x lq x (n*dv)
-        output = self.fc(output)
-        # output = self.dropout(self.fc(output))
+
+        output = self.dropout(self.fc(output))
         output = self.layer_norm(output + residual)
 
         return output

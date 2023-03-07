@@ -3,11 +3,10 @@ import mindspore as ms
 import mindspore.nn as nn
 from mindspore.amp import DynamicLossScaler
 
-import sys
-sys.path.append('..')
-from modules.transformer.models import Encoder, Decoder
-from modules.variance_adapter import VarianceAdaptor
-from utils import get_mask_from_lengths
+from mindaudio.models.transformer.models import Encoder, Decoder
+from mindaudio.models.fastspeech2.variance_adapter import VarianceAdaptor
+from mindaudio.models.fastspeech2.utils import get_mask_from_lengths
+from mindaudio.models.fastspeech2.loss import FastSpeech2Loss
 
 
 class FastSpeech2(nn.Cell):
@@ -70,9 +69,9 @@ class FastSpeech2(nn.Cell):
 
 
 class FastSpeech2WithLoss(FastSpeech2):
-    def __init__(self, loss_fn, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.loss_fn = loss_fn
+    def __init__(self, hps):
+        super().__init__(hps)
+        self.loss_fn = FastSpeech2Loss(hps)
         self.scale = DynamicLossScaler(1024, 2, 1)
 
     def construct(
@@ -110,38 +109,3 @@ class FastSpeech2WithLoss(FastSpeech2):
             'duration_targets': d_targets,
         })
         return self.scale.scale(self.loss_fn(yh))
-
-
-if __name__ == '__main__':
-    from time import time
-    # ms.context.set_context(device_target='GPU', device_id=0, mode=ms.context.GRAPH_MODE)
-    ms.context.set_context(device_target='GPU', device_id=0, mode=ms.context.PYNATIVE_MODE)
-    args = [
-        ms.Tensor(np.load('../speakers.npy')),
-        ms.Tensor(np.load('../texts.npy')),
-        ms.Tensor(np.load('../src_lens.npy')),
-        ms.Tensor(np.load('../max_src_len.npy')),
-        # ms.Tensor(np.load('../mels.npy')),
-        ms.Tensor(np.load('../mel_lens.npy')),
-        ms.Tensor(np.load('../max_mel_len.npy')),
-        ms.Tensor(np.load('../p_targets.npy')),
-        ms.Tensor(np.load('../e_targets.npy')),
-        ms.Tensor(np.load('../d_targets.npy')),
-    ]
-    print('batch:', args[1].shape)
-
-    import yaml
-    preprocess_config = '/home/zhudongyao/ptFastSpeech2/config/LJSpeech_paper/preprocess.yaml'
-    model_config = '/home/zhudongyao/ptFastSpeech2/config/LJSpeech_paper/model.yaml'
-    train_config = '/home/zhudongyao/ptFastSpeech2/config/LJSpeech_paper/train.yaml'
-    preprocess_config = yaml.load(open(preprocess_config, "r"), Loader=yaml.FullLoader)
-    model_config = yaml.load(open(model_config, "r"), Loader=yaml.FullLoader)
-
-    net = FastSpeech2(preprocess_config, model_config)
-    for i in range(2):
-        t = time()
-        y = net(*args)
-        t = time() - t
-        print('time: %.2fs' % t)
-        for k, v in y:
-            print(k, ':', v.shape)

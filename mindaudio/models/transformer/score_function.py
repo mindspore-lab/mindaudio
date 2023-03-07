@@ -1,8 +1,6 @@
 import mindspore.numpy as msnp
-from mindspore import dtype as mstype
 from mindspore import nn
 from mindspore import ops
-from mindspore.ops import constexpr
 
 
 class ScaledDotProductAttention(nn.Cell):

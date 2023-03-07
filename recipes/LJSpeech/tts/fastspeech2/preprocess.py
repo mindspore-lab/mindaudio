@@ -9,11 +9,11 @@ from tqdm import tqdm
 from mindspore.dataset.audio import Spectrogram, MelScale
 import mindspore as ms
 from mindaudio.data.io import read
+import mindaudio
 
 sys.path.append('.')
 from phonemes import get_alignment
-from hparams import hps
-from recipes.LJSpeech.text import text_to_sequence
+from recipes.text import text_to_sequence
 from recipes.LJSpeech import LJSpeech
 from recipes.LJSpeech.tts import create_ljspeech_tts_dataset
 from dataset import (
@@ -21,6 +21,14 @@ from dataset import (
     all_dirs,
     all_postfix,
 )
+
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('--device_target', '-d', type=str, default="CPU", choices=("GPU", "CPU", 'Ascend'))
+parser.add_argument('--device_id', '-i', type=int, default=0)
+parser.add_argument('--config', '-c', type=str, default='recipes/LJSpeech/tts/fastspeech2/fastspeech2.yaml')
+args = parser.parse_args()
+hps = mindaudio.load_config(args.config)
 
 def read_wav(filename):
     filename = str(filename).replace('b\'', '').replace('\'', '')
@@ -50,7 +58,7 @@ mel_fn = MelScale(
 def _normalize(S):
     S = 20 * np.log10(np.clip(S, 1e-5, None)) - 20
     S = np.clip((S + 100) / 100, 0.0, 1.0)
-    return S
+    return S.astype(np.float32)
 
 # process text: file -> phoneme
 def get_fs2_features(audio, text):
@@ -118,17 +126,13 @@ def preprocess_ljspeech(data_path, manifest_path, is_train):
             writer.write(str(x['base']) + '\n')
         for k in feature_columns:
             np.save(os.path.join(data_path, all_dirs[k], base + all_postfix[k]), x[k].asnumpy())
-        pitch_min, pitch_max = min(x['pitch'].min(), pitch_min), max(x['pitch'].max(), pitch_max)
-        energy_min, energy_max = min(x['energy'].min(), energy_min), max(x['energy'].max(), energy_max)
+        pitch, energy = x['pitch'].asnumpy(), x['energy'].asnumpy()
+        pitch_min, pitch_max = min(pitch.min(), pitch_min), max(pitch.max(), pitch_max)
+        energy_min, energy_max = min(energy.min(), energy_min), max(energy.max(), energy_max)
     np.save('stats.npy', np.array([pitch_min, pitch_max, energy_min, energy_max]))
 
 
 if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--device_target', '-d', type=str, default="CPU", choices=("GPU", "CPU", 'Ascend'))
-    parser.add_argument('--device_id', '-i', type=int, default=0)
-    args = parser.parse_args()
     ms.context.set_context(mode=ms.context.PYNATIVE_MODE, device_target=args.device_target, device_id=args.device_id)
     preprocess_ljspeech(
         data_path=hps.data_path,

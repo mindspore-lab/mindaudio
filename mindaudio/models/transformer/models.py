@@ -4,17 +4,16 @@ from mindspore import dtype as mstype
 from mindspore import nn
 from mindspore import ops
 
-from modules.transformer import constants
-from modules.transformer.layers import FFTBlock
-from recipes.LJSpeech.text import all_symbols
-from utils import get_sinusoid_encoding_table
+from mindaudio.models.transformer import constants
+from mindaudio.models.transformer.layers import FFTBlock
+from mindaudio.models.transformer.positional_encoding import get_sinusoid_encoding_table
 
 
 class Encoder(nn.Cell):
     def __init__(self, hps):
         super().__init__()
 
-        n_src_vocab = len(all_symbols) + 1
+        n_src_vocab = hps.model.n_src_vocab + 1
         len_max_seq = hps.model.max_seq_len
         d_word_vec = hps.model.transformer.encoder_hidden
         n_layers = hps.model.transformer.encoder_layer

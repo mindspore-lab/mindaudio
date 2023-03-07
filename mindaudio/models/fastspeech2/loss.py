@@ -59,4 +59,3 @@ class FastSpeech2Loss(nn.Cell):
             self.slr(self.names[i], losses[i])
 
         return losses
-

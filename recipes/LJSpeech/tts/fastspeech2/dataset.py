@@ -5,7 +5,7 @@ import mindspore as ms
 
 from recipes.LJSpeech import LJSpeech
 from recipes.LJSpeech.tts import create_ljspeech_tts_dataset
-from utils import get_sinusoid_encoding_table
+from mindaudio.models.transformer import get_sinusoid_encoding_table
 
 
 TEXT_DIR = 'fs2_phoneme'
@@ -59,8 +59,6 @@ data_columns = [
     'd_targets',
 ]
 
-from hparams import hps
-
 
 def create_dataset(data_path, manifest_path, batch_size, is_train=True, rank=0, group_size=1):
     ds = LJSpeech(
@@ -94,7 +92,7 @@ def create_dataset(data_path, manifest_path, batch_size, is_train=True, rank=0, 
         B = len(xs)
         T = max(x.shape[0] for x in xs)
         shape = [B, T] + list(xs[0].shape[1:])
-        ys = np.zeros(shape)
+        ys = np.zeros(shape, dtype=np.float32)
         lengths = np.zeros(B, np.int32)
         for i, x in enumerate(xs):
             ys[i, : x.shape[0]] = x
@@ -137,13 +135,3 @@ def create_dataset(data_path, manifest_path, batch_size, is_train=True, rank=0, 
     )
 
     return ds
-
-if __name__ == '__main__':
-    ms.context.set_context(mode=ms.context.PYNATIVE_MODE, device_target='CPU')#, device_id=6)
-    ds = create_dataset(hps.data_path, hps.manifest_path, 2)
-    it = ds.create_dict_iterator()
-    for nb, d in enumerate(it):
-        print('nb:', nb)
-        for k, v in d.items():
-            print('k:', k, 'v:', v.shape, 't:', v.dtype)
-        break
