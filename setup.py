@@ -85,7 +85,8 @@ setup(
     install_requires=[
         'numpy >= 1.17.0',
         'PyYAML >= 5.3',
-        'tqdm'
+        'tqdm',
+        'Levenshtein'
     ]
 )
 print(find_packages())
