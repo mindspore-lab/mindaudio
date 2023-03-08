@@ -645,7 +645,7 @@ def magphase(waveform, power, iscomplex=True):
         mag_nonzero = mag + zero_to_ones
         # Compute real and imaginary seprately, because complex division can produce Nans
         # when denormaliased numbers are involved
-        phase = np.empty((waveform.shape[0], s.shape[1]), dtype=np.complex64)
+        phase = np.empty((waveform.shape[0], waveform.shape[1]), dtype=np.complex64)
         phase.real = waveform.real / mag_nonzero + zero_to_ones
         phase.imag = waveform.imag / mag_nonzero
         mag **= power
