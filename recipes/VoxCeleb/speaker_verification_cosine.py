@@ -1,28 +1,27 @@
-#!/usr/bin/python3
-"""Recipe for training a speaker verification system based on cosine distance.
 """
-import sys
-import datetime
-import mindaudio.data.io as io
-import mindspore as ms
-import wget
+Recipe for training a speaker verification system based on cosine distance.
+"""
 import os
+import wget
+import datetime
 import pickle
 import numpy as np
 from scipy.spatial.distance import cosine
 from sklearn.metrics.pairwise import cosine_similarity
+
+import mindspore as ms
 from mindspore import Tensor
 from mindspore import context, load_checkpoint, load_param_into_net
 from mindaudio.models.ecapatdnn import EcapaTDNN
 from mindaudio.data.processing import stereo_to_mono
-
-sys.path.append('../..')
-from recipes.VoxCeleb.voxceleb_prepare import prepare_voxceleb
-from recipes.VoxCeleb.reader import DatasetGenerator
-from recipes.VoxCeleb.metrics import get_EER_from_scores
-from recipes.VoxCeleb.config import config as hparams
 from mindaudio.data.features import fbank
 from mindaudio.data.processing import normalize
+import mindaudio.data.io as io
+
+from voxceleb_prepare import prepare_voxceleb
+from reader import DatasetGenerator
+from metrics import get_EER_from_scores
+from config import config as hparams
 
 # bad utterances
 excluded_set = {2302, 2303, 2304, 2305, 2306, 2307, 2308, 2309, 2310, 2311, 2312, 2313, 2314, 2315,
@@ -285,7 +284,7 @@ def compute_embeddings(embedder, dataloader, startidx=0, dur=50000, exc_set=None
             continue
         if index % 1000 == 0:
             print(f"{datetime.datetime.now()}, iter-{index}")
-        wavs = Tensor(batchdata)
+        wavs = Tensor(batchdata).astype(ms.float32)
         embs = embedder(wavs)
         utt2emb[dataloader[index][1]] = embs.asnumpy()
     return utt2emb
@@ -330,7 +329,7 @@ if __name__ == "__main__":
     for idx in range(len(eval_dataset)):
         if idx in excluded_set:
             excluded_utt_set.add(eval_dataset[idx][1])
-    with open(hparams.verification_file, 'r') as fp, \
+    with open(veri_file_path, 'r') as fp, \
             open(os.path.join(hparams.verification_file_bleeched), 'w') as fpOut:
         for line in fp:
             tokens = line.strip().split(" ")

@@ -1,22 +1,17 @@
-#!/usr/bin/python3
-"""Recipe for training speaker embeddings using the VoxCeleb Dataset.
+"""
+Recipe for training speaker embeddings using the VoxCeleb Dataset.
 """
 import os
-import sys
 import random
-
-import mindspore
 import wget
-
-import mindaudio.data.io as io
 from tqdm.contrib import tqdm
 from multiprocessing import Process, Manager
 import pickle
-
 import time
 from datetime import datetime
 import math
 import numpy as np
+
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor
@@ -28,19 +23,20 @@ from mindspore.train.callback import CheckpointConfig
 from mindspore.train.callback import RunContext, _InternalCallbackParam
 from mindspore.context import ParallelMode
 from mindspore.communication.management import init, get_rank, get_group_size
+
+import mindaudio.data.io as io
 from mindaudio.models.ecapatdnn import EcapaTDNN, Classifier
 from mindaudio.data.processing import stereo_to_mono
-
-sys.path.append('../..')
-from recipes.VoxCeleb.reader import DatasetGeneratorBatch as DatasetGenerator
-from recipes.VoxCeleb.util import AdditiveAngularMargin
-from recipes.VoxCeleb.loss_scale import TrainOneStepWithLossScaleCellv2 as TrainOneStepWithLossScaleCell
-from recipes.VoxCeleb.config import config as hparams
-from recipes.VoxCeleb.sampler import DistributedSampler
-from recipes.VoxCeleb.voxceleb_prepare import prepare_voxceleb
-from recipes.VoxCeleb.spec_augment import TimeDomainSpecAugment, EnvCorrupt
 from mindaudio.data.features import fbank
 from mindaudio.data.processing import normalize
+
+from reader import DatasetGeneratorBatch as DatasetGenerator
+from util import AdditiveAngularMargin
+from loss_scale import TrainOneStepWithLossScaleCellv2 as TrainOneStepWithLossScaleCell
+from config import config as hparams
+from sampler import DistributedSampler
+from voxceleb_prepare import prepare_voxceleb
+from spec_augment import TimeDomainSpecAugment, EnvCorrupt
 
 spk_id_encoded_dict = {}
 spk_id_encoded = -1
@@ -195,8 +191,6 @@ def data_trans_dp(datasetPath, dataSavePath):
     print(datetime.now().strftime("%m-%d-%H:%M:%S"))
     batchnum = math.ceil(total_process_num / thread_num)
     print('batch num:', batchnum)
-    print("press Enter to continue...")
-    input()
     for batchid in range(batchnum):
         threadlist = []
         for idx in range(thread_num):
@@ -265,8 +259,8 @@ class BuildTrainNetwork(nn.Cell):
         self.onehot = ms.nn.OneHot(depth=class_num_, axis=-1, dtype=ms.float32)
 
     def construct(self, input_data, label):
-        output = self.network(input_data)
-        label_onehot = self.onehot(label)
+        output = self.network(input_data.astype(ms.float32))
+        label_onehot = self.onehot(label.astype(ms.int32))
         # Get the network output and assign it to self.output
         logits = self.classifier(output)
         output = self.lossfunc(logits, label_onehot)

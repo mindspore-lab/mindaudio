@@ -61,7 +61,7 @@ ckpt_save_dir: "./ckpt/"                                        # path to store 
 # Basic parameters
 feat_eval_folder: /home/abc000/data/feat_eval/ # dir to store eval feature
 feat_norm_folder: /home/abc000/data/feat_norm/ # dir to store norm feature
-eval_data_folder: /home/abc000/data/voxceleb12/ # data folder
+eval_data_folder: /home/abc000/data/voxceleb1/ # data folder
 eval_output_folder: /home/abc000/data/data_aug_eval/
 eval_save_folder: /home/abc000/data/data_aug_eval/save/
 device: 'cpu'

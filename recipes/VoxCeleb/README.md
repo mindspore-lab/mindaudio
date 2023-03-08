@@ -38,7 +38,7 @@ You can do the conversion using ffmpeg(https://gist.github.com/seungwonpark/4f27
 
 4. Unpack voxceleb1 test files(verification split).
 
-Go to the voxceleb2 folder and run `unzip vox1_test_wav.zip`.
+   Go to the voxceleb2 folder and run `unzip vox1_test_wav.zip`.
 
 5. copy the `voxceleb1/vox1_dev_wav.zip` file into the voxceleb12 folder.
 
