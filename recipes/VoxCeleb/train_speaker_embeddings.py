@@ -195,8 +195,6 @@ def data_trans_dp(datasetPath, dataSavePath):
     print(datetime.now().strftime("%m-%d-%H:%M:%S"))
     batchnum = math.ceil(total_process_num / thread_num)
     print('batch num:', batchnum)
-    print("press Enter to continue...")
-    input()
     for batchid in range(batchnum):
         threadlist = []
         for idx in range(thread_num):
@@ -265,8 +263,8 @@ class BuildTrainNetwork(nn.Cell):
         self.onehot = ms.nn.OneHot(depth=class_num_, axis=-1, dtype=ms.float32)
 
     def construct(self, input_data, label):
-        output = self.network(input_data)
-        label_onehot = self.onehot(label)
+        output = self.network(input_data.astype(ms.float32))
+        label_onehot = self.onehot(label.astype(ms.int32))
         # Get the network output and assign it to self.output
         logits = self.classifier(output)
         output = self.lossfunc(logits, label_onehot)

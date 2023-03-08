@@ -330,7 +330,7 @@ if __name__ == "__main__":
     for idx in range(len(eval_dataset)):
         if idx in excluded_set:
             excluded_utt_set.add(eval_dataset[idx][1])
-    with open(hparams.verification_file, 'r') as fp, \
+    with open(veri_file_path, 'r') as fp, \
             open(os.path.join(hparams.verification_file_bleeched), 'w') as fpOut:
         for line in fp:
             tokens = line.strip().split(" ")
