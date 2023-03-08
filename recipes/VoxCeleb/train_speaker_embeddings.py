@@ -1,22 +1,17 @@
-#!/usr/bin/python3
-"""Recipe for training speaker embeddings using the VoxCeleb Dataset.
+"""
+Recipe for training speaker embeddings using the VoxCeleb Dataset.
 """
 import os
-import sys
 import random
-
-import mindspore
 import wget
-
-import mindaudio.data.io as io
 from tqdm.contrib import tqdm
 from multiprocessing import Process, Manager
 import pickle
-
 import time
 from datetime import datetime
 import math
 import numpy as np
+
 import mindspore as ms
 import mindspore.nn as nn
 from mindspore import Tensor
@@ -28,19 +23,20 @@ from mindspore.train.callback import CheckpointConfig
 from mindspore.train.callback import RunContext, _InternalCallbackParam
 from mindspore.context import ParallelMode
 from mindspore.communication.management import init, get_rank, get_group_size
+
+import mindaudio.data.io as io
 from mindaudio.models.ecapatdnn import EcapaTDNN, Classifier
 from mindaudio.data.processing import stereo_to_mono
-
-sys.path.append('../..')
-from recipes.VoxCeleb.reader import DatasetGeneratorBatch as DatasetGenerator
-from recipes.VoxCeleb.util import AdditiveAngularMargin
-from recipes.VoxCeleb.loss_scale import TrainOneStepWithLossScaleCellv2 as TrainOneStepWithLossScaleCell
-from recipes.VoxCeleb.config import config as hparams
-from recipes.VoxCeleb.sampler import DistributedSampler
-from recipes.VoxCeleb.voxceleb_prepare import prepare_voxceleb
-from recipes.VoxCeleb.spec_augment import TimeDomainSpecAugment, EnvCorrupt
 from mindaudio.data.features import fbank
 from mindaudio.data.processing import normalize
+
+from reader import DatasetGeneratorBatch as DatasetGenerator
+from util import AdditiveAngularMargin
+from loss_scale import TrainOneStepWithLossScaleCellv2 as TrainOneStepWithLossScaleCell
+from config import config as hparams
+from sampler import DistributedSampler
+from voxceleb_prepare import prepare_voxceleb
+from spec_augment import TimeDomainSpecAugment, EnvCorrupt
 
 spk_id_encoded_dict = {}
 spk_id_encoded = -1

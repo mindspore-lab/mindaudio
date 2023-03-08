@@ -1,28 +1,27 @@
-#!/usr/bin/python3
-"""Recipe for training a speaker verification system based on cosine distance.
 """
-import sys
-import datetime
-import mindaudio.data.io as io
-import mindspore as ms
-import wget
+Recipe for training a speaker verification system based on cosine distance.
+"""
 import os
+import wget
+import datetime
 import pickle
 import numpy as np
 from scipy.spatial.distance import cosine
 from sklearn.metrics.pairwise import cosine_similarity
+
+import mindspore as ms
 from mindspore import Tensor
 from mindspore import context, load_checkpoint, load_param_into_net
 from mindaudio.models.ecapatdnn import EcapaTDNN
 from mindaudio.data.processing import stereo_to_mono
-
-sys.path.append('../..')
-from recipes.VoxCeleb.voxceleb_prepare import prepare_voxceleb
-from recipes.VoxCeleb.reader import DatasetGenerator
-from recipes.VoxCeleb.metrics import get_EER_from_scores
-from recipes.VoxCeleb.config import config as hparams
 from mindaudio.data.features import fbank
 from mindaudio.data.processing import normalize
+import mindaudio.data.io as io
+
+from voxceleb_prepare import prepare_voxceleb
+from reader import DatasetGenerator
+from metrics import get_EER_from_scores
+from config import config as hparams
 
 # bad utterances
 excluded_set = {2302, 2303, 2304, 2305, 2306, 2307, 2308, 2309, 2310, 2311, 2312, 2313, 2314, 2315,
