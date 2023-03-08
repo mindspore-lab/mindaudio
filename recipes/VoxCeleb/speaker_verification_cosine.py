@@ -284,7 +284,7 @@ def compute_embeddings(embedder, dataloader, startidx=0, dur=50000, exc_set=None
             continue
         if index % 1000 == 0:
             print(f"{datetime.datetime.now()}, iter-{index}")
-        wavs = Tensor(batchdata)
+        wavs = Tensor(batchdata).astype(ms.float32)
         embs = embedder(wavs)
         utt2emb[dataloader[index][1]] = embs.asnumpy()
     return utt2emb
