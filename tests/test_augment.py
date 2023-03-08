@@ -117,6 +117,22 @@ class TestOperators():
         dropped_waveform = augment.drop_chunk(waveforms, lengths, drop_start=100, drop_end=200, noise_factor=0.0)
 
 
+    def test_time_stretch(self):
+        signal, _ = io.read(self.background_list[0])
+        y_fast = augment.time_stretch(signal, rate=2.0)
+        print(signal.shape)
+        print(y_fast.shape)
+
+
+    def test_pitch_shift(self):
+        signal, _ = io.read(self.background_list[0])
+        signal2 = np.random.rand(192, 48000)
+        test_list = [signal, signal2]
+        for waveform in test_list:
+            shift_waveform = augment.pitch_shift(waveform, sr=16000, n_steps=4)
+            print(shift_waveform.shape)
+
+
 if __name__ == "__main__":
     test = TestOperators()
     test.setup_method()

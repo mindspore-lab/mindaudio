@@ -22,6 +22,8 @@ __all__ = [
     'resynthesize'
 ]
 
+#Max block sizes to 256 KB
+MAX_MEM_BLOCK = 2**8 * 2**10
 
 def amplitude_to_dB(S, stype="power", ref=1.0, amin=1e-10, top_db=80.0):
     """
@@ -114,8 +116,17 @@ def dB_to_amplitude(S, ref, power):
     return ref_value * np.power(np.power(10.0, 0.1 * S), power)
 
 
+def _expand_to(x, ndim, axes):
+    axes_tup = tuple([axes])  # type: ignore
+
+    shape = [1] * ndim
+    for i, axi in enumerate(axes_tup):
+        shape[axi] = x.shape[i]
+    return x.reshape(shape)
+
+
 def stft(waveforms, n_fft=512, win_length=None, hop_length=None, window="hann", center=True,
-         pad_mode="reflect", return_complex=True):
+         pad_mode="constant", return_complex=True):
     """
     Short-time Fourier transform (STFT).
 
@@ -124,14 +135,11 @@ def stft(waveforms, n_fft=512, win_length=None, hop_length=None, window="hann", 
 
     Args:
         waveforms (np.ndarray), 1D or 2D array represent the time-serie audio signal.
-        n_fft (int): Number of fft point of the STFT. It defines the frequency resolution (n_fft should be <= than
-            win_len * (sample_rate/1000)). The number of rows in the STFT matrix ``D`` is ``(1 + n_fft/2)``. In any
-            case, we recommend setting ``n_fft`` to a power of two for optimizing the speed of the fast Fourier
-            transform (FFT) algorithm.
-        win_length (int): Number of frames the sliding window used to compute the STFT. Given the sample rate of the
-            audio, the time duration for the windowed signal can be obtained as:
-            :math:`duration (ms) = \frac{win_length*1000}{sample_rate}`. Usually, the time duration can be set to
-            :math:`~30ms`. If None, win_length will be set to the same as n_fft.
+        n_fft (int): Number of fft point of the STFT. It defines the frequency resolution. The number of rows in
+            the STFT matrix ``D`` is ``(1 + n_fft/2)``.
+            Notes:n_fft = 2 ** n, n_fft <= win_len * (sample_rate/1000)
+        win_length (int): Number of frames the sliding window used to compute the STFT.
+            Notes:duration (ms) = {win_length*1000}{sample_rate} If None, win_length = n_fft.
         hop_length (int): Number of frames for the hop of the sliding window used to compute the STFT. If None,
             hop_length will be set to 1/4*n_fft.
         window (str): Name of window function specified for STFT. This function should take an integer (number of
@@ -162,8 +170,9 @@ def stft(waveforms, n_fft=512, win_length=None, hop_length=None, window="hann", 
     fft_window = _pad_center(fft_window, n_fft)
 
     # Reshape so that the window can be broadcast
-    fft_window = np.expand_dims(fft_window, axis=-1)
+    fft_window = _expand_to(fft_window, ndim=1 + waveforms.ndim, axes=-2)
 
+    # Pad the time series so that frames are centered
     if center:
         if n_fft > waveforms.shape[-1]:
             raise ValueError(
@@ -172,21 +181,79 @@ def stft(waveforms, n_fft=512, win_length=None, hop_length=None, window="hann", 
                 )
             )
 
+        # Set up the padding array to be empty, and we'll fix the target dimension later
         padding = [(0, 0) for _ in range(waveforms.ndim)]
-        padding[-1] = (int(n_fft // 2), int(n_fft // 2))
-        waveforms = np.pad(waveforms, padding, mode=pad_mode)
 
-    elif n_fft > waveforms.shape[-1]:
-        raise ValueError(
-            "n_fft={} is too small for input signal of length={}".format(
-                n_fft, waveforms.shape[-1]
+        # How many frames depend on left padding?
+        start_k = int(np.ceil(n_fft // 2 / hop_length))
+
+        # What's the first frame that depends on extra right-padding?
+        tail_k = (waveforms.shape[-1] + n_fft // 2 - n_fft) // hop_length + 1
+
+        if tail_k <= start_k:
+            # If tail and head overlap, then just copy-pad the signal and carry on
+            start = 0
+            extra = 0
+            padding[-1] = (n_fft // 2, n_fft // 2)
+            waveforms = np.pad(waveforms, padding, mode=pad_mode)
+        else:
+            # If tail and head do not overlap, then we can implement padding on each part separately
+            # and avoid a full copy-pad
+
+            # "Middle" of the signal starts here, and does not depend on head padding
+            start = start_k * hop_length - n_fft // 2
+            padding[-1] = (n_fft // 2, 0)
+
+            waveforms_pre = np.pad(
+                waveforms[..., : (start_k - 1) * hop_length - n_fft // 2 + n_fft + 1],
+                padding,
+                mode=pad_mode,
             )
-        )
+            af_frames = frame(waveforms_pre, frame_length=n_fft, hop_length=hop_length)[..., :start_k]
+            the_shape_of_frames = af_frames.shape
+            extra = the_shape_of_frames[-1]
 
-    data_frames = frame(waveforms, n_fft, hop_length)
-    stft_matrix = np.empty((1 + n_fft // 2, data_frames.shape[1]), dtype=np.complex64)
+            if tail_k * hop_length - n_fft // 2 + n_fft <= waveforms.shape[-1] + n_fft // 2:
+                padding[-1] = (0, n_fft // 2)
+                y_post = np.pad(waveforms[..., (tail_k) * hop_length - n_fft // 2:], padding, mode=pad_mode)
+                y_frames_post = frame(y_post, frame_length=n_fft, hop_length=hop_length)
+                extra += y_frames_post.shape[-1]
+            else:
+                # the end padding
+                post_shape = list(the_shape_of_frames.shape)
+                post_shape[-1] = 0
+                y_frames_post = np.empty_like(af_frames, shape=post_shape)
+    else:
+        start = 0
+        extra = 0
+        if n_fft > waveforms.shape[-1]:
+            raise ParameterError(
+                f"n_fft={n_fft} is too large for uncentered analysis of input signal of length={y.shape[-1]}"
+            )
+    # Window the time series.
+    y_frames = frame(waveforms[..., start:], frame_length=n_fft, hop_length=hop_length)
+    shape = list(y_frames.shape)
+    shape[-2] = 1 + n_fft // 2
+    shape[-1] += extra
+    stft_matrix = np.empty(shape, order="F", dtype=np.complex64)
 
-    stft_matrix[..., :] = fft.rfft(fft_window * data_frames[..., :], axis=0)
+    # Fill in the warm-up
+    if center and extra > 0:
+        off_start = af_frames.shape[-1]
+        stft_matrix[..., :off_start] = fft.rfft(fft_window * af_frames, axis=-2)
+
+        off_end = y_frames_post.shape[-1]
+        if off_end > 0:
+            stft_matrix[..., -off_end:] = fft.rfft(fft_window * y_frames_post, axis=-2)
+    else:
+        off_start = 0
+
+    n_columns = max(int(MAX_MEM_BLOCK // (np.prod(y_frames.shape[:-1]) * y_frames.itemsize)),1)
+
+    for bl_s in range(0, y_frames.shape[-1], n_columns):
+        bl_t = min(bl_s + n_columns, y_frames.shape[-1])
+        stft_matrix[..., bl_s + off_start: bl_t + off_start] = fft.rfft(fft_window * y_frames[..., bl_s:bl_t], axis=-2)
+
     if return_complex:
         return stft_matrix
     else:
@@ -219,6 +286,22 @@ def frame(x, frame_length=2048, hop_length=64):
     return x_frames
 
 
+def _pad_shape(y_shift, data_shape):
+    need_shape = y_shift.shape[-1]
+
+    if need_shape > data_shape:
+        slices = [slice(None)] * y_shift.ndim
+        slices[-1] = slice(0, data_shape)
+        return y_shift[tuple(slices)]
+
+    elif need_shape < data_shape:
+        lengths = [(0, 0)] * y_shift.ndim
+        lengths[-1] = (0, data_shape - need_shape)
+        return np.pad(y_shift, lengths, mode="constant")
+
+    return y_shift
+
+
 def _pad_center(data, size, axis=-1):
     n = data.shape[axis]
 
@@ -240,23 +323,6 @@ def overlap_add(output_buffer, frames, hop_length):
     for sample_frame in range(frames.shape[-1]):
         sample = sample_frame * hop_length
         output_buffer[..., sample : (sample + n_fft)] += frames[..., sample_frame]
-
-
-def fix_length(data, *, size, axis=-1, **kwargs):
-    kwargs.setdefault("mode", "constant")
-
-    length = data.shape[axis]
-    if length > size:
-        slices = [slice(None)] * data.ndim
-        slices[axis] = slice(0, size)
-        return data[tuple(slices)]
-
-    elif length < size:
-        lengths = [(0, 0)] * data.ndim
-        lengths[axis] = (0, size - length)
-        return np.pad(data, lengths, **kwargs)
-
-    return data
 
 
 def istft(stft_matrix, n_fft=None, win_length=None, hop_length=None, window="hann", center=True, length=None):
@@ -377,7 +443,7 @@ def istft(stft_matrix, n_fft=None, win_length=None, hop_length=None, window="han
             # If we're not centering, start at 0 and trim/pad as necessary
             start = 0
 
-        y = fix_length(y[..., start:], size=length)
+        y = _pad_shape(y[..., start:], data_shape=length)
 
     return y
 
@@ -552,7 +618,7 @@ def melspectrogram(waveforms, n_fft=400, win_length=None, hop_length=None, pad=0
     return melscale(specgram)
 
 
-def magphase(s, power, iscomplex):
+def magphase(waveform, power, iscomplex=True):
     """
     Separate a complex-valued spectrogram with shape (..., 2) into its magnitude and phase.
 
@@ -572,21 +638,21 @@ def magphase(s, power, iscomplex):
     """
 
     if iscomplex:
-        mag = np.abs(s)
+        mag = np.abs(waveform)
 
         #Prevent NaNs and return magnitude 0, phase 1+0j for zero
         zero_to_ones = mag == 0
         mag_nonzero = mag + zero_to_ones
         # Compute real and imaginary seprately, because complex division can produce Nans
         # when denormaliased numbers are involved
-        phase = np.empty((s.shape[0], s.shape[1]), dtype=np.complex64)
-        phase.real = s.real / mag_nonzero + zero_to_ones
-        phase.imag = s.imag / mag_nonzero
+        phase = np.empty((waveform.shape[0], waveform.shape[1]), dtype=np.complex64)
+        phase.real = waveform.real / mag_nonzero + zero_to_ones
+        phase.imag = waveform.imag / mag_nonzero
         mag **= power
         return mag, phase
     else:
         magphase_from_ms = msaudio.Magphase(power)
-        return magphase_from_ms(s)
+        return magphase_from_ms(waveform)
 
 
 def melscale(spec, n_mels=128, sample_rate=16000, f_min=0, f_max=None, n_stft=201, norm=NormType.NONE,

@@ -4,7 +4,7 @@ import mindspore as ms
 import mindspore.dataset.audio as msaudio
 from mindspore.nn import Conv1d
 from .io import read
-from .spectrum import compute_amplitude, dB_to_amplitude
+from .spectrum import compute_amplitude, dB_to_amplitude, stft, istft, _pad_shape
 from .processing import rescale, resample
 from .filters import notch_filter
 
@@ -18,6 +18,8 @@ __all__ = [
     'drop_freq',
     'speed_perturb',
     'drop_chunk',
+    'time_stretch',
+    'pitch_shift'
 ]
 
 
@@ -534,8 +536,7 @@ def speed_perturb(waveform, orig_freq, speeds=[90, 100, 110], perturb_prob=1.0):
     original rate, to achieve a slightly slower or slightly faster signal.
 
     Args:
-        waveforms(np.ndarray): Shape should be `[batch, time]` or `[batch, time, channels]`.
-        lengths(np.ndarray): Shape should be a single dimension, `[batch]`.
+        waveform(np.ndarray): Shape should be `[batch, time]` or `[batch, time, channels]`.
         orig_freq(int): The frequency of the original signal.
         speeds(list): The speeds that the signal should be changed to, as a percentage of the original signal
         (i.e. `speeds` is divided by 100 to get a ratio).
@@ -691,6 +692,115 @@ def drop_chunk(waveforms, lengths, drop_length_low=100, drop_length_high=1000, d
                 dropped_waveform[i, start[j]: end[j]] = noise_vec
 
     return dropped_waveform
+
+
+def time_stretch(waveforms, rate=None) -> np.ndarray:
+    """
+    Time-stretch an audio series by a fixed rate.
+    Stretch Short Time Fourier Transform (STFT) in time without modifying pitch for a given rate.
+
+    Args:
+        waveforms (np.ndarray): Shape `[batch, time]`or `[time]`
+        rate (float): Rate to speed up or slow down by. Default: None, will keep the original rate.
+
+    Returns:
+        transfomed waveforms(np.ndarray): Shape `[batch, time]`
+
+    Example:
+        >>> signal, _ = io.read('./samples/ASR/BAC009S0002W0122.wav')
+        >>> y_fast = augment.time_stretch(signal, rate=2.0)
+    """
+    if rate <= 0:
+        raise ParameterError("rate must be a positive number")
+
+    # Construct the short-term Fourier transform (STFT)
+    spec = stft(waveforms)
+
+    # Stretch with the function phase_vocoder
+    spec_stretch = _phase_vocoder(spec, rate=rate)
+    length_stretch = int(round(waveforms.shape[-1] / rate))
+
+    # Invert to wav
+    wav_stretch = istft(spec_stretch, length=length_stretch)
+    return wav_stretch
+
+
+def _phase_vocoder(matrix, rate, hop_length=None, n_fft=None):
+    """
+    .. [#] Ellis, D. P. W. "A phase vocoder in Matlab."
+        Columbia University, 2002.
+        http://www.ee.columbia.edu/~dpwe/resources/matlab/pvoc/
+    .. [#] https://breakfastquay.com/rubberband/
+    """
+    if n_fft is None:
+        n_fft = 2 * (matrix.shape[-2] - 1)
+
+    if hop_length is None:
+        hop_length = int(n_fft // 4)
+
+    time_steps = np.arange(0, matrix.shape[-1], rate, dtype=np.float64)
+
+    # Create an empty output array
+    shape = list(matrix.shape)
+    shape[-1] = len(time_steps)
+    d_stretch = np.zeros_like(matrix, shape=shape)
+
+    # Expected phase advance in each bin
+    phi_advance = np.linspace(0, np.pi * hop_length, matrix.shape[-2])
+
+    # Phase accumulator; initialize to the first sample
+    phase_acc = np.angle(matrix[..., 0])
+
+    # Pad 0 columns to simplify boundary logic
+    padding = [(0, 0) for _ in matrix.shape]
+    padding[-1] = (0, 2)
+    matrix = np.pad(matrix, padding, mode="constant")
+
+    for t, step in enumerate(time_steps):
+        columns = matrix[..., int(step) : int(step + 2)]
+        alpha = np.mod(step, 1.0)
+        mag = (1.0 - alpha) * np.abs(columns[..., 0]) + alpha * np.abs(columns[..., 1])
+        phase_complex = np.cos(phase_acc) + 1j * np.sin(phase_acc)
+        if mag is not None:
+            phase_complex *= mag
+        d_stretch[..., t] = phase_complex
+        dphase = np.angle(columns[..., 1]) - np.angle(columns[..., 0]) - phi_advance
+        dphase = dphase - 2.0 * np.pi * np.round(dphase / (2.0 * np.pi))
+        phase_acc += phi_advance + dphase
+
+    return d_stretch
+
+
+def pitch_shift(waveforms, sr, n_steps, bins_per_octave=12):
+    """
+    Shift the waveform pitch with n_steps
+
+    Args:
+        waveforms: np.ndarray Shape `[batch, time]`or `[time]` audio time series.
+        sr(int): audio sampling rate
+        n_steps(float): steps(fractional) to shift
+        bins_per_octave(float): steps per octave
+
+    Returns:
+         transfomed waveforms(np.ndarray): Shape `[batch, time]`
+
+    Example:
+        >>> waveform, _ = io.read('./samples/ASR/BAC009S0002W0122.wav')
+        >>> shift_waveform = augment.pitch_shift(waveform, sr=16000, n_steps=4)
+
+    """
+    rate = 2.0 ** (-float(n_steps) / bins_per_octave)
+    waveforms_stretch = time_stretch(waveforms, rate=rate)
+    # Stretch in time, then resample
+    y_shift = resample(
+        waveforms_stretch,
+        orig_freq=float(sr) / rate,
+        new_freq=sr,
+    )
+    return _pad_shape(y_shift, data_shape=waveforms_stretch.shape[-1])
+
+
+
 
 
 
