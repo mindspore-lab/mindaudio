@@ -45,8 +45,8 @@ base_lrate: 0.000001                                            # base learning 
 max_lrate: 0.0001                                               # max learning rate of cyclic LR
 momentum: 0.95                                                  # weight decay for optimizer
 weight_decay: 0.000002                                          # momentum for optimizer
-num_epochs: 20                                                  # training epoch
-minibatch_size: 192                                             # batch size
+num_epochs: 50                                                  # training epoch
+minibatch_size: 96                                              # batch size
 emb_size: 192                                                   # embedding dim
 step_size: 65000                                                # steps to achieve max learning rate cyclic LR
 class_num: 7205                                                 # speaker num pf voxceleb1&2
@@ -82,7 +82,7 @@ n_train_snts: 400000 # used for normalization stats
 eval_data_path: "/home/abc000/data/feat_eval/"                            # path to eval fbank data
 veri_file_path: "/home/abc000/data/feat_eval/veri_test_bleeched.txt"      # trials
 cut_wav: false                                                            # cut wav to 3s (cut wav to 3s, same as train data)
-model_path: "/home/abc000/data/ckpt/train_ecapa_vox12-20_0.ckpt"          # path of eval model
+model_path: "/home/abc000/data/ckpt/train_ecapa_vox12-89_681.ckpt"          # path of eval model
 train_norm_path: "/home/abc000/data/feat_norm/"                           # fbank data for norm
 cohort_size: 20000                                                        # max number of utts to do norm
 npy_file_path: '/home/abc000/data/npys/'                                  # dir to save intermediate result
