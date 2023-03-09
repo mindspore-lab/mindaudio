@@ -80,17 +80,13 @@ def dataio_prep():
     enrol_data = ms.dataset.CSVDataset(
         dataset_files=hparams.enrol_data
     )
-    # enrol_data = enrol_data.filtered_sorted(sort_key="duration")
 
     # Test data
     test_data = ms.dataset.CSVDataset(
         dataset_files=hparams.test_data
     )
 
-    # test_data = test_data.filtered_sorted(sort_key="duration")
-
     # Define audio pipeline
-
     def audio_pipeline(wav, start, stop):
         start = int(start)
         stop = int(stop)
@@ -100,8 +96,6 @@ def dataio_prep():
         )
         if len(sig.shape) > 1:
             sig = stereo_to_mono(sig)
-        return sig
-
         return sig
 
     train_data = train_data.map(lambda wav, start, stop: audio_pipeline(wav, start, stop),
@@ -290,7 +284,7 @@ def compute_embeddings(embedder, dataloader, startidx=0, dur=50000, exc_set=None
     return utt2emb
 
 
-if __name__ == "__main__":
+def generate_eval_data():
     if not os.path.exists(hparams.eval_save_folder):
         os.makedirs(hparams.eval_save_folder)
     # Download verification list (to exlude verification sentences from train)
@@ -339,6 +333,8 @@ if __name__ == "__main__":
                 continue
             fpOut.write(line)
 
+
+def eval_impl():
     in_channels = hparams.in_channels
     channels = hparams.channels
     emb_size = hparams.emb_size
@@ -420,3 +416,8 @@ if __name__ == "__main__":
 
         eer = EER(np.array(pos_score), np.array(neg_score))
         print("EER with norm:", eer)
+
+
+if __name__ == "__main__":
+    generate_eval_data()
+    eval_impl()

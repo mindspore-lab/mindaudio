@@ -91,14 +91,6 @@ def dataio_prep():
 
     train_data = train_data.project(columns=["sig", "spk_id_encoded"])
 
-    # valid_data = valid_data.map(operations=[audio_pipeline], input_columns=["wav", "start", "stop", "duration"],
-    #                             output_columns=["sig"])
-    #
-    # valid_data = valid_data.map(operations=[label_pipeline],
-    #                             output_columns=["spk_id_encoded"])
-    #
-    # valid_data = valid_data.project(columns=["sig", "spk_id_encoded"])
-
     return train_data, valid_data
 
 
@@ -426,7 +418,7 @@ def train():
     train_net(hparams.rank, model_constructed, num_epochs, ds_train, ckpoint_cb, steps_per_epoch_train, minibatch_size)
 
 
-if __name__ == "__main__":
+def generate_train_data():
     if not os.path.exists(os.path.join(hparams.save_folder)):
         os.makedirs(os.path.join(hparams.save_folder), exist_ok=False)
 
@@ -533,7 +525,11 @@ if __name__ == "__main__":
         batch_count += 1
         print("process ...", float(batch_count) / batch_counts)
 
-    datasetPath = hparams.feat_folder
-    dataSavePath = hparams.feat_folder_merge
-    data_trans_dp(datasetPath, dataSavePath)
+    dataset_path = hparams.feat_folder
+    save_path = hparams.feat_folder_merge
+    data_trans_dp(dataset_path, save_path)
+
+
+if __name__ == "__main__":
+    generate_train_data()
     train()
