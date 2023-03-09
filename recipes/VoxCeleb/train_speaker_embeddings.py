@@ -476,7 +476,7 @@ def generate_train_data():
                            noise_prob=1.0,
                            noise_snr_low=0,
                            noise_snr_high=15)
-    spec_aug = [spec_aug1, spec_aug2, spec_aug3, spec_aug4, spec_aug5]
+    spec_aug = [spec_aug3, spec_aug4]
 
     for batch in tqdm(iterator):
         wavs = batch["sig"].astype(ms.float32)
