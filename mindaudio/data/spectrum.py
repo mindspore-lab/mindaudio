@@ -60,7 +60,7 @@ def amplitude_to_dB(wavform, stype="power", ref=1.0, amin=1e-10, top_db=80.0):
         >>> waveforms = np.random.random([1, 400 // 2 + 1, 30])
         >>> out = spectrum.amplitude_to_dB(waveforms)
     """
-    if np.issubdtype(S.dtype, np.complexfloating):
+    if np.issubdtype(wavform.dtype, np.complexfloating):
         raise UserWarning(
             "amplitude_to_db was called on complex input so phase "
             "information will be discarded. To suppress this warning, "

@@ -1,4 +1,6 @@
 <div align="center">
+
+
 # MindAudio
 
 [![CI](https://github.com/mindspore-lab/mindcv/actions/workflows/ci.yml/badge.svg)](https://github.com/mindspore-lab/mindcv/actions/workflows/ci.yml)
@@ -11,27 +13,28 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 
-English | [中文](README_CN.md)
+[English](README.md) | 中文
 
-[Introduction](#introduction) |
-[Installation](#installation) |
-[Get Started](#get-started) |
-[Model List](#model-list) |
-[Notes](#日志)
+[简介](#简介) |
+[安装](#安装) |
+[快速入门](#快速入门) |
+[任务列表](#任务列表) |
+[日志](#日志)
 
 </div>
 
 ## Introduction
 
-MindAudio is a MindAudio is an open source all-in-one toolkit for the voice field, witch based on the whole scene AI frame: [MindSpore](https://www.mindspore.cn/). MindAudio provides a series of API for common audio data processing, audio feature extraction and audio data enhancement in the field of speech, so that users can preprocess data conveniently. Provides common data sets and SoTA models to support multiple speech processing tasks such as speech recognition, text-to-speech generation, voice print recognition, speech separation, etc.
+MindAudio is an open source all-in-one toolkit for the voice field, witch based on the whole scene AI frame: [MindSpore](https://www.mindspore.cn/). MindAudio provides a series of API for common audio data processing, audio feature extraction and audio data enhancement in the field of speech, so that users can preprocess data conveniently. Provides common data sets and SoTA models to support multiple speech processing tasks such as speech recognition, text-to-speech generation, voice print recognition, speech separation, etc.
 
 <details open>
 <summary> Major Features </summary>
 
 
+
 - **Bulk data handling API.**
 
-   MindAudio provides a large number of easy-to-use data processing API, users can easily achieve audio data analysis, as well as audio algorithm tasks in the data feature extraction and enhancement.
+  MindAudio provides a large number of easy-to-use data processing API, users can easily achieve audio data analysis, as well as audio algorithm tasks in the data feature extraction and enhancement.
 
 ```python
 >>> import mindaudio
@@ -59,7 +62,7 @@ MindAudio is a MindAudio is an open source all-in-one toolkit for the voice fiel
 
 - **Flexibility and efficiency.**
 
-   MindAudio is built on MindSpore which is an efficent DL framework that can be run on different hardware platforms (GPU/CPU/Ascend). It supports both graph mode for high efficiency and pynative mode for flexibility.
+  MindAudio is built on MindSpore which is an efficent DL framework that can be run on different hardware platforms (GPU/CPU/Ascend). It supports both graph mode for high efficiency and pynative mode for flexibility.
 
 ## Installation
 

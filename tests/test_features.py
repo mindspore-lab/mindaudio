@@ -63,5 +63,6 @@ if __name__ == "__main__":
     test = TestOperators()
     test.setup_method()
     test.test_harmonic()
+    test.test_mfcc()
 
 

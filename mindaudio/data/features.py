@@ -198,7 +198,7 @@ def fbank(waveforms, deltas=False, context=False, n_mels=40, n_fft=400, sample_r
 
     melspcgram = melspectrogram(waveforms, n_fft=n_fft, win_length=win_length, hop_length=hop_length, window=window,
                                 n_mels=n_mels, sample_rate=sample_rate, f_min=f_min, f_max=f_max)
-    fbanks = amplitude_to_dB(S=melspcgram, stype="power", ref=1.0, top_db=80.0)
+    fbanks = amplitude_to_dB(wavform=melspcgram, stype="power", ref=1.0, top_db=80.0)
     if deltas:
         delta1 = compute_deltas(fbanks)
         delta2 = compute_deltas(delta1)

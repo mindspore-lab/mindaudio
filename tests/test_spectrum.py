@@ -63,3 +63,4 @@ if __name__ == "__main__":
     test = TestOperators()
     test.setup_method()
     test.test_istft()
+    test.test_dB_to_amplitude()
