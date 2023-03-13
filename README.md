@@ -7,15 +7,15 @@ MindSpore Audio is an open source audio research toolbox based on MindSpore in a
 ## Getting Started
 
 ### [Conformer](/examples/conformer/)
-### [DeepSpeech2](/examples/deepspeech2/)
-### [Tacotron2](/examples/tacotron2/)
+### [DeepSpeech2](/recipes/LibriSpeech/)
+### [WaveGrad](/recipes/LJSpeech/tts/wavegrad)
+### [FastSpeech2](/recipes/LJSpeech/tts/fastspeech2)
 
 ## API
 
 ### [mindaudio.data](/mindaudio/data)
 ### [mindaudio.models](/mindaudio/models)
-### [mindaudio.utils](/mindaudio/utils)
-### [mindaudio.adapter](/mindaudio/adapter)
+### [mindaudio.callbacks](/mindaudio/callbacks)
 
 ## Installation
 
@@ -34,6 +34,8 @@ pip install -r requirements.txt
 git clone https://github.com/mindlab-ai/mindaudio.git
 cd mindaudio
 python setup.py install
+# or
+pip install .
 ```
 
 or

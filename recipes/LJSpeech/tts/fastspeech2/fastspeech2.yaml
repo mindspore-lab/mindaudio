@@ -32,7 +32,7 @@ energy:
 
 data_path: 'data/LJSpeech-1.1'
 manifest_path: 'data/ljspeech_manifest.csv'
-lexicon_path: 'data/librispeech-lexicon.txt'
+lexicon_path: 'recipes/text/librispeech-lexicon.txt'
 
 # Model params
 model:
