@@ -4,8 +4,6 @@ MindSpore implementation of [FastSpeech2](https://arxiv.org/abs/2006.04558), a t
 
 ## Demo
 
-[sample](results/1000000_predicted_fs_1000.wav) Transcript: "This is a MindSpore implementation of the FastSpeech2 model, a diffusion based vocoder model for text to speech systems. Many thanks to Open I for computational resources!"):
-
 ## **Dependencies**
 
 1. `pip install -r requirements.txt`
@@ -20,26 +18,25 @@ MindSpore implementation of [FastSpeech2](https://arxiv.org/abs/2006.04558), a t
 
 | Model | Dataset | Checkpoint | Total Batch Size | Num Mels | Hardware | MindSpore Version |
 | -----| ----- | -----| -----| -----| -----| -----|
-| FastSpeech2 (base) | LJSpeech-1.1 | [160k
-steps](https://download.mindspore.cn/toolkits/mindaudio/fastspeech2/fastspeech2_160k_en_mel128.ckpt) | 32 | 128 | 1 $\times$ Ascend | 1.9.0 |
+| FastSpeech2 (base) | LJSpeech-1.1 | [160k steps](https://download.mindspore.cn/toolkits/mindaudio/fastspeech2/fastspeech2_160k_en_mel128.ckpt) | 32 | 128 | 1 $\times$ Ascend | 1.9.0 |
 | FastSpeech2 (base) | AiShell | [TODO]() | 32 | 128 | 1 $\times$ Ascend | 1.9.0 |
 
 ## Train your own model
 
 ### Step 0 (Data)
 
-#### 0.0
+#### 0.0 Download
 
 Download [LJSpeech-1.1](http://keithito.com/LJ-Speech-Dataset/) to `./data/`.
 Download [Montreal Forced Aligner](https://montreal-forced-aligner.readthedocs.io/en/latest/)
 
-#### 0.1
+#### 0.1 Align
 
 Download provided MFA alignments from [here](https://drive.google.com/drive/folders/1DBRkALpPd6FL9gjHMmMEdHODmkgNIIK4?usp=sharing).
 
 Put the `TextGrid` to be under your path given in `data_path` in `fastspeech2.yaml`.
 
-#### 0.2
+#### 0.2 Preprocess
 
 Preprocess data to get a "_wav.npy" and "_feature.npy" for each ".wav" file in your dataset folder. Set your `data_path` and 
 `manifest_path` in `fastspeech2.yaml`. You can now run the following command:
