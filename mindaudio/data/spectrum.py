@@ -22,10 +22,11 @@ __all__ = [
     'resynthesize'
 ]
 
-#Max block sizes to 256 KB
+#Define max block sizes(256 KB)
 MAX_MEM_BLOCK = 2**8 * 2**10
 
-def amplitude_to_dB(S, stype="power", ref=1.0, amin=1e-10, top_db=80.0):
+
+def amplitude_to_dB(wavform, stype="power", ref=1.0, amin=1e-10, top_db=80.0):
     """
     Turn a spectrogram from the amplitude/power scale to decibel scale.
 
@@ -33,7 +34,7 @@ def amplitude_to_dB(S, stype="power", ref=1.0, amin=1e-10, top_db=80.0):
         The dimension of the input spectrogram to be processed should be (..., freq, time).
 
     Args:
-        S (np.ndarray): A power/amplitude spectrogram.
+        wavform (np.ndarray): A power/amplitude spectrogram.
         stype (str, optional): Scale of the input spectrogram, which can be
             'power' or 'magnitude'. Default: 'power'.
         ref (float, callable, optional): Multiplier reference value for generating
@@ -65,9 +66,9 @@ def amplitude_to_dB(S, stype="power", ref=1.0, amin=1e-10, top_db=80.0):
             "information will be discarded. To suppress this warning, "
             "call amplitude_to_db(np.abs(D)**2) instead."
         )
-        magnitude = np.abs(S)
+        magnitude = np.abs(wavform)
     else:
-        magnitude = S
+        magnitude = wavform
 
     if callable(ref):
         ref_value = ref(magnitude)
@@ -93,12 +94,12 @@ def amplitude_to_dB(S, stype="power", ref=1.0, amin=1e-10, top_db=80.0):
     return specgram_db
 
 
-def dB_to_amplitude(S, ref, power):
+def dB_to_amplitude(wavform, ref, power):
     """
         Turn a dB-scaled spectrogram to the power/amplitude scale.
 
         Args:
-            S (np.ndarray): A dB-scaled spectrogram.
+            wavform (np.ndarray): A dB-scaled spectrogram.
             ref (float, callable): Reference which the output will be scaled by. Can be set to be np.max.
             power (float): If power equals 1, will compute DB to power. If 0.5, will compute DB to amplitude.
 
@@ -109,11 +110,11 @@ def dB_to_amplitude(S, ref, power):
             >>> out = spectrum.dB_to_amplitude(specgram, 0.5, 0.5)
     """
     if callable(ref):
-        ref_value = ref(S)
+        ref_value = ref(wavform)
     else:
         ref_value = np.abs(ref)
 
-    return ref_value * np.power(np.power(10.0, 0.1 * S), power)
+    return ref_value * np.power(np.power(10.0, 0.1 * wavform), power)
 
 
 def _expand_to(x, ndim, axes):
@@ -702,7 +703,7 @@ def resynthesize(enhanced_mag, noisy_inputs, normalize_wavs=True):
         >>> enhanced_wav = spectrum.resynthesize(mag, waveform1, normalize_wavs=False)
     """
 
-    # Extract noisy phase from inputs
+    #To extract phase of input noisy
     noisy_feats = stft(noisy_inputs, return_complex=False)
     noisy_phase = np.arctan2(noisy_feats[:, :, 1], noisy_feats[:, :, 0])
 
@@ -713,15 +714,13 @@ def resynthesize(enhanced_mag, noisy_inputs, normalize_wavs=True):
             ],
             axis=-1,
         )
-    # Combine with enhanced magnitude
-    #complex_predictions = np.dot(
+    # using enhanced magnitude to combine data
     complex_predictions = np.expand_dims(enhanced_mag, -1) * pre_stack
     result = complex_predictions[:, :, 0] + 1j * complex_predictions[:, :, 1]
 
     pred_wavs = istft(result)
 
-
-    # Normalize. Since we're using peak amplitudes, ignore lengths
+    # peaked amplitudes, ignore lengths, need to normalize.
     if normalize_wavs:
         from .processing import normalize
         pred_wavs = normalize(pred_wavs, norm="max")
