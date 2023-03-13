@@ -22,11 +22,11 @@ MindSpore implementation of [WaveGrad](https://arxiv.org/abs/2009.00713), a diff
 
 From wav files:
 
-`python reverse.py --restore model_1000000.ckpt --wav LJ010-0142.wav --save results --device_target Ascend --device_id 0 --plot`
+`python recipes/LJSpeech/tts/wavegrad/reverse.py --restore model_1000000.ckpt --wav LJ010-0142.wav --save results --device_target Ascend --device_id 0 --plot`
 
 From melspectrograms:
 
-`python reverse.py --restore model_1000000.ckpt --mel fs.npy --save results --device_target Ascend --device_id 0 --plot`
+`python recipes/LJSpeech/tts/wavegrad/reverse.py --restore model_1000000.ckpt --mel fs.npy --save results --device_target Ascend --device_id 0 --plot`
 
 ## Pretrained Models
 
@@ -34,8 +34,6 @@ From melspectrograms:
 | -----| ----- | -----| -----| -----| -----| -----| -----|
 | WaveGrad (base) | LJSpeech-1.1 | [1M steps](https://download.mindspore.cn/toolkits/mindaudio/wavegrad/model_1000000_v190.ckpt) | 256 | 30 | 128 | 8 $\times$ Ascend | 1.9.0 |
 | WaveGrad (base) | AiShell | [TODO]() | 256 | 30 | 128 | 8 $\times$ Ascend | 1.9.0 |
-
-For FastSpeech2 model, we skipped the audio preprocess part and directly used this repo's preprocessed melspectrograms.
 
 ## Train your own model
 
@@ -48,9 +46,9 @@ Download [LJSpeech-1.1](http://keithito.com/LJ-Speech-Dataset/) to `./data/`.
 #### 0.1
 
 Preprocess data to get a "_wav.npy" and "_feature.npy" for each ".wav" file in your dataset folder. Set your `data_path` and 
-`manifest_path` in `base.yaml`. You can now run the following command:
+`manifest_path` in `wavegrad_base.yaml`. You can now run the following command:
 
-`python preprocess.py --device_target CPU --device_id 0`
+`python recipes/LJSpeech/tts/wavegrad/preprocess.py --device_target CPU --device_id 0`
 
 ### Step 1 (Train)
 
@@ -66,7 +64,7 @@ Other training and model parameters can be set in `base.yaml`.
 
 Train on multiple cards: (each card will have a batch size of hparams.batch_size // MY_DEVICE_NUM)
 ```
-nohup mpirun --allow-run-as-root -n $MY_DEVICE_NUM python train.py --device_target $MY_DEVICE --is_distributed True --context_mode graph > train_distributed.log &
+nohup mpirun --allow-run-as-root -n $MY_DEVICE_NUM python recipes/LJSpeech/tts/wavegrad/train.py --device_target $MY_DEVICE --is_distributed True --context_mode graph > train_distributed.log &
 ```
 
 Train on 1 card:
