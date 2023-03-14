@@ -49,18 +49,15 @@ class MaskConv(nn.Cell):
     def __init__(self):
         super(MaskConv, self).__init__()
         self.zeros = ops.ZerosLike()
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=(41, 11), stride=(2, 2), pad_mode='pad', padding=(20, 20, 5, 5))
+        self.bn1 = nn.BatchNorm2d(num_features=32)
+        self.conv2 = nn.Conv2d(32, 32, kernel_size=(21, 11), stride=(2, 1), pad_mode='pad', padding=(10, 10, 5, 5))
+        self.bn2 = nn.BatchNorm2d(num_features=32)
+        self.tanh = nn.Tanh()
         self._initialize_weights()
-        self.module_list = nn.CellList([
-            nn.Conv2d(1, 32, kernel_size=(41, 11), stride=(2, 2), pad_mode='pad', padding=(20, 20, 5, 5)),
-            nn.BatchNorm2d(num_features=32),
-            nn.Tanh(),
-            nn.Conv2d(32, 32, kernel_size=(21, 11), stride=(2, 1), pad_mode='pad', padding=(10, 10, 5, 5)),
-            nn.BatchNorm2d(num_features=32),
-            nn.Tanh()
-        ])
+        self.module_list = nn.CellList([self.conv1, self.bn1, self.tanh, self.conv2, self.bn2, self.tanh])
 
     def construct(self, x, lengths):
-
         for module in self.module_list:
             x = module(x)
         return x
@@ -99,7 +96,7 @@ class BatchRNN(nn.Cell):
     """
 
     def __init__(self, batch_size, input_size, hidden_size, num_layers, bidirectional=False, batch_norm=False,
-                 rnn_type='LSTM', device_target="GPU"):
+                 rnn_type='LSTM'):
         super(BatchRNN, self).__init__()
         self.batch_size = batch_size
         self.input_size = input_size
@@ -157,7 +154,7 @@ class DeepSpeechModel(nn.Cell):
     """
 
     def __init__(self, batch_size, labels, rnn_hidden_size, nb_layers, audio_conf, rnn_type='LSTM',
-                 bidirectional=True, device_target='GPU'):
+                 bidirectional=True):
         super(DeepSpeechModel, self).__init__()
         self.batch_size = batch_size
         self.hidden_size = rnn_hidden_size
@@ -188,7 +185,7 @@ class DeepSpeechModel(nn.Cell):
 
         self.RNN = BatchRNN(batch_size=self.batch_size, input_size=rnn_input_size, num_layers=nb_layers,
                             hidden_size=rnn_hidden_size, bidirectional=bidirectional, batch_norm=False,
-                            rnn_type=self.rnn_type, device_target=device_target)
+                            rnn_type=self.rnn_type)
         fully_connected = nn.Dense(rnn_hidden_size, num_classes, has_bias=False)
         self.fc = SequenceWise(fully_connected)
 

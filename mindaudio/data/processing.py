@@ -15,6 +15,7 @@ __all__ = [
     'stereo_to_mono',
     'trim',
     'split',
+    'sliding_window_cmn',
     'invert_channels',
     'loop',
     'clip',

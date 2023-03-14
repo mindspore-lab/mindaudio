@@ -10,6 +10,7 @@ from mindspore import nn
 from mindspore import context
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
 import mindspore.ops as ops
+import mindspore.common.dtype as mstype
 
 from mindaudio.models.deepspeech2 import DeepSpeechModel
 from mindaudio.models.decoders.greedydecoder import MSGreedyDecoder
