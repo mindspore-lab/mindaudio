@@ -39,5 +39,13 @@ CheckpointConfig:
     ckpt_path: './checkpoint'
     keep_checkpoint_max: 10
 
+save_output: 'librispeech_val_output'
+
+verbose: True
+
+EvalDataConfig:
+    test_manifest: './eval/libri_test_clean_manifest.json'
+    batch_size: 20
+
 labels: ["'", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
          "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", " ", "_"]

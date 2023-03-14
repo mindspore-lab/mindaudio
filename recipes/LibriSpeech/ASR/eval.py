@@ -41,7 +41,7 @@ if __name__ == '__main__':
 
     labels = args.labels
 
-    model = PredictWithSoftmax(DeepSpeechModel(batch_size=args.DataConfig.batch_size,
+    model = PredictWithSoftmax(DeepSpeechModel(batch_size=args.EvalDataConfig.batch_size,
                                                rnn_hidden_size=args.ModelConfig.hidden_size,
                                                nb_layers=args.ModelConfig.hidden_layers,
                                                labels=labels,
@@ -49,9 +49,9 @@ if __name__ == '__main__':
                                                audio_conf=args.DataConfig.SpectConfig,
                                                bidirectional=args.bidirectional))
 
-    ds_eval = create_base_dataset(manifest_filepath=args.DataConfig.train_manifest,
+    ds_eval = create_base_dataset(manifest_filepath=args.EvalDataConfig.test_manifest,
                                    labels=args.labels, rank=rank_id, group_size=group_size)
-    ds_eval = eval_data_pipeline(ds_eval, batch_size=args.DataConfig.batch_size,
+    ds_eval = eval_data_pipeline(ds_eval, batch_size=args.EvalDataConfig.batch_size,
                                    audio_conf=args.DataConfig.SpectConfig)
 
     param_dict = load_checkpoint(args.pretrain_ckpt)
