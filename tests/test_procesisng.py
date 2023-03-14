@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import sys
+import mindspore
 sys.path.append('.')
 import mindaudio.data.io as io
 import mindaudio.data.processing as processing
@@ -126,6 +127,11 @@ def test_insert_in_background():
     out_waveform4 = processing.insert_in_background(waveform4, offset_factor, background_audio4)
     print(out_waveform4)
 
+def test_overlap_add():
+    np_signal = np.random.randn(3, 3, 40)
+    ma_signal = mindspore.Tensor(np_signal, mindspore.float32)
+    overlapped = processing.overlap_and_add(ma_signal, 40)
+
 
 if __name__ == "__main__":
     test_normalize()
@@ -140,3 +146,4 @@ if __name__ == "__main__":
     test_loop()
     test_clip()
     test_insert_in_background()
+    test_overlap_add()

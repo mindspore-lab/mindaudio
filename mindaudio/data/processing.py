@@ -1,7 +1,9 @@
 import numbers
 import numpy as np
 import scipy
+import math
 import mindspore as ms
+from mindspore import Tensor, Parameter, ops
 from mindspore.dataset.audio import ResampleMethod
 import mindspore.dataset.audio as msaudio
 from .spectrum import dB_to_amplitude, amplitude_to_dB, compute_amplitude, frame
