@@ -1,9 +1,8 @@
 """
 modify GreedyDecoder to adapt to MindSpore
 """
-import sys
-sys.path.append('.')
-# import Levenshtein as Lev
+
+import Levenshtein as Lev
 from six.moves import xrange
 import mindspore.ops as ops
 
