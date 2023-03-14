@@ -6,8 +6,10 @@ import json
 import pickle
 import numpy as np
 import os
+from mindspore import nn
 from mindspore import context
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
+import mindspore.ops as ops
 
 from mindaudio.models.deepspeech2 import DeepSpeechModel
 from mindaudio.models.decoders.greedydecoder import MSGreedyDecoder
@@ -23,9 +25,9 @@ class PredictWithSoftmax(nn.Cell):
     def __init__(self, network):
         super(PredictWithSoftmax, self).__init__(auto_prefix=False)
         self.network = network
-        self.inference_softmax = P.Softmax(axis=-1)
-        self.transpose_op = P.Transpose()
-        self.cast_op = P.Cast()
+        self.inference_softmax = ops.Softmax(axis=-1)
+        self.transpose_op = ops.Transpose()
+        self.cast_op = ops.Cast()
 
     def construct(self, inputs, input_length):
         x, output_sizes = self.network(inputs, self.cast_op(input_length, mstype.int32))
@@ -35,6 +37,8 @@ class PredictWithSoftmax(nn.Cell):
 
 
 if __name__ == '__main__':
+    rank_id = 0
+    group_size = 1
     args = parse_args()
     context.set_context(device_id=args.device_id,mode=context.GRAPH_MODE,
                         device_target=args.device_target, save_graphs=False)
@@ -49,17 +53,17 @@ if __name__ == '__main__':
                                                audio_conf=args.DataConfig.SpectConfig,
                                                bidirectional=args.bidirectional))
 
-    ds_eval = create_base_dataset(manifest_filepath=args.EvalDataConfig.test_manifest,
+    ds_eval = create_base_dataset(manifest_path=args.EvalDataConfig.test_manifest,
                                    labels=args.labels, rank=rank_id, group_size=group_size)
     ds_eval = eval_data_pipeline(ds_eval, batch_size=args.EvalDataConfig.batch_size,
                                    audio_conf=args.DataConfig.SpectConfig)
 
-    param_dict = load_checkpoint(args.pretrain_ckpt)
+    param_dict = load_checkpoint(args.Pretrained_ckpt)
     load_param_into_net(model, param_dict)
     # load_param_into_net(model, param_dict)
     print('Successfully loading the pre-trained model')
 
-    if args.LMConfig.decoder_type == 'greedy':
+    if args.Decoder_type == 'greedy':
         decoder = MSGreedyDecoder(labels=labels, blank_index=labels.index('_'))
     else:
         raise NotImplementedError("Only greedy decoder is supported now")

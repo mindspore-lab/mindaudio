@@ -6,7 +6,6 @@ import wget
 import shutil
 import json
 import numpy as np
-from  multiprocessing import cpu_count
 
 
 LIBRI_SPEECH_URLS = {
@@ -20,12 +19,6 @@ LIBRI_SPEECH_URLS = {
     "test_clean": ["http://www.openslr.org/resources/12/test-clean.tar.gz"],
     "test_other": ["http://www.openslr.org/resources/12/test-other.tar.gz"]
 }
-
-
-TRAIN_INPUT_PAD_LENGTH = 1600
-TRAIN_LABEL_PAD_LENGTH = 500
-TEST_INPUT_PAD_LENGTH = 4000
-BLANK_ID = 28
 
 
 def _download_data(root):

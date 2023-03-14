@@ -25,11 +25,11 @@ ModelConfig:
     lookahead_context: 20
 
 OptimConfig:
-    learning_rate: 3e-4
+    learning_rate: 0.0003
     learning_anneal: 1.1
-    weight_decay: 1e-5
+    weight_decay: 0.00001
     momentum: 0.9
-    eps: 1e-8
+    eps: 0.000000001
     betas: (0.9, 0.999)
     loss_scale: 1024
     epsilon: 0.00001
@@ -38,6 +38,10 @@ CheckpointConfig:
     ckpt_file_name_prefix: 'DeepSpeech'
     ckpt_path: './checkpoint'
     keep_checkpoint_max: 10
+
+Pretrained_ckpt: './ckpt'
+
+Decoder_type: 'greedy'
 
 save_output: 'librispeech_val_output'
 

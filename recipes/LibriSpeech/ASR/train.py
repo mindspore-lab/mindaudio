@@ -45,7 +45,7 @@ class NetWithLossClass(nn.Cell):
 
 
 def train(args):
-    ds_train = create_base_dataset(manifest_filepath=args.DataConfig.train_manifest,
+    ds_train = create_base_dataset(manifest_path=args.DataConfig.train_manifest,
                                    labels=args.labels, rank=rank_id, group_size=group_size)
     ds_train = train_data_pipeline(ds_train, batch_size=args.DataConfig.batch_size,
                                    audio_conf=args.DataConfig.SpectConfig)

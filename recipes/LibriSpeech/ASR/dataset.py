@@ -1,10 +1,20 @@
+import json
+import os
+import numpy as np
+from multiprocessing import cpu_count
 import mindspore.dataset.engine as de
 import mindaudio
 from mindaudio.utils.distributed import DistributedSampler
 
 
+TRAIN_INPUT_PAD_LENGTH = 1600
+TRAIN_LABEL_PAD_LENGTH = 500
+TEST_INPUT_PAD_LENGTH = 4000
+BLANK_ID = 28
+
+
 class AudioTextBaseDataset():
-    def __int__(self, manifest_path="", labels=None):
+    def __init__(self, manifest_path='', labels=None):
         self.bins = []
         self.manifest_path = manifest_path
         self.labels = {labels[i]: i for i in range(len(labels))}
@@ -119,7 +129,7 @@ def get_feature(audio, sample_rate, window_size, window_stride):
 def train_data_pipeline(dataset, batch_size, audio_conf):
     ds = dataset.map(lambda x: get_feature(x, audio_conf.sample_rate, audio_conf.window_size, audio_conf.window_stride),
                      input_columns=["audio"],
-                     num_parallel_wokers=cpu_count())
+                     num_parallel_workers=cpu_count())
 
     ds = ds.batch(batch_size,
                   per_batch_map=pad_txt_wav_train,
@@ -131,7 +141,7 @@ def train_data_pipeline(dataset, batch_size, audio_conf):
 def eval_data_pipeline(dataset, batch_size, audio_conf):
     ds = dataset.map(lambda x: get_feature(x, audio_conf.sample_rate, audio_conf.window_size, audio_conf.window_stride),
                      input_columns=["audio"],
-                     num_parallel_wokers=cpu_count())
+                     num_parallel_workers=cpu_count())
 
     ds = ds.batch(batch_size,
                   per_batch_map=pad_txt_wav_eval,
