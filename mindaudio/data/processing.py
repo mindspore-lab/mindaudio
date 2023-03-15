@@ -1,10 +1,12 @@
 import numbers
 import numpy as np
 import scipy
+import math
 import mindspore as ms
+from mindspore import Tensor, Parameter, ops
 from mindspore.dataset.audio import ResampleMethod
 import mindspore.dataset.audio as msaudio
-from .spectrum import dB_to_amplitude, amplitude_to_dB, compute_amplitude
+from .spectrum import dB_to_amplitude, amplitude_to_dB, compute_amplitude, frame
 
 
 __all__ = [
@@ -15,6 +17,7 @@ __all__ = [
     'stereo_to_mono',
     'trim',
     'split',
+    'sliding_window_cmn',
     'invert_channels',
     'loop',
     'clip',
@@ -23,83 +26,26 @@ __all__ = [
 ]
 
 
-def frame(x, frame_length=2048, hop_length=64):
-    """
-    Generate series of frames of the input signal.
-
-    Args:
-        x (np.ndarray, Tensor): Input audio signal.
-        frame_length (int): The length as to form a group.
-        hop_length (int): The hopping length.
-
-    Returns:
-        np.ndarray or Tensor, framed signals.
-    """
-    # x = np.array(x, copy=False)
-
-    if hop_length < 1:
-        raise ValueError("Invalid hop_length: {:d}".format(hop_length))
-
-    num_frame = (x.shape[-1] - frame_length) // hop_length + 1
-    x_frames = np.zeros(x.shape[:-1] + (frame_length, num_frame))
-    if isinstance(x, ms.Tensor):
-        x_frames = ms.Tensor(x_frames)
-    for i in range(frame_length):
-        x_frames[..., i, :] = x[..., i:i + num_frame * hop_length][..., ::hop_length]
-    return x_frames
-
 def normalize(waveforms, norm="max", axis=0):
     """Normalize an array along a specified axis.
 
     Args:
         waveforms (np.ndarray): An audio signal to normalize
-        norm (Union['min', 'max', 'mean', 'mean_std', 'l0', 'l1', 'l2']): Normalization type, here "max" means l-infinity norm,
-                                                                          "mean_std" refers to the mean standard deviation norm
+        norm (Union['min', 'max', 'mean', 'mean_std', 'l0', 'l1', 'l2']): Normalization type,
+        here "max" means l-infinity norm, "mean_std" refers to the mean standard deviation norm
         axis (int): Axis along which to compute the norm
 
     Raises:
         TypeError: If the normalization type is not supported
 
-    Supported Platforms:
-       "GPU"
-
     Returns:
         np.ndarray, normalized array.
 
     Examples:
-        >>> # Construct an example matrix
         >>> waveforms = np.vander(np.arange(-2, 2))
-        >>> # Max (L-Infinity)-normalize the rows
         >>> normalize(waveforms, axis=1)
-        array([[-1.   ,  0.5  , -0.25 ,  0.125],
-               [-1.   ,  1.   , -1.   ,  1.   ],
-               [ 0.   ,  0.   ,  0.   ,  1.   ],
-               [ 1.   ,  1.   ,  1.   ,  1.   ]])
-        >>> # Min-normalize the columns
         >>> normalize(waveforms, norm="min")
-        array([[-8.   ,  4.   , -2.   ,  1.   ],
-               [-1.   ,  1.   , -1.   ,  1.   ],
-               [ 0.   ,  0.   ,  0.   ,  1.   ],
-               [ 1.   ,  1.   ,  1.   ,  1.   ]])
-        >>> # l0-normalize the columns
         >>> normalize(waveforms, norm="l0")
-        array([[-2.667,  1.333, -0.667,  0.25 ],
-               [-0.333,  0.333, -0.333,  0.25 ],
-               [ 0.   ,  0.   ,  0.   ,  0.25 ],
-               [ 0.333,  0.333,  0.333,  0.25 ]])
-        >>> # l1-normalize the columns
-        >>> normalize(waveforms, norm="l1")
-        array([[-0.8  ,  0.667, -0.5  ,  0.25 ],
-               [-0.1  ,  0.167, -0.25 ,  0.25 ],
-               [ 0.   ,  0.   ,  0.   ,  0.25 ],
-               [ 0.1  ,  0.167,  0.25 ,  0.25 ]])
-        >>> # l2-normalize the columns
-        >>> normalize(waveforms, norm="l2")
-         array([[-0.985,  0.943, -0.816,  0.5  ],
-                [-0.123,  0.236, -0.408,  0.5  ],
-                [ 0.   ,  0.   ,  0.   ,  0.5  ],
-                [ 0.123,  0.236,  0.408,  0.5  ]])
-
     """
 
     # get the smallest normal as the threshold
@@ -140,14 +86,12 @@ def normalize(waveforms, norm="max", axis=0):
     else:
         raise TypeError("Unsupported norm type {}".format(repr(norm)))
 
-    # indices where scale is below the threshold
+    x_norm = np.empty_like(waveforms)
     idx = scale < threshold
-    Xnorm = np.empty_like(waveforms)
-    # leave small indices un-normalized
     scale[idx] = 1.0
-    Xnorm[:] = waveforms / scale
+    x_norm[:] = waveforms / scale
 
-    return Xnorm
+    return x_norm
 
 
 def unitarize(waveforms, lengths=None, amp_type="avg", eps=1e-14):
@@ -229,103 +173,6 @@ def resample(waveform, orig_freq=16000, new_freq=16000, res_type="fft",
         return resample_function(waveform)
 
 
-def resamplev2(y, orig_sr, target_sr, fix=True, scale=False, axis=-1):
-    """Resample a time series from orig_sr to target_sr
-    By default, this uses a high-quality method (`soxr_hq`) for band-limited sinc
-    interpolation. The alternate ``res_type`` values listed below offer different
-    trade-offs of speed and quality.
-    Parameters
-    ----------
-    y : np.ndarray [shape=(..., n, ...)]
-        audio time series, with `n` samples along the specified axis.
-    orig_sr : number > 0 [scalar]
-        original sampling rate of ``y``
-    target_sr : number > 0 [scalar]
-        target sampling rate
-    res_type : str (default: `soxr_hq`)
-        resample type
-        'soxr_vhq', 'soxr_hq', 'soxr_mq' or 'soxr_lq'
-            `soxr` Very high-, High-, Medium-, Low-quality FFT-based bandlimited interpolation.
-            ``'soxr_hq'`` is the default setting of `soxr`.
-        'soxr_qq'
-            `soxr` Quick cubic interpolation (very fast, but not bandlimited)
-        'kaiser_best'
-            `resampy` high-quality mode
-        'kaiser_fast'
-            `resampy` faster method
-        'fft' or 'scipy'
-            `scipy.signal.resample` Fourier method.
-        'polyphase'
-            `scipy.signal.resample_poly` polyphase filtering. (fast)
-        'linear'
-            `samplerate` linear interpolation. (very fast, but not bandlimited)
-        'zero_order_hold'
-            `samplerate` repeat the last value between samples. (very fast, but not bandlimited)
-        'sinc_best', 'sinc_medium' or 'sinc_fastest'
-            `samplerate` high-, medium-, and low-quality bandlimited sinc interpolation.
-        .. note::
-            Not all options yield a bandlimited interpolator. If you use `soxr_qq`, `polyphase`,
-            `linear`, or `zero_order_hold`, you need to be aware of possible aliasing effects.
-        .. note::
-            `samplerate` and `resampy` are not installed with `librosa`.
-            To use `samplerate` or `resampy`, they should be installed manually::
-                $ pip install samplerate
-                $ pip install resampy
-        .. note::
-            When using ``res_type='polyphase'``, only integer sampling rates are
-            supported.
-    fix : bool
-        adjust the length of the resampled signal to be of size exactly
-        ``ceil(target_sr * len(y) / orig_sr)``
-    scale : bool
-        Scale the resampled signal so that ``y`` and ``y_hat`` have approximately
-        equal total energy.
-    axis : int
-        The target axis along which to resample.  Defaults to the trailing axis.
-    **kwargs : additional keyword arguments
-        If ``fix==True``, additional keyword arguments to pass to
-        `librosa.util.fix_length`.
-    Returns
-    -------
-    y_hat : np.ndarray [shape=(..., n * target_sr / orig_sr, ...)]
-        ``y`` resampled from ``orig_sr`` to ``target_sr`` along the target axis
-    Raises
-    ------
-    ParameterError
-        If ``res_type='polyphase'`` and ``orig_sr`` or ``target_sr`` are not both
-        integer-valued.
-    See Also
-    --------
-    librosa.util.fix_length
-    scipy.signal.resample
-    resampy
-    samplerate.converters.resample
-    soxr.resample
-    Notes
-    -----
-    This function caches at level 20.
-    Examples
-    --------
-    Downsample from 22 KHz to 8 KHz
-    >>> y, sr = librosa.load(librosa.ex('trumpet'), sr=22050)
-    >>> y_8k = librosa.resample(y, orig_sr=sr, target_sr=8000)
-    >>> y.shape, y_8k.shape
-    ((117601,), (42668,))
-    """
-
-
-
-
-    if fix:
-        y_hat = util.fix_length(y_hat, size=n_samples, axis=axis, **kwargs)
-
-    if scale:
-        y_hat /= np.sqrt(ratio)
-
-    # Match dtypes
-    return np.asarray(y_hat, dtype=y.dtype)
-
-
 def rescale(waveforms, target_lvl, lengths=None, amp_type="avg", dB=False):
     """
     Performs signal rescaling to a target level.
@@ -360,14 +207,14 @@ def rescale(waveforms, target_lvl, lengths=None, amp_type="avg", dB=False):
 
     waveforms = unitarize(waveforms, lengths=lengths, amp_type=amp_type)
     if dB:
-        out = dB_to_amplitude(np.array(target_lvl), ref=1.0, power=0.5) * waveforms
+        out_waveforms = dB_to_amplitude(np.array(target_lvl), ref=1.0, power=0.5) * waveforms
     else:
-        out = target_lvl * waveforms
+        out_waveforms = target_lvl * waveforms
 
     if batch_added:
-        out = out.squeeze(0)
+        out_waveforms = out_waveforms.squeeze(0)
 
-    return out
+    return out_waveforms
 
 
 def stereo_to_mono(waveforms):
@@ -678,9 +525,7 @@ def insert_in_background(waveform, offset_factor, background_audio):
 def overlap_and_add(signal, frame_step):
     """
     Taken from https://github.com/kaituoxu/Conv-TasNet/blob/master/src/utils.py
-    Adds potentially overlapping frames of a signal with shape`[..., frames, frame_length]`, offsetting subsequent
-    frames by `frame_step`.
-    The resulting tensor has shape `[..., output_size]` where output_size = (frames - 1) * frame_step + frame_length
+    To factor code for mindspore
 
     Args:
         signal(mindspore.tensor): Shape of [..., frames, frame_length]. All dimensions may be unknown,

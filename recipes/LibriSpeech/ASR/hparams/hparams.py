@@ -15,7 +15,7 @@ def create_parser():
     group.add_argument('--bidirectional', action="store_false", default=True, help='Use bidirectional RNN')
     group.add_argument('--device_target', type=str, default="Ascend", choices=("GPU", "CPU", "Ascend"),
                         help='Device target, support GPU and CPU, Default: GPU')
-    group.add_argument('--device_id', default=4, type=int, metavar='N', help='number of total epochs to run')
+    group.add_argument('--device_id', default=0, type=int, metavar='N', help='number of total epochs to run')
 
     return parser_config, parser
 

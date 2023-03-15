@@ -1,14 +1,9 @@
-"""
-modify GreedyDecoder to adapt to MindSpore
-"""
-import sys
-sys.path.append('.')
-import Levenshtein as Lev
 from six.moves import xrange
-import mindspore.ops as ops
+import numpy as np
+import Levenshtein as Lev
 
 
-class Decoder(object):
+class Decoder():
     """
     Basic decoder class from which all other decoders inherit. Implements several
     helper functions. Subclasses should implement the decode() method.
@@ -20,7 +15,7 @@ class Decoder(object):
 
     def __init__(self, labels, blank_index=0):
         self.labels = labels
-        self.int_to_char = dict([(i, c) for (i, c) in enumerate(labels)])
+        self.int_to_char = {i: c for (i, c) in enumerate(labels)}
         self.blank_index = blank_index
         space_index = len(labels)  # To prevent errors in decode, we add an out of bounds index for the space
         if ' ' in labels:
@@ -44,8 +39,8 @@ class Decoder(object):
         # strings)
         w1 = [chr(word2char[w]) for w in s1.split()]
         w2 = [chr(word2char[w]) for w in s2.split()]
-        print(w1)
-        return Lev.distance(''.join(w1), ''.join(w2))#mindspore.ops.EditDistance
+
+        return Lev.distance(''.join(w1), ''.join(w2))
 
     def cer(self, s1, s2):
         """
@@ -73,9 +68,7 @@ class Decoder(object):
         raise NotImplementedError
 
 
-class MSGreedyDecoder(Decoder):
-    def __init__(self, labels, blank_index=0):
-        super(MSGreedyDecoder, self).__init__(labels, blank_index)
+class GreedyDecoder(Decoder):
 
     def convert_to_strings(self,
                            sequences,
@@ -93,8 +86,13 @@ class MSGreedyDecoder(Decoder):
                 offsets.append([string_offsets])
         if return_offsets:
             return strings, offsets
-        else:
-            return strings
+        return strings
+
+
+class MSGreedyDecoder(GreedyDecoder):
+    """
+    GreedyDecoder used for MindSpore
+    """
 
     def process_string(self, sequence, size, remove_repetitions=False):
         """
@@ -116,21 +114,9 @@ class MSGreedyDecoder(Decoder):
         return string, offsets
 
     def decode(self, probs, sizes=None):
-        """
-        Returns the argmax decoding given the probability matrix. Removes
-        repeated elements in the sequence, as well as blanks.
+        probs = probs.asnumpy()
+        sizes = sizes.asnumpy()
 
-        Arguments:
-            probs: Tensor of character probabilities from the network. Expected shape of batch x seq_length x output_dim
-            sizes(optional): Size of each sequence in the mini-batch
-        Returns:
-            strings: sequences of the model's best guess for the transcription on inputs
-            offsets: time step per character predicted
-        """
-        max_probs, _ = ops.ArgMaxWithValue(probs, 2)
-        strings, offsets = self.convert_to_strings(max_probs.view(max_probs.size(0), max_probs.size(1)),
-                                                   sizes,
-                                                   remove_repetitions=True,
-                                                   return_offsets=True)
+        max_probs = np.argmax(probs, axis=-1)
+        strings, offsets = self.convert_to_strings(max_probs, sizes, remove_repetitions=True, return_offsets=True)
         return strings, offsets
-

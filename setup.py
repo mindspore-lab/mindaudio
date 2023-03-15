@@ -9,7 +9,7 @@ from setuptools import setup
 from setuptools.command.build_py import build_py
 from setuptools.command.egg_info import egg_info
 
-from mindaudio.version import __version__
+exec(open('mindaudio/version.py').read())
 
 version = __version__
 package_name = 'mindaudio'
@@ -85,7 +85,8 @@ setup(
     install_requires=[
         'numpy >= 1.17.0',
         'PyYAML >= 5.3',
-        'tqdm'
+        'tqdm',
+        'Levenshtein'
     ]
 )
 print(find_packages())

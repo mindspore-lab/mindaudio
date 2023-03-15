@@ -1,10 +1,10 @@
 import numpy as np
+from scipy.ndimage import median_filter
 import mindspore as ms
 from mindspore import nn, Tensor
 from mindspore.dataset.audio.utils import BorderType, create_dct, NormMode, WindowType
 import mindspore.dataset.audio as msaudio
-from .spectrum import melspectrogram, amplitude_to_dB, stft, istft
-from scipy.ndimage import median_filter
+from .spectrum import melspectrogram, amplitude_to_dB, stft, istft, magphase
 
 
 __all__ = [
@@ -198,7 +198,7 @@ def fbank(waveforms, deltas=False, context=False, n_mels=40, n_fft=400, sample_r
 
     melspcgram = melspectrogram(waveforms, n_fft=n_fft, win_length=win_length, hop_length=hop_length, window=window,
                                 n_mels=n_mels, sample_rate=sample_rate, f_min=f_min, f_max=f_max)
-    fbanks = amplitude_to_dB(S=melspcgram, stype="power", ref=1.0, top_db=80.0)
+    fbanks = amplitude_to_dB(wavform=melspcgram, stype="power", ref=1.0, top_db=80.0)
     if deltas:
         delta1 = compute_deltas(fbanks)
         delta2 = compute_deltas(delta1)
@@ -324,7 +324,7 @@ def angle(x):
         >>> import mindaudio.data.spectrum as spectrum
         >>> waveform, sr = io.read('./samples/ASR/BAC009S0002W0122.wav')
         >>> inputs_arr = spectrum.stft(waveform, return_complex=False)
-        >>> angle = features.complex_norm(inputs_arr)
+        >>> angle = features.angle(inputs_arr)
 
     """
     angle_ms = msaudio.Angle()
@@ -332,7 +332,6 @@ def angle(x):
 
 
 def soft_mask(x_input, x_ref, *, power=1, split_zeros=False):
-    # pylint: disable=C,R,W,E,F
     if np.any(x_input < 0) or np.any(x_ref < 0):
         raise TypeError("x_input and x_ref must be non-negative")
 
@@ -366,21 +365,12 @@ def soft_mask(x_input, x_ref, *, power=1, split_zeros=False):
     return mask
 
 
-def mag_phase(spectrogram, *, power=1):
-    # pylint: disable=C,R,W,E,F
-    mag = np.abs(spectrogram)
-    mag **= power
-    phase = np.exp(1.0j * np.angle(spectrogram))
-
-    return mag, phase
-
-
 def hpss(spectrogram, *, kernel_size=31, power=2.0, mask=False, margin=1.0):
     # pylint: disable=C,R,W,E,F
     if not np.iscomplexobj(spectrogram):
         phase = 1
     else:
-        spectrogram, phase = mag_phase(spectrogram)
+        spectrogram, phase = magphase(spectrogram, power=1)
 
     if not np.isscalar(margin):
         margin_harmonic = margin[0]
