@@ -132,7 +132,7 @@ class DatasetGeneratorBatch:
             self.flush_memmaps()
         fea = self.memmaps_sample[utt_path][offset_utt:offset_utt + length_utt]
         label = self.memmaps_label[label_path][offset_l:offset_l + length_l]
-        return fea.reshape((96, 301, 80)), label
+        return fea.reshape((192, 301, 80)), label
 
     def flush_memmaps(self):
         for file_path in self.memmaps_sample:
