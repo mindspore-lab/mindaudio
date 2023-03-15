@@ -1,12 +1,71 @@
 import mindspore as ms
 import os
 import wget
+import numpy as np
 import zipfile
 import mindaudio.data.io as io
 from mindaudio.data.processing import stereo_to_mono
 from mindaudio.data.augment import add_reverb, add_babble, add_noise, drop_freq, speed_perturb, drop_chunk
 
 OPENRIR_URL = "http://www.openslr.org/resources/28/rirs_noises.zip"
+
+
+class InputNormalization:
+    """Performs mean and variance normalization of the input tensor.
+    Arguments
+    ---------
+    mean_norm : True
+         If True, the mean will be normalized.
+    std_norm : True
+         If True, the standard deviation will be normalized.
+    norm_type : str
+         It defines how the statistics are computed ('sentence' computes them
+         at sentence level, 'batch' at batch level, 'speaker' at speaker
+         level, while global computes a single normalization vector for all
+         the sentences in the dataset). Speaker and global statistics are
+         computed with a moving average approach.
+    """
+
+    def __init__(
+            self,
+            mean_norm=True,
+            std_norm=True,
+            norm_type="global",
+    ):
+        self.mean_norm = mean_norm
+        self.std_norm = std_norm
+        self.norm_type = norm_type
+        self.eps = 1e-10
+
+    def construct(self, x_input):
+        batches = x_input.shape[0]
+        for snt_id in range(batches):
+
+            # Avoiding padded time steps
+            actual_size = x_input.shape[1]
+
+            current_mean, current_std = self._compute_current_stats(
+                x_input[snt_id, 0:actual_size, ...]
+            )
+
+            if self.norm_type == "sentence":
+                x_input[snt_id] = (x_input[snt_id] - current_mean) / current_std
+
+        return x_input
+
+    def _compute_current_stats(self, x_input):
+        if self.mean_norm:
+            current_mean = np.mean(x_input, axis=0)
+        else:
+            current_mean = np.array([0.0])
+
+        # Compute current std
+        if self.std_norm:
+            current_std = np.std(x_input, axis=0)
+        else:
+            current_std = np.array([1.0])
+
+        return current_mean, current_std
 
 
 class AddNoise:

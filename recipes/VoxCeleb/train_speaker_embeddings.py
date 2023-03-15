@@ -4,7 +4,6 @@ Recipe for training speaker embeddings using the VoxCeleb Dataset.
 import os
 import random
 import wget
-from tqdm.contrib import tqdm
 from multiprocessing import Process, Manager
 import pickle
 import time
@@ -28,7 +27,6 @@ import mindaudio.data.io as io
 from mindaudio.models.ecapatdnn import EcapaTDNN, Classifier
 from mindaudio.data.processing import stereo_to_mono
 from mindaudio.data.features import fbank
-from mindaudio.data.processing import normalize
 
 from reader import DatasetGeneratorBatch as DatasetGenerator
 from util import AdditiveAngularMargin
@@ -36,23 +34,19 @@ from loss_scale import TrainOneStepWithLossScaleCellv2 as TrainOneStepWithLossSc
 from config import config as hparams
 from sampler import DistributedSampler
 from voxceleb_prepare import prepare_voxceleb
-from spec_augment import TimeDomainSpecAugment, EnvCorrupt
+from spec_augment import TimeDomainSpecAugment, EnvCorrupt, InputNormalization
 
 spk_id_encoded_dict = {}
 spk_id_encoded = -1
+process_num = 10
 
 
 def dataio_prep():
     "Creates the datasets and their data processing pipelines."
 
-    # 1. Declarations:
-    train_data = ms.dataset.CSVDataset(dataset_files=[hparams.train_annotation],
-                                       num_parallel_workers=hparams.dataloader_options.num_workers,
-                                       shuffle=hparams.dataloader_options.shuffle)
-    valid_data = ms.dataset.CSVDataset(dataset_files=[hparams.valid_annotation])
     snt_len_sample = int(hparams.sample_rate * hparams.sentence_len)
 
-    # 2. Define audio pipeline:
+    # Define audio pipeline:
     def audio_pipeline(duration, wav, start, stop):
         if hparams.random_chunk:
             duration_sample = int(float(duration) * hparams.sample_rate)
@@ -61,17 +55,14 @@ def dataio_prep():
         else:
             start = int(start)
             stop = int(stop)
-        num_frames = stop - start
 
-        sig, _ = io.read(
-            str(wav), duration=float(num_frames) / hparams.sample_rate, offset=float(start) / hparams.sample_rate
-        )
-
+        sig, _ = io.read(str(wav))
         if len(sig.shape) > 1:
             sig = stereo_to_mono(sig)
-        return sig
 
-    # 3. Define text pipeline:
+        return sig[start:stop]
+
+    # Define text pipeline:
     def label_pipeline(spk_id):
         global spk_id_encoded
         spk_id = str(spk_id)
@@ -82,16 +73,25 @@ def dataio_prep():
             spk_id_encoded_dict[spk_id] = spk_id_encoded
             return spk_id_encoded
 
-    train_data = train_data.map(lambda duration, wav, start, stop: audio_pipeline(duration, wav, start, stop),
-                                input_columns=["duration", "wav", "start", "stop"],
-                                output_columns=["sig"], column_order=["ID", "sig", "spk_id"])
+    train_datalist = []
+    for i in range(process_num):
+        train_data = ms.dataset.CSVDataset(dataset_files=[hparams.train_annotation],
+                                           num_parallel_workers=hparams.dataloader_options.num_workers,
+                                           shuffle=hparams.dataloader_options.shuffle,
+                                           num_shards=process_num,
+                                           shard_id=i)
 
-    train_data = train_data.map(operations=[label_pipeline], input_columns=["spk_id"],
-                                output_columns=["spk_id_encoded"], column_order=["ID", "sig", "spk_id_encoded"])
+        train_data = train_data.map(lambda duration, wav, start, stop: audio_pipeline(duration, wav, start, stop),
+                                    input_columns=["duration", "wav", "start", "stop"],
+                                    output_columns=["sig"])
 
-    train_data = train_data.project(columns=["sig", "spk_id_encoded"])
+        train_data = train_data.map(operations=[label_pipeline], input_columns=["spk_id"],
+                                    output_columns=["spk_id_encoded"])
 
-    return train_data, valid_data
+        train_data = train_data.project(columns=["sig", "spk_id_encoded"])
+        train_datalist.append(train_data)
+
+    return train_datalist
 
 
 def preprocess_raw_new(fidx, fea_utt_lst, label_utt_lst,
@@ -179,7 +179,7 @@ def data_trans_dp(datasetPath, dataSavePath):
     samples_dict = Manager().dict()
     labels_dict = Manager().dict()
 
-    thread_num = 5
+    thread_num = process_num
     print(datetime.now().strftime("%m-%d-%H:%M:%S"))
     batchnum = math.ceil(total_process_num / thread_num)
     print('batch num:', batchnum)
@@ -418,67 +418,9 @@ def train():
     train_net(hparams.rank, model_constructed, num_epochs, ds_train, ckpoint_cb, steps_per_epoch_train, minibatch_size)
 
 
-def generate_train_data():
-    if not os.path.exists(os.path.join(hparams.save_folder)):
-        os.makedirs(os.path.join(hparams.save_folder), exist_ok=False)
-
-    # Download verification list (to exlude verification sentences from train)
-    veri_file_path = os.path.join(
-        hparams.save_folder, os.path.basename(hparams.verification_file)
-    )
-    wget.download(hparams.verification_file, veri_file_path)
-
-    # Dataset prep (parsing VoxCeleb and annotation into csv files)
-    prepare_voxceleb(data_folder=hparams.data_folder, save_folder=hparams.save_folder,
-                     verification_pairs_file=veri_file_path,
-                     splits=["train", "dev"],
-                     split_ratio=[90, 10],
-                     seg_dur=hparams.sentence_len,
-                     skip_prep=hparams.skip_prep)
-
-    if not os.path.exists(os.path.join(hparams.feat_folder)):
-        os.makedirs(os.path.join(hparams.feat_folder), exist_ok=False)
-    save_dir = os.path.join(hparams.feat_folder)
-
-    # Dataset IO prep: creating Dataset objects and proper encodings for phones
-    train_data, _ = dataio_prep()
-
-    dataset_size = train_data.get_dataset_size()
-    print("len of train:", dataset_size)
-
-    train_data = train_data.batch(batch_size=hparams.dataloader_options.batch_size)
-
-    batch_counts = int(dataset_size / hparams.dataloader_options.batch_size)
-
-    fea_fp = open(os.path.join(save_dir, "fea.lst"), 'w')
-    label_fp = open(os.path.join(save_dir, "label.lst"), 'w')
-
-    iterator = train_data.create_dict_iterator(num_epochs=hparams.number_of_epochs)
-    batch_count = 0
-
-    spec_aug1 = TimeDomainSpecAugment(sample_rate=16000, speeds=[100])
-    spec_aug2 = TimeDomainSpecAugment(sample_rate=16000, speeds=[95, 100, 105])
-    spec_aug3 = EnvCorrupt(openrir_folder=hparams.data_folder,
-                           openrir_max_noise_len=3.0,
-                           reverb_prob=1.0,
-                           noise_prob=0.0,
-                           noise_snr_low=0,
-                           noise_snr_high=15)
-    spec_aug4 = EnvCorrupt(openrir_folder=hparams.data_folder,
-                           openrir_max_noise_len=3.0,
-                           reverb_prob=0.0,
-                           noise_prob=1.0,
-                           noise_snr_low=0,
-                           noise_snr_high=15)
-    spec_aug5 = EnvCorrupt(openrir_folder=hparams.data_folder,
-                           openrir_max_noise_len=3.0,
-                           reverb_prob=1.0,
-                           noise_prob=1.0,
-                           noise_snr_low=0,
-                           noise_snr_high=15)
-    spec_aug = [spec_aug3, spec_aug4]
-
-    for batch in tqdm(iterator):
+def generate_npy(iterator, spec_aug, save_dir, label_fp, fea_fp, batch_counts, index):
+    count = 0
+    for batch in iterator:
         wavs = batch["sig"].astype(ms.float32)
         lens = np.ones(wavs.shape[0])
         wavs_aug_tot = []
@@ -505,12 +447,15 @@ def generate_train_data():
         n_augment = len(wavs_aug_tot)
 
         feats = fbank(wavs.asnumpy(), deltas=False, n_mels=80, left_frames=0, right_frames=0,
-                      n_fft=320, hop_length=160).transpose(0, 2, 1)
-        feats = normalize(feats, norm="mean")
+                      n_fft=400, hop_length=160).transpose(0, 2, 1)
+
+        normal_func = InputNormalization(norm_type='sentence', std_norm=False)
+        feats = normal_func.construct(feats)
+
         ct = datetime.now()
         ts = ct.timestamp()
-        id_save_name = str(ts) + "_id.npy"
-        fea_save_name = str(ts) + "_fea.npy"
+        id_save_name = str(ts) + "_" + str(index) + "_id.npy"
+        fea_save_name = str(ts) + "_" + str(index) + "_fea.npy"
         spkid = batch["spk_id_encoded"].asnumpy()
         out_spkid = []
         for i in range(n_augment):
@@ -522,8 +467,80 @@ def generate_train_data():
         np.save(os.path.join(save_dir, fea_save_name), feats)
         label_fp.write(id_save_name + "\n")
         fea_fp.write(fea_save_name + "\n")
-        batch_count += 1
-        print("process ...", float(batch_count) / batch_counts)
+        count = count + 1
+        percentage = float(count) / batch_counts * 100
+        percentage = round(percentage, 2)
+        print("Process {} percentage {}%".format(index, percentage))
+
+
+def generate_train_data():
+    context.set_context(device_target="CPU")
+    if not os.path.exists(os.path.join(hparams.save_folder)):
+        os.makedirs(os.path.join(hparams.save_folder), exist_ok=False)
+
+    # Download verification list (to exlude verification sentences from train)
+    veri_file_path = os.path.join(
+        hparams.save_folder, os.path.basename(hparams.verification_file)
+    )
+    wget.download(hparams.verification_file, veri_file_path)
+
+    # Dataset prep (parsing VoxCeleb and annotation into csv files)
+    prepare_voxceleb(data_folder=hparams.data_folder, save_folder=hparams.save_folder,
+                     verification_pairs_file=veri_file_path,
+                     splits=["train", "dev"],
+                     split_ratio=[90, 10],
+                     seg_dur=hparams.sentence_len,
+                     skip_prep=hparams.skip_prep)
+
+    if not os.path.exists(os.path.join(hparams.feat_folder)):
+        os.makedirs(os.path.join(hparams.feat_folder), exist_ok=False)
+    save_dir = os.path.join(hparams.feat_folder)
+
+    # Dataset IO prep: creating Dataset objects and proper encodings for phones
+    train_datalist = dataio_prep()
+
+    fea_fp = open(os.path.join(save_dir, "fea.lst"), 'w')
+    label_fp = open(os.path.join(save_dir, "label.lst"), 'w')
+
+    spec_aug1 = TimeDomainSpecAugment(sample_rate=16000, speeds=[100])
+    spec_aug2 = TimeDomainSpecAugment(sample_rate=16000, speeds=[95, 100, 105])
+    spec_aug3 = EnvCorrupt(openrir_folder=hparams.data_folder,
+                           openrir_max_noise_len=3.0,
+                           reverb_prob=1.0,
+                           noise_prob=0.0,
+                           noise_snr_low=0,
+                           noise_snr_high=15)
+    spec_aug4 = EnvCorrupt(openrir_folder=hparams.data_folder,
+                           openrir_max_noise_len=3.0,
+                           reverb_prob=0.0,
+                           noise_prob=1.0,
+                           noise_snr_low=0,
+                           noise_snr_high=15)
+    spec_aug5 = EnvCorrupt(openrir_folder=hparams.data_folder,
+                           openrir_max_noise_len=3.0,
+                           reverb_prob=1.0,
+                           noise_prob=1.0,
+                           noise_snr_low=0,
+                           noise_snr_high=15)
+
+    spec_aug = [spec_aug1, spec_aug2, spec_aug3, spec_aug4, spec_aug5]
+    processlist = []
+    index = 0
+    for train_data in train_datalist:
+        dataset_size = train_data.get_dataset_size()
+        print(train_data.get_col_names())
+        train_data = train_data.batch(batch_size=hparams.dataloader_options.batch_size)
+        iterator = train_data.create_dict_iterator(num_epochs=hparams.number_of_epochs)
+        print("len of train:", dataset_size)
+        batch_counts = dataset_size / hparams.dataloader_options.batch_size
+        process = Process(target=generate_npy,
+                          args=(iterator, spec_aug, save_dir, label_fp, fea_fp, batch_counts, index))
+        process.start()
+        processlist.append(process)
+        index += 1
+
+    for process in processlist:
+        process.join()
 
     dataset_path = hparams.feat_folder
     save_path = hparams.feat_folder_merge
