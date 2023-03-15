@@ -483,7 +483,7 @@ def generate_train_data():
     veri_file_path = os.path.join(
         hparams.save_folder, os.path.basename(hparams.verification_file)
     )
-    # wget.download(hparams.verification_file, veri_file_path)
+    wget.download(hparams.verification_file, veri_file_path)
 
     # Dataset prep (parsing VoxCeleb and annotation into csv files)
     prepare_voxceleb(data_folder=hparams.data_folder, save_folder=hparams.save_folder,
