@@ -474,6 +474,7 @@ def generate_npy(iterator, spec_aug, save_dir, label_fp, fea_fp, batch_counts, i
 
 
 def generate_train_data():
+    print("Generate train data.")
     context.set_context(device_target="CPU")
     if not os.path.exists(os.path.join(hparams.save_folder)):
         os.makedirs(os.path.join(hparams.save_folder), exist_ok=False)
@@ -482,7 +483,7 @@ def generate_train_data():
     veri_file_path = os.path.join(
         hparams.save_folder, os.path.basename(hparams.verification_file)
     )
-    wget.download(hparams.verification_file, veri_file_path)
+    # wget.download(hparams.verification_file, veri_file_path)
 
     # Dataset prep (parsing VoxCeleb and annotation into csv files)
     prepare_voxceleb(data_folder=hparams.data_folder, save_folder=hparams.save_folder,
@@ -548,5 +549,6 @@ def generate_train_data():
 
 
 if __name__ == "__main__":
-    generate_train_data()
+    if hparams.need_generate_data:
+        generate_train_data()
     train()

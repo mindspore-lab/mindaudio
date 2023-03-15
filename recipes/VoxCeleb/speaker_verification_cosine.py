@@ -286,6 +286,7 @@ def compute_embeddings(embedder, dataloader, startidx=0, dur=50000, exc_set=None
 
 
 def generate_eval_data():
+    print("Generate eval data.")
     if not os.path.exists(hparams.eval_save_folder):
         os.makedirs(hparams.eval_save_folder)
     # Download verification list (to exlude verification sentences from train)
@@ -420,5 +421,6 @@ def eval_impl():
 
 
 if __name__ == "__main__":
-    generate_eval_data()
+    if hparams.need_generate_data:
+        generate_eval_data()
     eval_impl()
