@@ -4,7 +4,7 @@
 
 ## How to run
 
-#### 1.Dataset preparation
+### 1.Dataset preparation
 
 ```shell
 # Enter the corresponding data set directory
@@ -15,8 +15,8 @@ python librispeech.py --root_path "your_data_path"
 
 Due to reading flac files is not supported, users need to install sox or other software to converse flac to wav files.
 
-#### 2.Standalone training
-
+### 2.training
+#### Standalone training
 ```shell
 # Enter the specific task directory
 cd ASR
@@ -24,7 +24,15 @@ cd ASR
 python train.py -c "./hparams/Deepspeech2.yaml"
 ```
 
-#### 3.Validation
+#### Distribute training
+```shell
+# Enter the specific task directory
+cd ASR
+# Distribute_training
+mpirun --allow-run-as-root -n 8 python train.py -c "./hparams/Deepspeech2.yaml"
+```
+
+### 3.Validation
 
 ```shell
 # Validate a trained checkpoint

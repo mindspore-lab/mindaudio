@@ -61,8 +61,7 @@ def train(args):
                                      labels=args.labels,
                                      rnn_type=args.ModelConfig.rnn_type,
                                      audio_conf=args.DataConfig.SpectConfig,
-                                     bidirectional=True,
-                                     device_target=args.device_target)
+                                     bidirectional=True)
 
     loss_net = NetWithLossClass(deepspeech_net, ascend=(args.device_target == 'Ascend'))
     weights = ParameterTuple(deepspeech_net.trainable_params())
