@@ -3,23 +3,19 @@
 
 # MindAudio
 
-https://img.shields.io/cirrus/github/mindaudio/https://github.com/mindspore-lab/mindaudio
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/mindcv)](https://pypi.org/project/mindcv)
-[![PyPI](https://img.shields.io/pypi/v/mindcv)](https://pypi.org/project/mindcv)
-[![docs](https://img.shields.io/badge/docs-latest-blue)](https://mindcv.readthedocs.io/en/latest)
-[![license](https://img.shields.io/github/license/mindspore-lab/mindcv.svg)](https://github.com/mindspore-lab/mindcv/blob/main/LICENSE.md)
-https://img.shields.io/github/issues/mindaduio/https://github.com/mindspore-lab/mindaudio/issues?style=plastic
-[![PRs](https://img.shields.io/badge/PRs-welcome-pink.svg)](https://github.com/mindspore-lab/mindcv/pulls)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/mindspore-lab/mindaudio/ut_test.yaml)
+![GitHub issues](https://img.shields.io/github/issues/mindspore-lab/mindaudio)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/mindspore-lab/mindaudio)
+![GitHub](https://img.shields.io/github/license/mindspore-lab/mindaudio)](<img alt="GitHub" src="https://img.shields.io/github/license/mindspore-lab/mindaudio">)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 
-[English](README.md) | 中文
+English | [中文](README_CN.md)
 
-[简介](#简介) |
-[安装](#安装) |
-[快速入门](#快速入门) |
-[任务列表](#任务列表) |
-[日志](#日志)
+[Introduction](#introduction) |
+[Installation](#installation) |
+[Get Started](#get-started) |
+[Model List](#model-list) |
+[Notes](#notes)
 
 </div>
 
