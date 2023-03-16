@@ -18,7 +18,6 @@ def parse_args():
     parser = argparse.ArgumentParser(description='WaveGrad training')
     parser.add_argument('--is_distributed', type=ast.literal_eval, default=False)
     parser.add_argument('--device_target', type=str, default="GPU", choices=("GPU", "CPU", 'Ascend'))
-    parser.add_argument('--device_id', '-i', type=int, default=0)
     parser.add_argument('--context_mode', type=str, default='graph', choices=['py', 'graph'])
     parser.add_argument('--config', '-c', type=str, default='recipes/LJSpeech/tts/wavegrad/wavegrad_base.yaml')
     parser.add_argument('--restore', '-r', type=str, default='')
@@ -77,10 +76,10 @@ def main():
     if args.is_distributed:
         init()
         ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.DATA_PARALLEL, gradients_mean=True)
-    rank = int(os.getenv('DEVICE_ID', '0')) if args.is_distributed else 0
+    rank = int(os.getenv('DEVICE_ID', '0'))
     group = int(os.getenv('RANK_SIZE', '1')) if args.is_distributed else 1
     print('[info] rank: %d group: %d batch: %d' % (rank, group, hps.batch_size // group))
-    ms.context.set_context(device_id=rank if args.is_distributed else args.device_id)
+    ms.context.set_context(device_id=rank)
 
     np.random.seed(0)
     ms.set_seed(0)

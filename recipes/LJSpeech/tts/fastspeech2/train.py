@@ -5,7 +5,6 @@ import mindspore as ms
 import mindspore.ops as ops
 import mindspore.nn as nn
 from mindspore.communication import init
-from mindspore.amp import all_finite
 from mindspore import SummaryCollector
 
 from time import time
@@ -20,7 +19,6 @@ def parse_args():
     parser = argparse.ArgumentParser(description='FastSpeech2 training')
     parser.add_argument('--is_distributed', type=ast.literal_eval, default=False)
     parser.add_argument('--device_target', type=str, default="GPU", choices=("GPU", "CPU", 'Ascend'))
-    parser.add_argument('--device_id', '-i', type=int, default=0)
     parser.add_argument('--context_mode', type=str, default='py', choices=['py', 'graph'])
     parser.add_argument('--config', '-c', type=str, default='recipes/LJSpeech/tts/fastspeech2/fastspeech2.yaml')
     parser.add_argument('--restore', '-r', type=str, default='')
@@ -53,8 +51,6 @@ class MyTrainOneStepCell(nn.TrainOneStepCell):
     def construct(self, *args):
         losses, grads = ops.value_and_grad(self.network, weights=self.weights, has_aux=True)(*args)
 
-        losses = self.network.scale.unscale(losses)
-        grads = self.network.scale.unscale(grads)
         if self.grad_clip:
             grads = ops.clip_by_global_norm(grads[1], clip_norm=self.max_grad_norm)
         grads = self.grad_reducer(grads)
@@ -62,16 +58,13 @@ class MyTrainOneStepCell(nn.TrainOneStepCell):
         info = '[fastspeech2 loss]'
         for name, loss in zip(self.network.loss_fn.names, losses):
             info += ' [%s] %.2f' % (name, loss)
-        print(info)
-        # cond = self.get_overflow_status(status, grads)
-        # overflow = self.process_loss_scale(cond)
-        overflow = all_finite(grads) and False
-        if not overflow:
-            self.optimizer(grads)
-
         t2 = self.t
         self.t = time()
-        return losses, overflow, self.t - t2
+        info += ' [step time] %.2fs' % (self.t - t2)
+        print(info)
+
+        self.optimizer(grads)
+        return losses
 
 
 def main():
@@ -85,10 +78,10 @@ def main():
     if args.is_distributed:
         init()
         ms.set_auto_parallel_context(parallel_mode=ms.ParallelMode.DATA_PARALLEL, gradients_mean=True)
-    rank = int(os.getenv('DEVICE_ID', '0')) if args.is_distributed else 0
+    rank = int(os.getenv('DEVICE_ID', '0'))
     group = int(os.getenv('RANK_SIZE', '1')) if args.is_distributed else 1
     print('[info] rank: %d group: %d batch: %d' % (rank, group, hps.batch_size // group))
-    ms.context.set_context(device_id=rank if args.is_distributed else args.device_id)
+    ms.context.set_context(device_id=rank)
 
     np.random.seed(0)
     ms.set_seed(0)

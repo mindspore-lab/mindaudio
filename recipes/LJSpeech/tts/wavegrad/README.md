@@ -33,17 +33,17 @@ From melspectrograms:
 | Model | Dataset | Checkpoint | Total Batch Size | Num Frames | Num Mels | Hardware | MindSpore Version |
 | -----| ----- | -----| -----| -----| -----| -----| -----|
 | WaveGrad (base) | LJSpeech-1.1 | [1M steps](https://download.mindspore.cn/toolkits/mindaudio/wavegrad/model_1000000_v190.ckpt) | 256 | 30 | 128 | 8 $\times$ Ascend | 1.9.0 |
-| WaveGrad (base) | AiShell | [TODO]() | 256 | 30 | 128 | 8 $\times$ Ascend | 1.9.0 |
+| WaveGrad (base) | AiShell | [coming soon]() | 256 | 30 | 128 | 8 $\times$ Ascend | 1.9.0 |
 
 ## Train your own model
 
 ### Step 0 (Data)
 
-#### 0.0
+#### 0.0 Download
 
 Download [LJSpeech-1.1](http://keithito.com/LJ-Speech-Dataset/) to `./data/`.
 
-#### 0.1
+#### 0.1 Preprocess
 
 Preprocess data to get a "_wav.npy" and "_feature.npy" for each ".wav" file in your dataset folder. Set your `data_path` and 
 `manifest_path` in `wavegrad_base.yaml`. You can now run the following command:
@@ -69,31 +69,9 @@ nohup mpirun --allow-run-as-root -n $MY_DEVICE_NUM python recipes/LJSpeech/tts/w
 
 Train on 1 card:
 ```
-export MY_DEVICE_ID=0
-nohup python train.py --device_target $MY_DEVICE --device_id $MY_DEVICE_ID --context_mode graph > train_single.log &
+export DEVICE_ID=0
+nohup python train.py --device_target $MY_DEVICE --context_mode graph > train_single.log &
 ```
-
-#### 1.2 Train on 8 Ascend cards on [openi](https://openi.pcl.ac.cn/)
-
-A quick guide on how to use openi:
-1. git clone a repo
-2. create a train task
-3. locally preprocess the data, zip it, and upload to your job's dataset
-4. set task options as follows:
-
-start file: 
-
-`train.py`
-
-Run Parameter:	
-
-`is_openi` = `True`
-
-`is_distributed` = `True`
-
-`device_target` = `Ascend`
-
-`context_mode` = `graph`
 
 ### Implementation details
 
