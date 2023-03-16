@@ -19,7 +19,7 @@ MindSpore implementation of [FastSpeech2](https://arxiv.org/abs/2006.04558), a t
 | Model | Dataset | Checkpoint | Total Batch Size | Num Mels | Hardware | MindSpore Version |
 | -----| ----- | -----| -----| -----| -----| -----|
 | FastSpeech2 (base) | LJSpeech-1.1 | [160k steps](https://download.mindspore.cn/toolkits/mindaudio/fastspeech2/fastspeech2_160k_en_mel128.ckpt) | 32 | 128 | 1 $\times$ Ascend | 1.9.0 |
-| FastSpeech2 (base) | AiShell | [TODO]() | 32 | 128 | 1 $\times$ Ascend | 1.9.0 |
+| FastSpeech2 (base) | AiShell | [coming soon]() | 32 | 128 | 1 $\times$ Ascend | 1.9.0 |
 
 ## Train your own model
 
@@ -52,15 +52,19 @@ python recipes/LJSpeech/tts/fastspeech2/preprocess.py
 Set up device information:
 ```
 export MY_DEVICE=Ascend # options: [Ascend, GPU]
-export MY_DEVICE_NUM=1
 ```
 
 Other training and model parameters can be set in `recipes/LJSpeech/tts/fastspeech2/fastspeech2.yaml`. 
 
 Train on 1 card:
+```shell
+export DEVICE_ID=0
+nohup python train.py --device_target $MY_DEVICE > train_single.log &
 ```
-export MY_DEVICE_ID=0
-nohup python train.py --device_target $MY_DEVICE --device_id $MY_DEVICE_ID > train_single.log &
+
+Train on multiple cards:
+```shell
+stay tuned
 ```
 
 ### Implementation details

@@ -33,7 +33,7 @@ From melspectrograms:
 | Model | Dataset | Checkpoint | Total Batch Size | Num Frames | Num Mels | Hardware | MindSpore Version |
 | -----| ----- | -----| -----| -----| -----| -----| -----|
 | WaveGrad (base) | LJSpeech-1.1 | [1M steps](https://download.mindspore.cn/toolkits/mindaudio/wavegrad/model_1000000_v190.ckpt) | 256 | 30 | 128 | 8 $\times$ Ascend | 1.9.0 |
-| WaveGrad (base) | AiShell | [TODO]() | 256 | 30 | 128 | 8 $\times$ Ascend | 1.9.0 |
+| WaveGrad (base) | AiShell | [coming soon]() | 256 | 30 | 128 | 8 $\times$ Ascend | 1.9.0 |
 
 ## Train your own model
 
@@ -69,8 +69,8 @@ nohup mpirun --allow-run-as-root -n $MY_DEVICE_NUM python recipes/LJSpeech/tts/w
 
 Train on 1 card:
 ```
-export MY_DEVICE_ID=0
-nohup python train.py --device_target $MY_DEVICE --device_id $MY_DEVICE_ID --context_mode graph > train_single.log &
+export DEVICE_ID=0
+nohup python train.py --device_target $MY_DEVICE --context_mode graph > train_single.log &
 ```
 
 ### Implementation details
