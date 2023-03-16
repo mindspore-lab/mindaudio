@@ -102,7 +102,7 @@ mindaudio提供一系列常用的音频数据处理API，可便捷调用进行�
 >>> plt.show()
 ```
 
-结果展示：![image-20230310165349460](/home/litingyu/.config/Typora/typora-user-images/image-20230310165349460.png)
+结果展示：![image-20230310165349460](https://raw.githubusercontent.com/mindspore-lab/mindaudio/main/tests/result/stft_magnitude.png)
 
 
 

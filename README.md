@@ -109,7 +109,7 @@ mindaudio provides a series of commonly used audio data processing apis, which c
 
 Result presentation:
 
-![image-20230310165349460](/home/litingyu/.config/Typora/typora-user-images/image-20230310165349460.png)
+![image-20230310165349460](https://raw.githubusercontent.com/mindspore-lab/mindaudio/main/tests/result/stft_magnitude.png)
 
 ### Voice task implementation
 
