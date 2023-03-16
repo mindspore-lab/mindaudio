@@ -1,7 +1,6 @@
 import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
-from mindspore.amp import DynamicLossScaler
 
 from mindaudio.models.transformer.models import Encoder, Decoder
 from mindaudio.models.fastspeech2.variance_adapter import VarianceAdaptor
@@ -72,7 +71,6 @@ class FastSpeech2WithLoss(FastSpeech2):
     def __init__(self, hps):
         super().__init__(hps)
         self.loss_fn = FastSpeech2Loss(hps)
-        self.scale = DynamicLossScaler(1024, 2, 1)
 
     def construct(
         self,
@@ -108,4 +106,4 @@ class FastSpeech2WithLoss(FastSpeech2):
             'energy_targets': e_targets,
             'duration_targets': d_targets,
         })
-        return self.scale.scale(self.loss_fn(yh))
+        return self.loss_fn(yh)

@@ -45,7 +45,7 @@ class Encoder(nn.Cell):
         self.equal = ops.Equal()
         self.not_equal = ops.NotEqual()
         self.expand_dims = ops.ExpandDims()
-        self.pad = constants.PAD
+        self.pad = Tensor(constants.PAD, dtype=mstype.int32)
 
     def construct(self, src_seq, src_pos, positions_encoder=None):
         padding_mask = self.equal(src_seq, self.pad)
@@ -95,7 +95,7 @@ class Decoder(nn.Cell):
             ]
         )
         self.n_head = n_head
-        self.pad = constants.PAD
+        self.pad = Tensor(constants.PAD, dtype=mstype.int32)
         self.equal = ops.Equal()
         self.not_equal = ops.NotEqual()
         self.expand_dims = ops.ExpandDims()
