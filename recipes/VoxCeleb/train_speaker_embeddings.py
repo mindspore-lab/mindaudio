@@ -179,7 +179,7 @@ def data_trans_dp(datasetPath, dataSavePath):
     samples_dict = Manager().dict()
     labels_dict = Manager().dict()
 
-    thread_num = process_num
+    thread_num = 6
     print(datetime.now().strftime("%m-%d-%H:%M:%S"))
     batchnum = math.ceil(total_process_num / thread_num)
     print('batch num:', batchnum)
