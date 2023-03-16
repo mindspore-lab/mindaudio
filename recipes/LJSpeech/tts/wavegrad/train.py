@@ -114,7 +114,7 @@ def main():
 
     num_epochs = hps.num_epochs
     callbacks = []
-    if rank == 0:
+    if not args.is_distributed or rank == 0:
         callbacks.append(ms.LossMonitor(1))
         callbacks.append(ms.TimeMonitor())
         save = mindaudio.callbacks.SaveCallBack(

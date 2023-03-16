@@ -17,6 +17,7 @@ n_fft: 2048
 n_mels: 128
 
 data_path: 'data/LJSpeech-1.1'
+# manifest_path: this file is generated, not the metadata.csv
 manifest_path: 'data/ljspeech_manifest.csv'
 
 # Model params

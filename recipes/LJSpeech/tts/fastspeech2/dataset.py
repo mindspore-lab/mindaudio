@@ -77,7 +77,10 @@ def create_dataset(data_path, manifest_path, batch_size, is_train=True, rank=0, 
             data.append(np.load(os.path.join(data_path, all_dirs[key], base + all_postfix[key])))
             if key == 'mel':
                 data[-1] = data[-1].T
-
+            if key not in ['phoneme', 'duration']:
+                data[-1] = data[-1].astype(np.float32)
+            else:
+                data[-1] = data[-1].astype(np.int32)
         return tuple(data)
 
     ds = ds.map(

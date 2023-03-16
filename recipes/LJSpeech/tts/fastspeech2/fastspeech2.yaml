@@ -31,6 +31,7 @@ energy:
     energy_max: 494.149902
 
 data_path: 'data/LJSpeech-1.1'
+# manifest_path: this file is generated, not the metadata.csv
 manifest_path: 'data/ljspeech_manifest.csv'
 lexicon_path: 'recipes/text/librispeech-lexicon.txt'
 

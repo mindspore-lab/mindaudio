@@ -35,36 +35,38 @@ def tensor_grad_scale(scale, grad):
     return grad * ops.cast(ops.Reciprocal()(scale), ops.dtype(grad))
 
 
-class MyTrainOneStepCell(nn.TrainOneStepCell):
+class MyTrainOneStepCell(nn.TrainOneStepWithLossScaleCell):
     def __init__(self,
                  network,
                  optimizer,
-                 sens=ms.Tensor(1.),
-                 grad_clip=True,
-                 max_grad_norm=1.,
+                 max_grad_norm=1., 
+                 scale_sense=ms.Tensor(1.),
+                 grad_clip=True
     ):
-        super().__init__(network, optimizer, sens)
+        super().__init__(network, optimizer, scale_sense)
         self.grad_clip = grad_clip
         self.max_grad_norm = max_grad_norm
-        self.t = time()
+        self.slr = ops.ScalarSummary()
 
     def construct(self, *args):
-        losses, grads = ops.value_and_grad(self.network, weights=self.weights, has_aux=True)(*args)
+        loss = self.network(*args)
+        self.slr('loss', loss)
 
+        status, scaling_sens = self.start_overflow_check(loss, self.scale_sense)
+        self.slr('scaling_sens', scaling_sens)
+        scaling_sens_filled = ops.ones_like(loss) * ops.cast(scaling_sens, ops.dtype(loss))
+        grads = self.grad(self.network, self.weights)(*args, scaling_sens_filled)
+        grads = self.hyper_map(ops.partial(_grad_scale, scaling_sens), grads)
         if self.grad_clip:
-            grads = ops.clip_by_global_norm(grads[1], clip_norm=self.max_grad_norm)
+            grads = ops.clip_by_global_norm(grads, clip_norm=self.max_grad_norm)
         grads = self.grad_reducer(grads)
 
-        info = '[fastspeech2 loss]'
-        for name, loss in zip(self.network.loss_fn.names, losses):
-            info += ' [%s] %.2f' % (name, loss)
-        t2 = self.t
-        self.t = time()
-        info += ' [step time] %.2fs' % (self.t - t2)
-        print(info)
+        cond = self.get_overflow_status(status, grads)
+        overflow = self.process_loss_scale(cond)
+        if not overflow:
+            self.optimizer(grads)
 
-        self.optimizer(grads)
-        return losses
+        return loss, cond, scaling_sens
 
 
 def main():
@@ -110,14 +112,16 @@ def main():
             global_step = int(ckpt['cur_step'].asnumpy())
     print('[info] global_step:', global_step)
 
-    network = MyTrainOneStepCell(model, optimiser, max_grad_norm=hps.max_grad_norm)
+    scale_sense = nn.DynamicLossScaleUpdateCell(loss_scale_value=2**12, scale_factor=2, scale_window=1000)
+    network = MyTrainOneStepCell(model, optimiser, max_grad_norm=hps.max_grad_norm, scale_sense=scale_sense)
 
     slr = ops.ScalarSummary()
     slr('lr', lr)
 
     num_epochs = hps.num_epochs
     callbacks = []
-    if rank == 0:
+    if not args.is_distributed or rank == 0:
+        callbacks.append(ms.LossMonitor(1))
         callbacks.append(ms.TimeMonitor())
         save = mindaudio.callbacks.SaveCallBack(
             model,
