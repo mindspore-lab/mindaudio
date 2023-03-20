@@ -83,7 +83,7 @@ n_train_snts: 400000 # used for normalization stats
 eval_data_path: "/home/abc000/data/feat_eval/"                            # path to eval fbank data
 veri_file_path: "/home/abc000/data/feat_eval/veri_test_bleeched.txt"      # trials
 cut_wav: false                                                            # cut wav to 3s (cut wav to 3s, same as train data)
-model_path: "/home/abc000/data/ckpt/train_ecapa_vox12.ckpt"               # path of eval model
+model_path: "/home/abc000/data/ckpt/ecapatdnn_vox12.ckpt"               # path of eval model
 train_norm_path: "/home/abc000/data/feat_norm/"                           # fbank data for norm
 cohort_size: 20000                                                        # max number of utts to do norm
 npy_file_path: '/home/abc000/data/npys/'                                  # dir to save intermediate result
