@@ -15,9 +15,9 @@ from mindspore import context, load_checkpoint, load_param_into_net
 from mindaudio.models.ecapatdnn import EcapaTDNN
 from mindaudio.data.processing import stereo_to_mono
 from mindaudio.data.features import fbank
-from mindaudio.data.processing import normalize
 import mindaudio.data.io as io
 
+from spec_augment import InputNormalization
 from voxceleb_prepare import prepare_voxceleb
 from reader import DatasetGenerator
 from metrics import get_EER_from_scores
@@ -57,8 +57,9 @@ def compute_feat_loop(data_loader, save_dir):
             ts = ct.timestamp()
 
             feats = fbank(wavs.asnumpy(), deltas=False, n_mels=80, left_frames=0, right_frames=0,
-                          n_fft=320, hop_length=160).transpose(0, 2, 1)
-            feats = normalize(feats, norm="mean")
+                          n_fft=400, hop_length=160).transpose(0, 2, 1)
+            normal_func = InputNormalization(norm_type='sentence', std_norm=False)
+            feats = normal_func.construct(feats)
 
             save_fea_name = str(ts) + "_fea_mvn.npy"
             save_label_name = str(ts) + "_label.npy"
@@ -285,6 +286,7 @@ def compute_embeddings(embedder, dataloader, startidx=0, dur=50000, exc_set=None
 
 
 def generate_eval_data():
+    print("Generate eval data.")
     if not os.path.exists(hparams.eval_save_folder):
         os.makedirs(hparams.eval_save_folder)
     # Download verification list (to exlude verification sentences from train)
@@ -419,5 +421,6 @@ def eval_impl():
 
 
 if __name__ == "__main__":
-    generate_eval_data()
+    if hparams.need_generate_data:
+        generate_eval_data()
     eval_impl()
