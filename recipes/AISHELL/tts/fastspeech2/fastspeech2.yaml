@@ -1,0 +1,64 @@
+
+# Training params
+num_epochs: 5000
+batch_size: 32
+learning_rate: 0.001
+beta1: 0.9
+beta2: 0.98
+eps: 0.000000001
+
+max_grad_norm: 1.0
+
+save_step: 40000
+save_dir: '.'
+
+# Data params
+preemph_coef: 0.97
+sample_rate: 22050
+hop_samples: 300
+crop_mel_frames: 30
+n_fft: 2048
+n_mels: 128
+pitch:
+    feature: 'frame_level'
+    normalization: False
+    pitch_min: 0.
+    pitch_max: 843.436831
+energy:
+    feature: 'frame_level'
+    normalization: False
+    energy_min: 0.0436493270
+    energy_max: 494.149902
+
+data_path: '/home/zhudongyao/data_aishell'
+# manifest_path: this file is generated, not the metadata.csv
+manifest_path: '/home/zhudongyao/aishell_manifest.csv'
+lexicon_path: 'recipes/text/pinyin-lexicon-r.txt'
+
+# Model params
+model:
+    n_src_vocab: 360
+
+    transformer:
+        encoder_layer: 4
+        encoder_head: 2
+        encoder_hidden: 256
+        decoder_layer: 4
+        decoder_head: 2
+        decoder_hidden: 256
+        conv_filter_size: 1024
+        conv_kernel_size: [9, 1]
+        encoder_dropout: 0.2
+        decoder_dropout: 0.2
+
+    variance_predictor:
+        filter_size: 256
+        kernel_size: 3
+        dropout: 0.5
+
+    variance_embedding:
+        pitch_quantization: 'log'
+        energy_quantization: 'linear'
+        n_bins: 256
+
+    max_seq_len: 1000
