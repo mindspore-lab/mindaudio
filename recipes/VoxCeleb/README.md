@@ -8,7 +8,7 @@ Run the following command to train speaker embeddings using [ECAPA-TDNN](https:/
 
 The speaker-id accuracy should be around 98-99% for both voxceleb1 and voceleb2.
 
-After training the speaker embeddings, it is possible to perform speaker verification using cosine similarity.  You can run it with the following command:
+After training the speaker embeddings, it is possible to perform speaker verification using cosine similarity, The pretrained model ckpt path is at(https://download.mindspore.cn/toolkits/mindaudio/ecapatdnn/). You can download the pretrained model ckpt, run it with the following command:
 
 `python speaker_verification_cosine.py`
 
@@ -51,7 +51,7 @@ You can do the conversion using ffmpeg(https://gist.github.com/seungwonpark/4f27
 - training embeddings:
 `python train_speaker_embeddings.py`
 
-- eval embeddings:
+- eval embeddings：
 `python speaker_verification_cosine.py`
 
 
