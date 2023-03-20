@@ -38,7 +38,7 @@ from spec_augment import TimeDomainSpecAugment, EnvCorrupt, InputNormalization
 
 spk_id_encoded_dict = {}
 spk_id_encoded = -1
-process_num = 10
+process_num = 5
 
 
 def dataio_prep():
