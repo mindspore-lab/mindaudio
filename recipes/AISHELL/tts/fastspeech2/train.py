@@ -47,7 +47,6 @@ class MyTrainOneStepCell(nn.TrainOneStepWithLossScaleCell):
         self.grad_clip = grad_clip
         self.max_grad_norm = max_grad_norm
         self.slr = ops.ScalarSummary()
-        self.t = time()
 
     def construct(self, *args):
         loss = self.network(*args)
@@ -66,10 +65,6 @@ class MyTrainOneStepCell(nn.TrainOneStepWithLossScaleCell):
         overflow = self.process_loss_scale(cond)
         if not overflow:
             self.optimizer(grads)
-        t = time()
-        dt = t - self.t
-        self.t = t
-        print('[loss] %.2f [time] %.2fs' % (loss, dt))
 
         return loss, cond, scaling_sens
 
@@ -97,7 +92,7 @@ def main():
         data_path=hps.data_path,
         manifest_path=hps.manifest_path,
         batch_size=hps.batch_size // group,
-        is_train=True,
+        split='train',
         rank=rank,
         group_size=group
     )
@@ -126,7 +121,7 @@ def main():
     num_epochs = hps.num_epochs
     callbacks = []
     if not args.is_distributed or rank == 0:
-        callbacks.append(ms.LossMonitor(ds.get_dataset_size()))
+        callbacks.append(ms.LossMonitor(1))
         callbacks.append(ms.TimeMonitor())
         save = mindaudio.callbacks.SaveCallBack(
             model,

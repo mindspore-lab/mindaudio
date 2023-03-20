@@ -106,4 +106,4 @@ class FastSpeech2WithLoss(FastSpeech2):
             'energy_targets': e_targets,
             'duration_targets': d_targets,
         })
-        return self.loss_fn(yh)
+        return sum(self.loss_fn(yh))
