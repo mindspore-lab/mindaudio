@@ -486,7 +486,7 @@ def generate_train_data():
     wget.download(hparams.verification_file, veri_file_path)
 
     # Dataset prep (parsing VoxCeleb and annotation into csv files)
-    prepare_voxceleb(data_folder=hparams.data_folder, save_folder=hparams.save_folder,
+    prepare_voxceleb(data_folder_path=hparams.data_folder, save_folder_path=hparams.save_folder,
                      verification_pairs_file=veri_file_path,
                      splits=["train", "dev"],
                      split_ratio=[90, 10],
