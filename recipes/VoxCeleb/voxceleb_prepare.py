@@ -1,5 +1,5 @@
 """
-Data preparation, from speechbrain VoxCeleb recipe.
+Data preparation, from mindaudio VoxCeleb recipe.
 """
 
 import os
@@ -18,31 +18,26 @@ from mindaudio.data.processing import stereo_to_mono
 from tqdm.contrib import tqdm
 
 logger = logging.getLogger(__name__)
-OPT_FILE = "opt_voxceleb_prepare.pkl"
-TRAIN_CSV = "train.csv"
-DEV_CSV = "dev.csv"
-TEST_CSV = "test.csv"
-ENROL_CSV = "enrol.csv"
+VOX_OPT_FILE = "opt_voxceleb_prepare.pkl"
+VOX_TRAIN_CSV = "train.csv"
+VOX_DEV_CSV = "dev.csv"
+VOX_TEST_CSV = "test.csv"
+VOX_ENROL_CSV = "enrol.csv"
 SAMPLERATE = 16000
 
-DEV_WAV = "vox1_dev_wav.zip"
-TEST_WAV = "vox1_test_wav.zip"
+VOX_DEV_WAV = "vox1_dev_wav.zip"
+VOX_TEST_WAV = "vox1_test_wav.zip"
 META = "meta"
 
 
 def load_pkl(file):
-    """Loads a pkl file.
+    """
+    Loads a pkl file.
 
-    For an example, see `save_pkl`.
+    Args:
+        file : str, Path to the input pkl file.
 
-    Arguments
-    ---------
-    file : str
-        Path to the input pkl file.
-
-    Returns
-    -------
-    The loaded object.
+    Returns The loaded object.
     """
 
     # Deals with the situation where two processes are trying
@@ -65,358 +60,233 @@ def load_pkl(file):
 
 
 def save_pkl(obj, file):
-    """Save an object in pkl format.
+    """
+    Save an object in pkl format.
 
-    Arguments
-    ---------
-    obj : object
-        Object to save in pkl format
-    file : str
-        Path to the output file
-    sampling_rate : int
-        Sampling rate of the audio file
-
-    Example
-    -------
-    >>> tmpfile = getfixture('tmpdir') / "example.pkl"
-    >>> save_pkl([1, 2, 3, 4, 5], tmpfile)
-    >>> load_pkl(tmpfile)
-    [1, 2, 3, 4, 5]
+    Args:
+        obj : object, Object to save in pkl format
+        file : str, Path to the output file
     """
     with open(file, "wb") as f:
         pickle.dump(obj, f)
 
 
 def prepare_voxceleb(
-        data_folder,
-        save_folder,
+        data_folder_path,
+        save_folder_path,
         verification_pairs_file,
         splits=("train", "dev", "test"),
         split_ratio=(90, 10),
         seg_dur=3.0,
+        skip_prep=False,
         amp_th=5e-04,
         source=None,
         split_speaker=False,
         random_segment=False,
-        skip_prep=False,
 ):
     """
     Prepares the csv files for the Voxceleb1 or Voxceleb2 datasets.
     Please follow the instructions in the README.md file for
     preparing Voxceleb2.
-
-    Arguments
-    ---------
-    data_folder : str
-        Path to the folder where the original VoxCeleb dataset is stored.
-    save_folder : str
-        The directory where to store the csv files.
-    verification_pairs_file : str
-        txt file containing the verification split.
-    splits : list
-        List of splits to prepare from ['train', 'dev']
-    split_ratio : list
-        List if int for train and validation splits
-    seg_dur : int
-        Segment duration of a chunk in seconds (e.g., 3.0 seconds).
-    amp_th : float
-        removes segments whose average amplitude is below the
-        given threshold.
-    source : str
-        Path to the folder where the VoxCeleb dataset source is stored.
-    split_speaker : bool
-        Speaker-wise split
-    random_segment : bool
-        Train random segments
-    skip_prep: Bool
-        If True, skip preparation.
-
-    Example
-    -------
-    >>> from recipes.VoxCeleb.voxceleb_prepare import prepare_voxceleb
-    >>> data_folder = 'data/VoxCeleb1/'
-    >>> save_folder = 'VoxData/'
-    >>> splits = ['train', 'dev']
-    >>> split_ratio = [90, 10]
-    >>> prepare_voxceleb(data_folder, save_folder, splits, split_ratio)
     """
 
     if skip_prep:
         return
     # Create configuration for easily skipping data_preparation stage
-    conf = {
-        "data_folder": data_folder,
+    save_conf = {
+        "data_folder": data_folder_path,
         "splits": splits,
         "split_ratio": split_ratio,
-        "save_folder": save_folder,
+        "save_folder": save_folder_path,
         "seg_dur": seg_dur,
         "split_speaker": split_speaker,
     }
 
-    if not os.path.exists(save_folder):
-        os.makedirs(save_folder)
+    if not os.path.exists(save_folder_path):
+        os.makedirs(save_folder_path)
 
     # Setting output files
-    save_opt = os.path.join(save_folder, OPT_FILE)
-    save_csv_train = os.path.join(save_folder, TRAIN_CSV)
-    save_csv_dev = os.path.join(save_folder, DEV_CSV)
+    save_option = os.path.join(save_folder_path, VOX_OPT_FILE)
+    save_csv_train = os.path.join(save_folder_path, VOX_TRAIN_CSV)
+    save_csv_dev = os.path.join(save_folder_path, VOX_DEV_CSV)
 
     # Create the data folder contains VoxCeleb1 test data from the source
     if source is not None:
-        if not os.path.exists(os.path.join(data_folder, "wav", "id10270")):
-            logger.info("Extracting %s/%s to %s", source, TEST_WAV, data_folder)
-            shutil.unpack_archive(os.path.join(source, TEST_WAV), data_folder)
-        if not os.path.exists(os.path.join(data_folder, "meta")):
-            logger.info("Copying %s/meta to %s", source, data_folder)
+        if not os.path.exists(os.path.join(data_folder_path, "wav", "id10270")):
+            shutil.unpack_archive(os.path.join(source, VOX_TEST_WAV), data_folder_path)
+        if not os.path.exists(os.path.join(data_folder_path, "meta")):
             shutil.copytree(
-                os.path.join(source, "meta"), os.path.join(data_folder, "meta")
+                os.path.join(source, "meta"), os.path.join(data_folder_path, "meta")
             )
 
     # Check if this phase is already done (if so, skip it)
-    if skip(splits, save_folder, conf):
-        logger.info("Skipping preparation, completed in previous run.")
+    if skip(splits, save_folder_path, save_conf):
         return
 
     # Additional checks to make sure the data folder contains VoxCeleb data
-    if "," in data_folder:
-        data_folder = data_folder.replace(" ", "").split(",")
+    if "," in data_folder_path:
+        data_folder_path = data_folder_path.replace(" ", "").split(",")
     else:
-        data_folder = [data_folder]
-
-    # _check_voxceleb1_folders(data_folder, splits)
+        data_folder_path = [data_folder_path]
 
     msg = "\tCreating csv file for the VoxCeleb Dataset.."
     logger.info(msg)
 
     # Split data into 90% train and 10% validation (verification split)
-    wav_lst_train, wav_lst_dev = _get_utt_split_lists(
-        data_folder, split_ratio, verification_pairs_file, split_speaker
+    wav_lst_train, wav_lst_dev = get_utt_split_lists(
+        data_folder_path, split_ratio, verification_pairs_file, split_speaker
     )
 
     # Creating csv file for training data
     if "train" in splits:
-        prepare_csv(
+        prepare_csv_file(
             seg_dur, wav_lst_train, save_csv_train, random_segment, amp_th
         )
 
     if "dev" in splits:
-        prepare_csv(seg_dur, wav_lst_dev, save_csv_dev, random_segment, amp_th)
+        prepare_csv_file(seg_dur, wav_lst_dev, save_csv_dev, random_segment, amp_th)
 
     # For PLDA verification
     if "test" in splits:
         prepare_csv_enrol_test(
-            data_folder, save_folder, verification_pairs_file
+            data_folder_path, save_folder_path, verification_pairs_file
         )
 
     # Saving options (useful to skip this phase when already done)
-    save_pkl(conf, save_opt)
+    save_pkl(save_conf, save_option)
 
 
-def skip(splits, save_folder, conf):
+def skip(splits, save_folder, save_conf):
     """
     Detects if the voxceleb data_preparation has been already done.
     If the preparation has been done, we can skip it.
 
-    Returns
-    -------
-    bool
-        if True, the preparation phase can be skipped.
-        if False, it must be done.
     """
     # Checking csv files
     skip_prep = True
 
     split_files = {
-        "train": TRAIN_CSV,
-        "dev": DEV_CSV,
-        "test": TEST_CSV,
-        "enrol": ENROL_CSV,
+        "train": VOX_TRAIN_CSV,
+        "dev": VOX_DEV_CSV,
+        "test": VOX_TEST_CSV,
+        "enrol": VOX_ENROL_CSV,
     }
     for split in splits:
         if not os.path.isfile(os.path.join(save_folder, split_files[split])):
             skip_prep = False
     #  Checking saved options
-    save_opt = os.path.join(save_folder, OPT_FILE)
+    save_opt = os.path.join(save_folder, VOX_OPT_FILE)
     if skip_prep is True:
         if os.path.isfile(save_opt):
             opts_old = load_pkl(save_opt)
-            skip_prep = bool(opts_old == conf)
-            # if opts_old == conf:
-            #     skip_prep = True
-            # else:
-            #     skip_prep = False
+            skip_prep = bool(opts_old == save_conf)
         else:
             skip_prep = False
 
     return skip_prep
 
 
-def _check_voxceleb_folders(data_folders, splits):
-    """
-    Check if the data folder actually contains the Voxceleb1 dataset.
-
-    If it does not, raise an error.
-
-    Returns
-    -------
-    None
-
-    Raises
-    ------
-    FileNotFoundError
-    """
-    for data_folder in data_folders:
-
-        if "train" in splits:
-            folder_vox1 = os.path.join(data_folder, "wav", "id10001")
-            folder_vox2 = os.path.join(data_folder, "wav", "id00012")
-
-            if not os.path.exists(folder_vox1) or not os.path.exists(
-                    folder_vox2
-            ):
-                err_msg = "the specified folder does not contain VoxCeleb"
-                raise FileNotFoundError(err_msg)
-
-        if "test" in splits:
-            folder = os.path.join(data_folder, "wav", "id10270")
-            if not os.path.exists(folder):
-                err_msg = (
-                        "the folder %s does not exist (as it is expected in "
-                        "the VoxCeleb dataset)" % folder
-                )
-                raise FileNotFoundError(err_msg)
-
-        folder = os.path.join(data_folder, "meta")
-        if not os.path.exists(folder):
-            err_msg = (
-                    "the folder %s does not exist (as it is expected in "
-                    "the VoxCeleb dataset)" % folder
-            )
-            raise FileNotFoundError(err_msg)
-
-
 # Used for verification split
-def _get_utt_split_lists(
+def get_utt_split_lists(
         data_folders, split_ratio, verification_pairs_file, split_speaker=False
 ):
     """
-    Tot. number of speakers vox1= 1211.
-    Tot. number of speakers vox2= 5994.
     Splits the audio file list into train and dev.
     This function automatically removes verification test files from the training and dev set (if any).
     """
-    train_lst = []
-    dev_lst = []
+    vox_train_lst = []
+    vox_dev_lst = []
 
     print("Getting file list...")
     for data_folder in data_folders:
-
-        test_lst = [
+        test_list = [
             line.rstrip("\n").split(" ")[1]
             for line in open(verification_pairs_file)
         ]
-        test_lst = set(sorted(test_lst))
+        test_list = set(sorted(test_list))
 
-        test_spks = [snt.split("/")[0] for snt in test_lst]
+        test_speakers = [snt.split("/")[0] for snt in test_list]
 
         path = os.path.join(data_folder, "wav", "**", "*.wav")
         if split_speaker:
             # avoid test speakers for train and dev splits
-            audio_files_dict = {}
+            audio_file_dict = {}
             for f in glob.glob(path, recursive=True):
                 spk_id = f.split("/wav/")[1].split("/")[0]
-                if spk_id not in test_spks:
-                    audio_files_dict.setdefault(spk_id, []).append(f)
+                if spk_id not in test_speakers:
+                    audio_file_dict.setdefault(spk_id, []).append(f)
 
-            spk_id_list = list(audio_files_dict.keys())
+            spk_id_list = list(audio_file_dict.keys())
             random.shuffle(spk_id_list)
             split = int(0.01 * split_ratio[0] * len(spk_id_list))
             for spk_id in spk_id_list[:split]:
-                train_lst.extend(audio_files_dict[spk_id])
+                vox_train_lst.extend(audio_file_dict[spk_id])
 
             for spk_id in spk_id_list[split:]:
-                dev_lst.extend(audio_files_dict[spk_id])
+                vox_dev_lst.extend(audio_file_dict[spk_id])
         else:
             # avoid test speakers for train and dev splits
-            audio_files_list = []
+            audio_file_list = []
             for f in glob.glob(path, recursive=True):
                 try:
                     spk_id = f.split("/wav/")[1].split("/")[0]
                 except ValueError:
                     logger.info("Malformed path: %s", f)
                     continue
-                if spk_id not in test_spks:
-                    if spk_id == 'id00012':
-                        print('find id00012\n')
-                    audio_files_list.append(f)
+                if spk_id not in test_speakers:
+                    audio_file_list.append(f)
 
-            random.shuffle(audio_files_list)
-            split = int(0.01 * split_ratio[0] * len(audio_files_list))
-            train_snts = audio_files_list[:split]
-            dev_snts = audio_files_list[split:]
+            random.shuffle(audio_file_list)
+            split = int(0.01 * split_ratio[0] * len(audio_file_list))
+            train_snts = audio_file_list[:split]
+            dev_snts = audio_file_list[split:]
 
-            train_lst.extend(train_snts)
-            dev_lst.extend(dev_snts)
+            vox_train_lst.extend(train_snts)
+            vox_dev_lst.extend(dev_snts)
 
-    return train_lst, dev_lst
+    return vox_train_lst, vox_dev_lst
 
 
-def _get_chunks(seg_dur, audio_id, audio_duration):
+def get_chunks(seg_dur, audio_id, audio_duration):
     """
     Returns list of chunks
     """
     num_chunks = int(audio_duration / seg_dur)  # all in milliseconds
 
-    chunk_lst = [
+    chunk_list = [
         audio_id + "_" + str(i * seg_dur) + "_" + str(i * seg_dur + seg_dur)
         for i in range(num_chunks)
     ]
 
-    return chunk_lst
+    return chunk_list
 
 
-def prepare_csv(seg_dur, wav_lst, csv_file, random_segment=False, amp_th=0):
+def prepare_csv_file(seg_dur, wav_lst, csv_file, random_segment=False, amp_th=0):
     """
     Creates the csv file given a list of wav files.
-
-    Arguments
-    ---------
-    wav_lst : list
-        The list of wav files of a given data split.
-    csv_file : str
-        The path of the output csv file
-    random_segment: bool
-        Read random segments
-    amp_th: float
-        Threshold on the average amplitude on the chunk.
-        If under this threshold, the chunk is discarded.
-
-    Returns
-    -------
-    None
     """
 
     msg = '\t"Creating csv lists in  %s..."' % (csv_file)
     logger.info(msg)
 
-    csv_output = [["ID", "duration", "wav", "start", "stop", "spk_id"]]
+    csv_output_header = [["ID", "duration", "wav", "start", "stop", "spk_id"]]
 
     # For assigning unique ID to each chunk
-    my_sep = "--"
+    each_sep = "--"
     entry = []
     # Processing all the wav files in the list
-    for wav_file in tqdm(wav_lst, dynamic_ncols=True):
+    for each_wav_file in tqdm(wav_lst, dynamic_ncols=True):
         # Getting sentence and speaker ids
         try:
-            [spk_id, sess_id, utt_id] = wav_file.split("/")[-3:]
+            [spk_id, sess_id, utt_id] = each_wav_file.split("/")[-3:]
         except ValueError:
-            logger.info("Malformed path: %s", wav_file)
+            logger.info("Malformed path: %s", each_wav_file)
             continue
-        audio_id = my_sep.join([spk_id, sess_id, utt_id.split(".")[0]])
+        audio_id = each_sep.join([spk_id, sess_id, utt_id.split(".")[0]])
 
         # Reading the signal (to retrieve duration in seconds)
         try:
-            signal, _ = io.read(wav_file)
+            signal, _ = io.read(each_wav_file)
         except ValueError:
             continue
 
@@ -425,100 +295,89 @@ def prepare_csv(seg_dur, wav_lst, csv_file, random_segment=False, amp_th=0):
 
         if random_segment:
             audio_duration = signal.shape[0] / SAMPLERATE
-            start_sample = 0
-            stop_sample = signal.shape[0]
+            start_sample_index = 0
+            stop_sample_index = signal.shape[0]
 
             # Composition of the csv_line
-            csv_line = [
+            csv_each_line = [
                 audio_id,
                 str(audio_duration),
-                wav_file,
-                start_sample,
-                stop_sample,
+                each_wav_file,
+                start_sample_index,
+                stop_sample_index,
                 spk_id,
             ]
-            entry.append(csv_line)
+            entry.append(csv_each_line)
         else:
             audio_duration = signal.shape[0] / SAMPLERATE
 
-            uniq_chunks_list = _get_chunks(seg_dur, audio_id, audio_duration)
+            uniq_chunks_list = get_chunks(seg_dur, audio_id, audio_duration)
             for chunk in uniq_chunks_list:
                 s, e = chunk.split("_")[-2:]
-                start_sample = int(float(s) * SAMPLERATE)
+                start_sample_index = int(float(s) * SAMPLERATE)
                 end_sample = int(float(e) * SAMPLERATE)
 
                 #  Avoid chunks with very small energy
-                mean_sig = np.mean(np.abs(signal[start_sample:end_sample]))
+                mean_sig = np.mean(np.abs(signal[start_sample_index:end_sample]))
                 if mean_sig < amp_th:
                     continue
 
                 # Composition of the csv_line
-                csv_line = [
+                csv_each_line = [
                     chunk,
                     str(audio_duration),
-                    wav_file,
-                    start_sample,
+                    each_wav_file,
+                    start_sample_index,
                     end_sample,
                     spk_id,
                 ]
-                entry.append(csv_line)
+                entry.append(csv_each_line)
 
-    csv_output = csv_output + entry
+    csv_output_header = csv_output_header + entry
 
     # Writing the csv lines
     with open(csv_file, mode="w") as csv_f:
         csv_writer = csv.writer(
             csv_f, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
         )
-        for line in csv_output:
+        for line in csv_output_header:
             csv_writer.writerow(line)
 
     # Final prints
-    msg = "\t%s successfully created!" % (csv_file)
-    logger.info(msg)
+    msg_info = "\t%s successfully created!" % (csv_file)
+    logger.info(msg_info)
 
 
 def prepare_csv_enrol_test(data_folders, save_folder, verification_pairs_file):
     """
     Creates the csv file for test data (useful for verification)
-
-    Arguments
-    ---------
-    data_folder : str
-        Path of the data folders
-    save_folder : str
-        The directory where to store the csv files.
-
-    Returns
-    -------
-    None
     """
 
     csv_output_head = [
         ["ID", "duration", "wav", "start", "stop", "spk_id"]
     ]
 
-    for data_folder in data_folders:
+    for each_data_folder in data_folders:
 
-        test_lst_file = verification_pairs_file
+        test_list_file = verification_pairs_file
 
-        enrol_ids, test_ids = [], []
+        vox_enrol_ids, vox_test_ids = [], []
 
         # Get unique ids (enrol and test utterances)
-        for line in open(test_lst_file):
-            e_id = line.split(" ")[1].rstrip().split(".")[0].strip()
-            t_id = line.split(" ")[2].rstrip().split(".")[0].strip()
-            enrol_ids.append(e_id)
-            test_ids.append(t_id)
+        for each_line in open(test_list_file):
+            e_id = each_line.split(" ")[1].rstrip().split(".")[0].strip()
+            t_id = each_line.split(" ")[2].rstrip().split(".")[0].strip()
+            vox_enrol_ids.append(e_id)
+            vox_test_ids.append(t_id)
 
-        enrol_ids = list(np.unique(np.array(enrol_ids)))
-        test_ids = list(np.unique(np.array(test_ids)))
+        vox_enrol_ids = list(np.unique(np.array(vox_enrol_ids)))
+        vox_test_ids = list(np.unique(np.array(vox_test_ids)))
 
         # Prepare enrol csv
         logger.info("preparing enrol csv")
         enrol_csv = []
-        for e_id in enrol_ids:
-            wav = data_folder + "/wav/" + e_id + ".wav"
+        for e_id in vox_enrol_ids:
+            wav = each_data_folder + "/wav/" + e_id + ".wav"
 
             # Reading the signal (to retrieve duration in seconds)
             try:
@@ -529,37 +388,37 @@ def prepare_csv_enrol_test(data_folders, save_folder, verification_pairs_file):
                 signal = stereo_to_mono(signal)
 
             audio_duration = signal.shape[0] / SAMPLERATE
-            start_sample = 0
-            stop_sample = signal.shape[0]
+            start_sample_index = 0
+            stop_sample_index = signal.shape[0]
             [spk_id, _, _] = wav.split("/")[-3:]
 
             csv_line = [
                 e_id,
                 audio_duration,
                 wav,
-                start_sample,
-                stop_sample,
+                start_sample_index,
+                stop_sample_index,
                 spk_id,
             ]
 
             enrol_csv.append(csv_line)
 
         csv_output = csv_output_head + enrol_csv
-        csv_file = os.path.join(save_folder, ENROL_CSV)
+        csv_file_path = os.path.join(save_folder, VOX_ENROL_CSV)
 
         # Writing the csv lines
-        with open(csv_file, mode="w") as csv_f:
+        with open(csv_file_path, mode="w") as csv_f:
             csv_writer = csv.writer(
                 csv_f, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
             )
-            for line in csv_output:
-                csv_writer.writerow(line)
+            for each_line in csv_output:
+                csv_writer.writerow(each_line)
 
         # Prepare test csv
         logger.info("preparing test csv")
         test_csv = []
-        for t_id in test_ids:
-            wav = data_folder + "/wav/" + t_id + ".wav"
+        for t_id in vox_test_ids:
+            wav = each_data_folder + "/wav/" + t_id + ".wav"
 
             # Reading the signal (to retrieve duration in seconds)
             try:
@@ -570,28 +429,29 @@ def prepare_csv_enrol_test(data_folders, save_folder, verification_pairs_file):
                 signal = stereo_to_mono(signal)
 
             audio_duration = signal.shape[0] / SAMPLERATE
-            start_sample = 0
-            stop_sample = signal.shape[0]
+            start_sample_index = 0
+            stop_sample_index = signal.shape[0]
             [spk_id, _, _] = wav.split("/")[-3:]
 
             csv_line = [
                 t_id,
                 audio_duration,
                 wav,
-                start_sample,
-                stop_sample,
+                start_sample_index,
+                stop_sample_index,
                 spk_id,
             ]
 
             test_csv.append(csv_line)
 
         csv_output = csv_output_head + test_csv
-        csv_file = os.path.join(save_folder, TEST_CSV)
+        csv_file_path = os.path.join(save_folder, VOX_TEST_CSV)
 
         # Writing the csv lines
-        with open(csv_file, mode="w") as csv_f:
+        with open(csv_file_path, mode="w") as csv_f:
             csv_writer = csv.writer(
                 csv_f, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
             )
-            for line in csv_output:
-                csv_writer.writerow(line)
+            for each_line in csv_output:
+                csv_writer.writerow(each_line)
+
