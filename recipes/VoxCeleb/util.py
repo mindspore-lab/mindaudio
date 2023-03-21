@@ -7,20 +7,6 @@ import mindspore.numpy as np
 class AdditiveAngularMargin(nn.Cell):
     """
     An implementation of Additive Angular Margin (AAM) proposed
-    in the following paper: '''Margin Matters: Towards More Discriminative Deep
-    Neural Network Embeddings for Speaker Recognition'''
-    (https://arxiv.org/abs/1906.07317)
-
-    Arguments
-    ---------
-    margin : float
-        The margin for cosine similarity.
-    scale: float
-        The scale for cosine similarity.
-
-    Returns
-    -------
-    predictions : Tensor.
 
     """
 
@@ -40,17 +26,6 @@ class AdditiveAngularMargin(nn.Cell):
     def construct(self, outputs, targets):
         """
         Compute AAM between two tensors
-
-        Arguments
-        ---------
-        outputs : Tensor
-            The outputs of shape [N, C], cosine similarity is required.
-        targets : Tensor
-            The targets of shape [N, C], where the margin is applied for.
-
-        Return
-        ---------
-        predictions : Tensor
         """
         cosine = outputs
         sine = self.sqrt(1.0 - self.pow(cosine, 2))
