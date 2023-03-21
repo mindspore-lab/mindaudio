@@ -297,8 +297,8 @@ def generate_eval_data():
 
     # Prepare data from dev of Voxceleb1
     prepare_voxceleb(
-        data_folder=hparams.eval_data_folder,
-        save_folder=hparams.eval_save_folder,
+        data_folder_path=hparams.eval_data_folder,
+        save_folder_path=hparams.eval_save_folder,
         verification_pairs_file=veri_file_path,
         splits=["train", "dev", "test"],
         split_ratio=[90, 10],
