@@ -408,13 +408,13 @@ def mel(sr, n_fft, n_mels=128, fmin=0.0, fmax=None,
     fdiff = np.diff(mel_freqs)
     ramps = np.subtract.outer(mel_freqs, fftfreqs)
 
-    for i in range(n_mels):
+    for index in range(n_mels):
         # lower and upper slopes for all bins
-        lower = -ramps[i] / fdiff[i]
-        upper = ramps[i + 2] / fdiff[i + 1]
+        lower = -ramps[index] / fdiff[index]
+        upper = ramps[index + 2] / fdiff[index + 1]
 
         # .. then intersect them with each other and zero
-        weights[i] = np.maximum(0, np.minimum(lower, upper))
+        weights[index] = np.maximum(0, np.minimum(lower, upper))
 
     if isinstance(norm, str):
         if norm == "slaney":
