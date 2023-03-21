@@ -119,10 +119,19 @@ python librispeech.py --root_path "your_data_path"
 - 单卡训练
 
 ```shell
-#进入具体任务目录
+# 进入具体任务目录
 cd ASR
 # 单卡训练
 python train.py -c "./hparams/Deepspeech2.yaml"
+```
+
+- 多卡训练
+
+```shell
+# 进入具体任务目录
+cd ASR
+# 启动多卡训练
+mpirun --allow-run-as-root -n 8 python train.py -c "./hparams/Deepspeech2.yaml"
 ```
 
 - 推理

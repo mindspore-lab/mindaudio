@@ -133,6 +133,15 @@ cd ASR
 python train.py -c "./hparams/Deepspeech2.yaml"
 ```
 
+- Distribute training
+
+```shell
+# Enter the specific task directory
+cd ASR
+# Distribute training
+mpirun --allow-run-as-root -n 8 python train.py -c "./hparams/Deepspeech2.yaml"
+```
+
 - Validation
 
 ```shell

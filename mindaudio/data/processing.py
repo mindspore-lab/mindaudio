@@ -548,25 +548,23 @@ def overlap_and_add(signal, frame_step):
     outer_dimensions = signal.shape[:-2]
     frames, frame_length = signal.shape[-2:]
 
-    subframe_length = math.gcd(
-        frame_length, frame_step
-    )  # gcd=Greatest Common Divisor
-    subframe_step = frame_step // subframe_length
-    subframes_per_frame = frame_length // subframe_length
+    # return the greatest common divisor of frame_length and frame_step
+    cal_frame_length = math.gcd(frame_length, frame_step)
+    cal_frame_step = frame_step // cal_frame_length
+    subframes_per_frame = frame_length // cal_frame_length
     output_size = frame_step * (frames - 1) + frame_length
-    output_subframes = output_size // subframe_length
-
-    subframe_signal = signal.view(*outer_dimensions, -1, subframe_length)
+    output_subframes = output_size // cal_frame_length
 
     frame = np.lib.stride_tricks.sliding_window_view(np.arange(0, output_subframes),
-                                                     subframes_per_frame)[::subframe_step, :]
+                                                     subframes_per_frame)[::cal_frame_step, :]
     frame = Tensor(frame.reshape(-1), ms.int32)
 
     new_zeros = ops.Zeros()
     result = new_zeros(
-        (*outer_dimensions, output_subframes, subframe_length), ms.float32
+        (*outer_dimensions, output_subframes, cal_frame_length), ms.float32
     )
     # result.index_add_(-2, frame, subframe_signal)
+    subframe_signal = signal.view(*outer_dimensions, -1, cal_frame_length)
     result = ops.index_add(Parameter(result), frame, subframe_signal, 1)
     result = result.view(*outer_dimensions, -1)
     return result
