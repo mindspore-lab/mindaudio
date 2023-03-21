@@ -240,7 +240,7 @@ class EnvCorrupt:
         if hasattr(self, "add_noise"):
             waves = self.add_noise.construct(waves)
 
-        return waveforms
+        return waves
 
 
 def prepare_openrir(folder, reverb_csv, noise_csv, max_noise_len):
