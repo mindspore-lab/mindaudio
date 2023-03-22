@@ -46,15 +46,16 @@ You can do the conversion using ffmpeg(https://gist.github.com/seungwonpark/4f27
 
 7. Unpack voxceleb1 dev files and test files in dir `voxceleb1/`. You should have something like `voxceleb1/wav/id*/*.wav`.
 
-8. Now everything is ready and you can run voxceleb12 experiments:
-
-- training embeddings:
+# Train
+After Voxceleb1 + Voxceleb2 dataset is prepared, you can run the code below to generate preprocessed training audio data and train speaker embeddings:
 `python train_speaker_embeddings.py`
+Attention:Voxceleb1 + Voxceleb2 dataset is so big so that the time of processing audio data is so long, so we use multiprocess with 30 processes to precess audio data.
+If you mechine is not supported, please change the var "data_process_num" in the ecapatdnn.yaml file to the value your mechine supported.
+Also, when the preprocessed audio data is generated, you can run the code below only to train speaker embeddings:
+`python train_speaker_embeddings.py --need_generate_data=False`
 
-- eval embeddings：
+# Evaluate
+After you model is trained finished,  you can run the code below to generate preprocessed testing audio data and evalute speaker verification:
 `python speaker_verification_cosine.py`
-
-
-
-
-
+Also, when the preprocessed testing audio data is generated, you can run the code below only to evalute speaker verification:
+`python speaker_verification_cosine.py --need_generate_data=False`
