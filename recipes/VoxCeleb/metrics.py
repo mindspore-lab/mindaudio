@@ -28,6 +28,7 @@ def get_EER(P_fa, P_miss, thresholds=None):
 def get_EER_from_scores(scores, labels, pos_label=1):
     """Compute EER given scores and labels
     """
-    P_fa, P_miss, thresholds = compute_fa_miss(scores, labels, pos_label, return_thresholds=True)
+    P_fa, P_miss, thresholds = compute_fa_miss(scores, labels, pos_label,
+                                               return_thresholds=True)
     eer, thresh_eer = get_EER(P_fa, P_miss, thresholds)
     return eer, thresh_eer

@@ -12,7 +12,6 @@ import shutil
 import time
 
 import numpy as np
-import mindspore as ms
 import mindaudio.data.io as io
 from mindaudio.data.processing import stereo_to_mono
 from tqdm.contrib import tqdm
@@ -112,11 +111,14 @@ def prepare_voxceleb(
 
     # Create the data folder contains VoxCeleb1 test data from the source
     if source is not None:
-        if not os.path.exists(os.path.join(data_folder_path, "wav", "id10270")):
-            shutil.unpack_archive(os.path.join(source, VOX_TEST_WAV), data_folder_path)
+        if not os.path.exists(
+                os.path.join(data_folder_path, "wav", "id10270")):
+            shutil.unpack_archive(os.path.join(source, VOX_TEST_WAV),
+                                  data_folder_path)
         if not os.path.exists(os.path.join(data_folder_path, "meta")):
             shutil.copytree(
-                os.path.join(source, "meta"), os.path.join(data_folder_path, "meta")
+                os.path.join(source, "meta"),
+                os.path.join(data_folder_path, "meta")
             )
 
     # Check if this phase is already done (if so, skip it)
@@ -144,7 +146,8 @@ def prepare_voxceleb(
         )
 
     if "dev" in splits:
-        prepare_csv_file(seg_dur, wav_lst_dev, save_csv_dev, random_segment, amp_th)
+        prepare_csv_file(seg_dur, wav_lst_dev, save_csv_dev, random_segment,
+                         amp_th)
 
     # For PLDA verification
     if "test" in splits:
@@ -192,7 +195,8 @@ def get_utt_split_lists(
 ):
     """
     Splits the audio file list into train and dev.
-    This function automatically removes verification test files from the training and dev set (if any).
+    This function automatically removes verification test files from the
+    training and dev set (if any).
     """
     vox_train_lst = []
     vox_dev_lst = []
@@ -261,7 +265,8 @@ def get_chunks(seg_dur, audio_id, audio_duration):
     return chunk_list
 
 
-def prepare_csv_file(seg_dur, wav_lst, csv_file, random_segment=False, amp_th=0):
+def prepare_csv_file(seg_dur, wav_lst, csv_file, random_segment=False,
+                     amp_th=0):
     """
     Creates the csv file given a list of wav files.
     """
@@ -318,7 +323,8 @@ def prepare_csv_file(seg_dur, wav_lst, csv_file, random_segment=False, amp_th=0)
                 end_sample = int(float(e) * SAMPLERATE)
 
                 #  Avoid chunks with very small energy
-                mean_sig = np.mean(np.abs(signal[start_sample_index:end_sample]))
+                mean_sig = np.mean(
+                    np.abs(signal[start_sample_index:end_sample]))
                 if mean_sig < amp_th:
                     continue
 
@@ -454,4 +460,3 @@ def prepare_csv_enrol_test(data_folders, save_folder, verification_pairs_file):
             )
             for each_line in csv_output:
                 csv_writer.writerow(each_line)
-

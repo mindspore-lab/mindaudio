@@ -2,10 +2,10 @@ import numpy as np
 from scipy.ndimage import median_filter
 import mindspore as ms
 from mindspore import nn, Tensor
-from mindspore.dataset.audio.utils import BorderType, create_dct, NormMode, WindowType
+from mindspore.dataset.audio.utils import BorderType, create_dct, NormMode, \
+    WindowType
 import mindspore.dataset.audio as msaudio
 from .spectrum import melspectrogram, amplitude_to_dB, stft, istft, magphase
-
 
 __all__ = [
     'spectral_centroid',
@@ -19,7 +19,8 @@ __all__ = [
 ]
 
 
-def spectral_centroid(waveforms, sample_rate, n_fft=400, win_length=None, hop_length=None, pad=0, window="hann"):
+def spectral_centroid(waveforms, sample_rate, n_fft=400, win_length=None,
+                      hop_length=None, pad=0, window="hann"):
     """
     Create a spectral centroid from an audio signal.
 
@@ -28,10 +29,13 @@ def spectral_centroid(waveforms, sample_rate, n_fft=400, win_length=None, hop_le
         sample_rate (int): Sampling rate of the waveform, e.g. 44100 (Hz).
         n_fft (int): Size of FFT, creates n_fft // 2 + 1 bins (default=400).
         win_length (int): Window size (default=None, will use n_fft).
-        hop_length (int): Length of hop between STFT windows (default=None, will use win_length // 2).
+        hop_length (int): Length of hop between STFT windows (default=None,
+        will use win_length // 2).
         pad (int): Two sided padding of signal (default=0).
-        window (WindowType): Window function that is applied/multiplied to each frame/window,which can be
-        WindowType.BARTLETT, WindowType.BLACKMAN, WindowType.HAMMING, WindowType.HANN or WindowType.KAISER
+        window (WindowType): Window function that is applied/multiplied to
+        each frame/window,which can be
+        WindowType.BARTLETT, WindowType.BLACKMAN, WindowType.HAMMING,
+        WindowType.HANN or WindowType.KAISER
         (default=WindowType.HANN).
 
     Returns:
@@ -41,32 +45,36 @@ def spectral_centroid(waveforms, sample_rate, n_fft=400, win_length=None, hop_le
         >>> import mindaudio.data.io as io
         >>> import mindaudio.data.features as features
         >>> waveform, sr = io.read('./samples/ASR/BAC009S0002W0122.wav')
-        >>> spectralcentroid = features.spectral_centroid(waveform, sr)  # (channel, time)
+        >>> spectralcentroid = features.spectral_centroid(waveform, sr)
 
     """
 
     win_length = win_length if win_length else n_fft
     hop_length = hop_length if hop_length else win_length // 2
     window = WindowType(window)
-    spectralcentroid = msaudio.SpectralCentroid(sample_rate, n_fft, win_length, hop_length, pad, window)
+    spectralcentroid = msaudio.SpectralCentroid(sample_rate, n_fft, win_length,
+                                                hop_length, pad, window)
 
     return spectralcentroid(waveforms)
 
 
 def context_window(waveforms, left_frames=0, right_frames=0):
     """
-    Create a context window from an audio signal to gather multiple time step in a single feature vector.
+    Create a context window from an audio signal to gather multiple time step
+    in a single feature vector.
     Returns the array with the surrounding context.
 
     Args:
-        waveforms(np.ndarray): Single-channel or multi-channel time-series audio signals with shape [freq, time],
-                                   [batch, freq, time] or [batch, channel, freq, time].
+        waveforms(np.ndarray): Single-channel or multi-channel time-series
+        audio signals with shape [freq, time],[batch, freq, time] or
+        [batch, channel, freq, time].
         left_frames (int): Number of past frames to collect.
         left_frames (int): Number of future frames to collect.
 
     Returns:
-        np.array: Aggregated feature vector by gathering the past and future time steps. The feature with shape
-                      [freq, time], [batch, freq, time] or [batch, channel, freq, time].
+        np.array: Aggregated feature vector by gathering the past and future
+        time steps. The feature with shape [freq, time], [batch, freq, time]
+        or [batch, channel, freq, time].
 
     Examples:
         >>> import numpy as np
@@ -94,12 +102,13 @@ def context_window(waveforms, left_frames=0, right_frames=0):
     elif len(input_shape) == 4:
         x = waveforms.transpose((0, 2, 3, 1))
     else:
-        raise TypeError("Input dimension must be 2, 3 or 4, but got {}".format(len(input_shape)))
+        raise TypeError("Input dimension must be 2, 3 or 4, but got {}".format(
+            len(input_shape)))
 
     if first_call:
         first_call = False
         tile = np.tile(kernel, (x.shape[1], 1, 1))
-        tile = tile.reshape((x.shape[1] * context_size, kernel_size, ))
+        tile = tile.reshape((x.shape[1] * context_size, kernel_size,))
         kernel = np.expand_dims(tile, 1)
 
     x_shape = x.shape
@@ -109,8 +118,8 @@ def context_window(waveforms, left_frames=0, right_frames=0):
     # Computing context using the estimated kernel
     in_channel, out_channel = x_shape[1], kernel.shape[0]
     conv = nn.Conv1d(in_channel, out_channel, kernel_size,
-                          padding=max_frame, pad_mode='pad',
-                          group=x.shape[1], weight_init=Tensor(kernel))
+                     padding=max_frame, pad_mode='pad',
+                     group=x.shape[1], weight_init=Tensor(kernel))
     x_tensor = Tensor(x, ms.float32)
     context = conv(x_tensor)
     # Retrieving the original dimensionality for multi-channel case
@@ -132,19 +141,21 @@ def compute_deltas(specgram, win_length=5, pad_mode="edge"):
 
     Args:
         specgram(np.ndarray): audio signals of dimension'(..., freq, time)'
-        win_length (int): The window length used for computing delta, must be no less than 3 (default=5).
-        pad_mode (str): Mode parameter passed to padding, which can be 'constant', 'edge', 'reflect', 'symmetric'
+        win_length (int): The window length used for computing delta, must be
+        no less than 3 (default=5).
+        pad_mode (str): Mode parameter passed to padding, which can be
+        'constant', 'edge', 'reflect', 'symmetric'
             (default='edge').
 
             - 'constant', means it fills the border with constant values.
 
             - 'edge', means it pads with the last value on the edge.
 
-            - 'reflect', means it reflects the values on the edge omitting the last
-              value of edge.
+            - 'reflect', means it reflects the values on the edge omitting the
+            last value of edge.
 
-            - 'symmetric', means it reflects the values on the edge repeating the last
-              value of edge.
+            - 'symmetric', means it reflects the values on the edge repeating
+            the last value of edge.
     Returns:
         deltas
 
@@ -152,7 +163,8 @@ def compute_deltas(specgram, win_length=5, pad_mode="edge"):
         >>> import numpy as np
         >>> import mindaudio.data.features as features
         >>> specgram = np.random.random([1, 400 // 2 + 1, 1000])
-        >>> deltas = features.compute_deltas(waveforms, win_length=7, pad_mode="edge")
+        >>> deltas = features.compute_deltas(waveforms, win_length=7, \
+        pad_mode="edge")
     """
 
     pad_mode = BorderType(pad_mode)
@@ -161,31 +173,41 @@ def compute_deltas(specgram, win_length=5, pad_mode="edge"):
     return compute_deltas_ms(specgram)
 
 
-def fbank(waveforms, deltas=False, context=False, n_mels=40, n_fft=400, sample_rate=16000, f_min=0.0, f_max=None,
-          left_frames=5, right_frames=5, win_length=None, hop_length=None, window="hann"):
+def fbank(waveforms, deltas=False, context=False, n_mels=40, n_fft=400,
+          sample_rate=16000, f_min=0.0, f_max=None,
+          left_frames=5, right_frames=5, win_length=None, hop_length=None,
+          window="hann"):
     """
     Generate filter bank features.
 
     Args:
-        waveforms(np.ndarray): A batch of audio signals with shape [time], [batch, time] or [batch, channel, time].
-        deltas (bool): Whether or not to append derivatives and second derivatives to the features (default: False).
-        context (bool): Whether or not to append forward and backward contexts to the features (default: False).
+        waveforms(np.ndarray): A batch of audio signals with shape [time],
+        [batch, time] or [batch, channel, time].
+        deltas (bool): Whether or not to append derivatives and second
+        derivatives to the features (default: False).
+        context (bool): Whether or not to append forward and backward contexts
+        to the features (default: False).
         n_mels (int): Number of Mel filters (default: 40).
         n_fft (int): Number of samples used in each stft (default: 400).
-        sample_rate (int): Sampling rate for the input waveforms (default: 160000).
+        sample_rate (int): Sampling rate for the input waveforms
+        (default: 160000).
         f_min (float): Minimum frequency (default=0).
-        f_max (float): Maximum frequency (default=None, will be set to sample_rate // 2).
-        left_frames (int): Number of frames  left context to collect (default: 5).
+        f_max (float): Maximum frequency (default=None, will be set to
+        sample_rate // 2).
+        left_frames (int): Number of frames  left context to collect
+        (default: 5).
         right_frames (int): Number of past frames to collect (default: 5).
         win_length (int): Window size (default=None, will use n_fft).
-        hop_length (int): Length of hop between STFT windows (default=None, will use win_length // 2).
-        window (str): Window function that is applied/multiplied to each frame/window,which can be 'bartlett',
-        'blackman', 'hamming', 'hann' or 'kaiser' (default='hann'). Currently kaiser window is not supported
-        on macOS.
+        hop_length (int): Length of hop between STFT windows
+        (default=None, will use win_length // 2).
+        window (str): Window function that is applied/multiplied to each
+        frame/window,which can be 'bartlett',
+        'blackman', 'hamming', 'hann' or 'kaiser' (default='hann').
+        Currently kaiser window is not supported on macOS.
 
     Returns:
-        np.ndarray: Mel-frequency cepstrum coefficients with shape [freq, time], [batch, freq, time] or
-                    [batch, channel, freq, time].
+        np.ndarray: Mel-frequency cepstrum coefficients with shape
+        [freq, time], [batch, freq, time] or [batch, channel, freq, time].
 
     Example:
         >>> import numpy as np
@@ -196,9 +218,12 @@ def fbank(waveforms, deltas=False, context=False, n_mels=40, n_fft=400, sample_r
         (10, 40, 101)
     """
 
-    melspcgram = melspectrogram(waveforms, n_fft=n_fft, win_length=win_length, hop_length=hop_length, window=window,
-                                n_mels=n_mels, sample_rate=sample_rate, f_min=f_min, f_max=f_max)
-    fbanks = amplitude_to_dB(wavform=melspcgram, stype="power", ref=1.0, top_db=80.0)
+    melspcgram = melspectrogram(waveforms, n_fft=n_fft, win_length=win_length,
+                                hop_length=hop_length, window=window,
+                                n_mels=n_mels, sample_rate=sample_rate,
+                                f_min=f_min, f_max=f_max)
+    fbanks = amplitude_to_dB(wavform=melspcgram, stype="power", ref=1.0,
+                             top_db=80.0)
     if deltas:
         delta1 = compute_deltas(fbanks)
         delta2 = compute_deltas(delta1)
@@ -208,30 +233,43 @@ def fbank(waveforms, deltas=False, context=False, n_mels=40, n_fft=400, sample_r
     return fbanks
 
 
-def mfcc(waveforms, deltas=True, context=True, n_mels=23, n_mfcc=20, n_fft=400, sample_rate=16000, f_min=0.0,
-           f_max=None, left_frames=5, right_frames=5, win_length=None, hop_length=None, norm="ortho", log_mels=False):
-    """Generate Mel-frequency cepstrum coefficients (MFCC) features from input audio signal.
+def mfcc(waveforms, deltas=True, context=True, n_mels=23, n_mfcc=20, n_fft=400,
+         sample_rate=16000, f_min=0.0,
+         f_max=None, left_frames=5, right_frames=5, win_length=None,
+         hop_length=None, norm="ortho", log_mels=False):
+    """Generate Mel-frequency cepstrum coefficients (MFCC) features from input
+    audio signal.
 
     Args:
-        waveforms(np.ndarray): A batch of audio signals with shape [time], [batch, time] or [batch, channel, time].
-        deltas (bool): Whether or not to append derivatives and second derivatives to the features (default: False).
-        context (bool): Whether or not to append forward and backward contexts to the features (default: False).
+        waveforms(np.ndarray): A batch of audio signals with shape [time],
+        [batch, time] or [batch, channel, time].
+        deltas (bool): Whether or not to append derivatives and second
+        derivatives to the features (default: False).
+        context (bool): Whether or not to append forward and backward contexts
+        to the features (default: False).
         n_mels (int): Number of Mel filters (default: 23).
-        n_mfcc (int): Number of Mel-frequency cepstrum coefficients (default: 20).
+        n_mfcc (int): Number of Mel-frequency cepstrum coefficients
+        (default: 20).
         n_fft (int): Number of samples used in each stft (default: 400).
-        sample_rate (int): Sampling rate for the input waveforms (default: 160000).
+        sample_rate (int): Sampling rate for the input waveforms
+        (default: 160000).
         f_min (float, optional): Minimum frequency (default=0).
-        f_max (float, optional): Maximum frequency (default=None, will be set to sample_rate // 2).
-        left_frames (int): Number of frames  left context to collect (default: 5).
+        f_max (float, optional): Maximum frequency (default=None, will be set
+        to sample_rate // 2).
+        left_frames (int): Number of frames  left context to collect
+        (default: 5).
         right_frames (int): Number of past frames to collect (default: 5).
         win_length (int, optional): Window size (default=None, will use n_fft).
-        hop_length (int, optional): Length of hop between STFT windows (default=None, will use win_length // 2).
-        norm (str, optional): Normalization mode, can be "none" or "orhto" (default="none").
-        log_mels (bool, optional): Whether to use log-mel spectrograms instead of db-scaled (default=False).
+        hop_length (int, optional): Length of hop between STFT windows
+        (default=None, will use win_length // 2).
+        norm (str, optional): Normalization mode, can be "none" or "orhto"
+        (default="none").
+        log_mels (bool, optional): Whether to use log-mel spectrograms instead
+        of db-scaled (default=False).
 
     Returns:
-        np.ndarray: Mel-frequency cepstrum coefficients with shape [freq, time], [batch, freq, time]
-                    or [batch, channel, freq, time].
+        np.ndarray: Mel-frequency cepstrum coefficients with shape
+        [freq, time], [batch, freq, time] or [batch, channel, freq, time].
 
     Example:
         >>> import numpy as np
@@ -243,11 +281,14 @@ def mfcc(waveforms, deltas=True, context=True, n_mels=23, n_mfcc=20, n_fft=400, 
     norm = NormMode(norm)
 
     if n_mfcc > n_mels:
-        raise ValueError('The number of MFCC coefficients must be no more than # mel bins.')
+        raise ValueError(
+            'The number of MFCC coefficients must be no more than # mel bins.')
     dct = create_dct(n_mfcc=n_mfcc, n_mels=n_mels, norm=norm)
 
-    melspec = melspectrogram(waveforms, sample_rate=sample_rate, n_fft=n_fft, n_mels=n_mels, f_min=f_min,
-                                   f_max=f_max, win_length=win_length, hop_length=hop_length)
+    melspec = melspectrogram(waveforms, sample_rate=sample_rate, n_fft=n_fft,
+                             n_mels=n_mels, f_min=f_min,
+                             f_max=f_max, win_length=win_length,
+                             hop_length=hop_length)
     if log_mels:
         melspec = np.log(melspec + 1e-6)
     else:
@@ -258,11 +299,14 @@ def mfcc(waveforms, deltas=True, context=True, n_mels=23, n_mfcc=20, n_fft=400, 
     if len(melspecgram_shape) == 2:
         mfccs = np.matmul(melspec.transpose((1, 0)), dct).transpose((1, 0))
     elif len(melspecgram_shape) == 3:
-        mfccs = np.matmul(melspec.transpose((0, 2, 1)), dct).transpose((0, 2, 1))
+        mfccs = np.matmul(melspec.transpose((0, 2, 1)), dct).transpose(
+            (0, 2, 1))
     elif len(melspecgram_shape) == 4:
-        mfccs = np.matmul(melspec.transpose((0, 1, 3, 2)), dct).transpose((0, 1, 3, 2))
+        mfccs = np.matmul(melspec.transpose((0, 1, 3, 2)), dct).transpose(
+            (0, 1, 3, 2))
     else:
-        raise TypeError("Unsupported MelSpectrogram shape {}".format(len(melspecgram_shape)))
+        raise TypeError("Unsupported MelSpectrogram shape {}".format(
+            len(melspecgram_shape)))
 
     if deltas:
         delta1 = compute_deltas(mfccs)
@@ -278,12 +322,15 @@ def complex_norm(waveforms, power=1.0):
     Compute the norm of complex number sequence.
 
     Note:
-        The dimension of the audio waveform to be processed needs to be (..., complex=2).
-        The first dimension represents the real part while the second represents the imaginary.
+        The dimension of the audio waveform to be processed needs to be
+        (..., complex=2).
+        The first dimension represents the real part while the second
+        represents the imaginary.
 
     Args:
         waveforms (np.ndarray): Array shape of (..., 2).
-        power (float): Power of the norm, which must be non-negative. Default: 1.0.
+        power (float): Power of the norm, which must be non-negative.
+        Default: 1.0.
 
     Returns:
             np.ndarray, norm of the input signal.
@@ -310,7 +357,8 @@ def complex_norm(waveforms, power=1.0):
 def angle(x):
     """
     Calculate the angle of the complex number sequence of shape (..., 2).
-    The first dimension represents the real part while the second represents the imaginary.
+    The first dimension represents the real part while the second represents
+    the imaginary.
 
     Args:
         x(np.ndarray): Complex number to compute
@@ -388,7 +436,8 @@ def hpss(spectrogram, *, kernel_size=31, power=2.0, mask=False, margin=1.0):
 
     # margin minimum is 1.0
     if margin_harmonic < 1 or margin_perc < 1:
-        raise TypeError("Margins must be >= 1.0. " "A typical range is between 1 and 10.")
+        raise TypeError(
+            "Margins must be >= 1.0. " "A typical range is between 1 and 10.")
 
     # shape for kernels
     perc_shape = [1 for _ in spectrogram.shape]
@@ -417,7 +466,8 @@ def hpss(spectrogram, *, kernel_size=31, power=2.0, mask=False, margin=1.0):
     if mask:
         return mask_harmonic, mask_perc
 
-    return (spectrogram * mask_harmonic) * phase, (spectrogram * mask_perc) * phase
+    return (spectrogram * mask_harmonic) * phase, (
+                spectrogram * mask_perc) * phase
 
 
 def harmonic(y_input, **kwargs):
@@ -429,7 +479,8 @@ def harmonic(y_input, **kwargs):
         **kwargs : additional keyword arguments.
 
     Returns:
-        np.ndarray, the waveform after harmonic,A batch of data in shape (,n) or (n_channel,n).
+        np.ndarray, the waveform after harmonic,A batch of data in shape (,n)
+        or (n_channel,n).
 
     Examples:
         >>> waveform, sr = io.read('./samples/ASR/BAC009S0002W0122.wav')

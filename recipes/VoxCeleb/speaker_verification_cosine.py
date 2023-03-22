@@ -24,21 +24,36 @@ from metrics import get_EER_from_scores
 from config import config as hparams
 
 # bad utterances
-excluded_set = {2302, 2303, 2304, 2305, 2306, 2307, 2308, 2309, 2310, 2311, 2312, 2313, 2314, 2315,
-                2316, 2317, 2318, 2319, 2320, 2321, 2322, 2323, 2324, 2325, 2326, 2327, 2328, 2329,
-                2330, 2331, 2332, 2333, 2334, 2335, 2336, 2337, 2338, 2339, 2340, 2341, 2342, 2343,
-                2344, 2345, 2346, 2347, 2348, 2349, 2350, 2351, 2352, 2353, 2354, 2355, 2356, 2357,
-                2358, 2359, 2360, 2361, 2362, 2363, 2364, 2365, 2366, 2367, 2368, 2369, 2370, 2371,
-                2372, 2373, 2374, 2375, 2376, 2377, 2378, 2379, 2380, 2381, 2382, 2383, 2384, 2385,
-                2386, 2387, 2970, 2971, 2972, 2973, 2974, 2975, 2976, 2977, 2978, 2979, 2980, 2981,
-                2982, 2983, 2984, 2985, 2986, 2987, 2988, 2989, 2990, 2991, 2992, 2993, 2994, 2995,
-                2996, 2997, 2998, 2999, 3000, 3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009,
-                3010, 3011, 3012, 3013, 3014, 3015, 3016, 3017, 3018, 3019, 3020, 3021, 3022, 3023,
-                3024, 3025, 3026, 3027, 3028, 3029, 3030, 3031, 3032, 3033, 3034, 3035, 3036, 3037,
-                4442, 4443, 4444, 4445, 4446, 4447, 4448, 4449, 4450, 4451, 4452, 4453, 4454, 4455,
-                4456, 4457, 4458, 4459, 4460, 4461, 4462, 4463, 4464, 4465, 4466, 4467, 4468, 4469,
-                4470, 4471, 4472, 4473, 4474, 4475, 4476, 4477, 4478, 4479, 4480, 4481, 4482, 4483,
-                4484, 4485, 4486, 4487, 4488, 4489, 4490, 4491, 4492, 4639, 4640, 4641, 4642, 4643}
+excluded_set = {2302, 2303, 2304, 2305, 2306, 2307, 2308, 2309, 2310, 2311,
+                2312, 2313, 2314, 2315,
+                2316, 2317, 2318, 2319, 2320, 2321, 2322, 2323, 2324, 2325,
+                2326, 2327, 2328, 2329,
+                2330, 2331, 2332, 2333, 2334, 2335, 2336, 2337, 2338, 2339,
+                2340, 2341, 2342, 2343,
+                2344, 2345, 2346, 2347, 2348, 2349, 2350, 2351, 2352, 2353,
+                2354, 2355, 2356, 2357,
+                2358, 2359, 2360, 2361, 2362, 2363, 2364, 2365, 2366, 2367,
+                2368, 2369, 2370, 2371,
+                2372, 2373, 2374, 2375, 2376, 2377, 2378, 2379, 2380, 2381,
+                2382, 2383, 2384, 2385,
+                2386, 2387, 2970, 2971, 2972, 2973, 2974, 2975, 2976, 2977,
+                2978, 2979, 2980, 2981,
+                2982, 2983, 2984, 2985, 2986, 2987, 2988, 2989, 2990, 2991,
+                2992, 2993, 2994, 2995,
+                2996, 2997, 2998, 2999, 3000, 3001, 3002, 3003, 3004, 3005,
+                3006, 3007, 3008, 3009,
+                3010, 3011, 3012, 3013, 3014, 3015, 3016, 3017, 3018, 3019,
+                3020, 3021, 3022, 3023,
+                3024, 3025, 3026, 3027, 3028, 3029, 3030, 3031, 3032, 3033,
+                3034, 3035, 3036, 3037,
+                4442, 4443, 4444, 4445, 4446, 4447, 4448, 4449, 4450, 4451,
+                4452, 4453, 4454, 4455,
+                4456, 4457, 4458, 4459, 4460, 4461, 4462, 4463, 4464, 4465,
+                4466, 4467, 4468, 4469,
+                4470, 4471, 4472, 4473, 4474, 4475, 4476, 4477, 4478, 4479,
+                4480, 4481, 4482, 4483,
+                4484, 4485, 4486, 4487, 4488, 4489, 4490, 4491, 4492, 4639,
+                4640, 4641, 4642, 4643}
 
 
 def compute_feat_loop(data_loader, save_dir):
@@ -56,9 +71,11 @@ def compute_feat_loop(data_loader, save_dir):
             ct = datetime.datetime.now()
             ts = ct.timestamp()
 
-            feats = fbank(wavs.asnumpy(), deltas=False, n_mels=80, left_frames=0, right_frames=0,
+            feats = fbank(wavs.asnumpy(), deltas=False, n_mels=80,
+                          left_frames=0, right_frames=0,
                           n_fft=400, hop_length=160).transpose(0, 2, 1)
-            normal_func = InputNormalization(norm_type='sentence', std_norm=False)
+            normal_func = InputNormalization(norm_type='sentence',
+                                             std_norm=False)
             feats = normal_func.construct(feats)
 
             save_fea_name = str(ts) + "_fea_mvn.npy"
@@ -93,29 +110,33 @@ def dataio_prep():
         stop = int(stop)
         num_frames = stop - start
         sig, fs = io.read(
-            str(wav), duration=float(num_frames) / hparams.sample_rate, offset=float(start) / hparams.sample_rate
+            str(wav), duration=float(num_frames) / hparams.sample_rate,
+            offset=float(start) / hparams.sample_rate
         )
         if len(sig.shape) > 1:
             sig = stereo_to_mono(sig)
         return sig
 
-    train_data = train_data.map(lambda wav, start, stop: audio_pipeline(wav, start, stop),
-                                input_columns=["wav", "start", "stop"],
-                                output_columns=["sig"], column_order=["ID", "sig"])
+    train_data = train_data.map(
+        lambda wav, start, stop: audio_pipeline(wav, start, stop),
+        input_columns=["wav", "start", "stop"],
+        output_columns=["sig"], column_order=["ID", "sig"])
     train_data = train_data.project(columns=["ID", "sig"])
 
     train_data = train_data.batch(batch_size=hparams.eval_batch_size)
 
-    enrol_data = enrol_data.map(lambda wav, start, stop: audio_pipeline(wav, start, stop),
-                                input_columns=["wav", "start", "stop"],
-                                output_columns=["sig"], column_order=["ID", "sig"])
+    enrol_data = enrol_data.map(
+        lambda wav, start, stop: audio_pipeline(wav, start, stop),
+        input_columns=["wav", "start", "stop"],
+        output_columns=["sig"], column_order=["ID", "sig"])
     enrol_data = enrol_data.project(columns=["ID", "sig"])
 
     enrol_data = enrol_data.batch(batch_size=hparams.eval_batch_size)
 
-    test_data = test_data.map(lambda wav, start, stop: audio_pipeline(wav, start, stop),
-                              input_columns=["wav", "start", "stop"],
-                              output_columns=["sig"], column_order=["ID", "sig"])
+    test_data = test_data.map(
+        lambda wav, start, stop: audio_pipeline(wav, start, stop),
+        input_columns=["wav", "start", "stop"],
+        output_columns=["sig"], column_order=["ID", "sig"])
     test_data = test_data.project(columns=["ID", "sig"])
 
     test_data = test_data.batch(batch_size=hparams.eval_batch_size)
@@ -125,21 +146,36 @@ def dataio_prep():
 
 context.set_context(mode=context.GRAPH_MODE, device_target="CPU")
 
-excluded_set = {2302, 2303, 2304, 2305, 2306, 2307, 2308, 2309, 2310, 2311, 2312, 2313, 2314, 2315,
-                2316, 2317, 2318, 2319, 2320, 2321, 2322, 2323, 2324, 2325, 2326, 2327, 2328, 2329,
-                2330, 2331, 2332, 2333, 2334, 2335, 2336, 2337, 2338, 2339, 2340, 2341, 2342, 2343,
-                2344, 2345, 2346, 2347, 2348, 2349, 2350, 2351, 2352, 2353, 2354, 2355, 2356, 2357,
-                2358, 2359, 2360, 2361, 2362, 2363, 2364, 2365, 2366, 2367, 2368, 2369, 2370, 2371,
-                2372, 2373, 2374, 2375, 2376, 2377, 2378, 2379, 2380, 2381, 2382, 2383, 2384, 2385,
-                2386, 2387, 2970, 2971, 2972, 2973, 2974, 2975, 2976, 2977, 2978, 2979, 2980, 2981,
-                2982, 2983, 2984, 2985, 2986, 2987, 2988, 2989, 2990, 2991, 2992, 2993, 2994, 2995,
-                2996, 2997, 2998, 2999, 3000, 3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009,
-                3010, 3011, 3012, 3013, 3014, 3015, 3016, 3017, 3018, 3019, 3020, 3021, 3022, 3023,
-                3024, 3025, 3026, 3027, 3028, 3029, 3030, 3031, 3032, 3033, 3034, 3035, 3036, 3037,
-                4442, 4443, 4444, 4445, 4446, 4447, 4448, 4449, 4450, 4451, 4452, 4453, 4454, 4455,
-                4456, 4457, 4458, 4459, 4460, 4461, 4462, 4463, 4464, 4465, 4466, 4467, 4468, 4469,
-                4470, 4471, 4472, 4473, 4474, 4475, 4476, 4477, 4478, 4479, 4480, 4481, 4482, 4483,
-                4484, 4485, 4486, 4487, 4488, 4489, 4490, 4491, 4492, 4639, 4640, 4641, 4642, 4643}
+excluded_set = {2302, 2303, 2304, 2305, 2306, 2307, 2308, 2309, 2310, 2311,
+                2312, 2313, 2314, 2315,
+                2316, 2317, 2318, 2319, 2320, 2321, 2322, 2323, 2324, 2325,
+                2326, 2327, 2328, 2329,
+                2330, 2331, 2332, 2333, 2334, 2335, 2336, 2337, 2338, 2339,
+                2340, 2341, 2342, 2343,
+                2344, 2345, 2346, 2347, 2348, 2349, 2350, 2351, 2352, 2353,
+                2354, 2355, 2356, 2357,
+                2358, 2359, 2360, 2361, 2362, 2363, 2364, 2365, 2366, 2367,
+                2368, 2369, 2370, 2371,
+                2372, 2373, 2374, 2375, 2376, 2377, 2378, 2379, 2380, 2381,
+                2382, 2383, 2384, 2385,
+                2386, 2387, 2970, 2971, 2972, 2973, 2974, 2975, 2976, 2977,
+                2978, 2979, 2980, 2981,
+                2982, 2983, 2984, 2985, 2986, 2987, 2988, 2989, 2990, 2991,
+                2992, 2993, 2994, 2995,
+                2996, 2997, 2998, 2999, 3000, 3001, 3002, 3003, 3004, 3005,
+                3006, 3007, 3008, 3009,
+                3010, 3011, 3012, 3013, 3014, 3015, 3016, 3017, 3018, 3019,
+                3020, 3021, 3022, 3023,
+                3024, 3025, 3026, 3027, 3028, 3029, 3030, 3031, 3032, 3033,
+                3034, 3035, 3036, 3037,
+                4442, 4443, 4444, 4445, 4446, 4447, 4448, 4449, 4450, 4451,
+                4452, 4453, 4454, 4455,
+                4456, 4457, 4458, 4459, 4460, 4461, 4462, 4463, 4464, 4465,
+                4466, 4467, 4468, 4469,
+                4470, 4471, 4472, 4473, 4474, 4475, 4476, 4477, 4478, 4479,
+                4480, 4481, 4482, 4483,
+                4484, 4485, 4486, 4487, 4488, 4489, 4490, 4491, 4492, 4639,
+                4640, 4641, 4642, 4643}
 
 
 def evaluate(spk2emb, utt2emb, trials):
@@ -174,7 +210,9 @@ def evaluate2(spk2emb, utt2emb, norm_dict, params, trials):
         print_dur = 100
         for idx_c, trial in enumerate(lines):
             if idx_c % print_dur == 0:
-                print(f'{datetime.datetime.now()}, processing {idx_c}/{len(lines)}')
+                print(
+                    f'{datetime.datetime.now()}, \
+                    processing {idx_c}/{len(lines)}')
             trial = trial.strip()
             label, spk_utt, test_utt = trial.split(" ")
             spk_utt = spk_utt[:-4]
@@ -262,7 +300,8 @@ def emb_mean(g_mean, increment, emb_dict):
     return emb_dict_mean, g_mean, increment
 
 
-def compute_embeddings(embedder, dataloader, startidx=0, dur=50000, exc_set=None):
+def compute_embeddings(embedder, dataloader, startidx=0, dur=50000,
+                       exc_set=None):
     # Compute embeddings for utterances from dataloader
     embedder.set_train(False)
     utt2emb = dict()
@@ -326,7 +365,8 @@ def generate_eval_data():
         if idx in excluded_set:
             excluded_utt_set.add(eval_dataset[idx][1])
     with open(veri_file_path, 'r') as fp, \
-            open(os.path.join(hparams.verification_file_bleeched), 'w') as fpOut:
+            open(os.path.join(hparams.verification_file_bleeched),
+                 'w') as fpOut:
         for line in fp:
             tokens = line.strip().split(" ")
             if tokens[1][:-4] in excluded_utt_set:
@@ -340,7 +380,8 @@ def eval_impl():
     in_channels = hparams.in_channels
     channels = hparams.channels
     emb_size = hparams.emb_size
-    model = EcapaTDNN(in_channels, channels=(channels, channels, channels, channels, channels * 3),
+    model = EcapaTDNN(in_channels, channels=(
+        channels, channels, channels, channels, channels * 3),
                       lin_neurons=emb_size)
 
     eval_data_path = hparams.eval_data_path
@@ -355,14 +396,14 @@ def eval_impl():
     veri_file_path = hparams.veri_file_path
     if not os.path.exists(os.path.join(hparams.npy_file_path)):
         os.makedirs(hparams.npy_file_path, exist_ok=False)
-    fpath = os.path.join(hparams.npy_file_path,
-                         f"enroll_dict_bleeched.npy")
+    fpath = os.path.join(hparams.npy_file_path, "enroll_dict_bleeched.npy")
     if os.path.isfile(fpath):
         print(f'find cache file:{fpath}, continue')
         enroll_dict = pickle.load(open(fpath, "rb"))
     else:
         enroll_dict = compute_embeddings(
-            model, dataset_enroll, dur=len(dataset_enroll), exc_set=excluded_set)
+            model, dataset_enroll, dur=len(dataset_enroll),
+            exc_set=excluded_set)
         pickle.dump(enroll_dict, open(fpath, "wb"))
     eer = evaluate(enroll_dict, enroll_dict, veri_file_path)
     print("eer baseline:", eer)
@@ -402,9 +443,11 @@ def eval_impl():
         dict_lst = []
         for idx in range(0, 5):
             dict_lst.append(pickle.load(open(os.path.join(
-                hparams.npy_file_path, f"train_dict_{idx * 50000}_{(idx + 1) * 50000}.npy"), "rb")))
+                hparams.npy_file_path,
+                f"train_dict_{idx * 50000}_{(idx + 1) * 50000}.npy"), "rb")))
         dict_lst.append(pickle.load(open(os.path.join(
-            hparams.npy_file_path, f"train_dict_250000_{len(dataset_train)}.npy"), "rb")))
+            hparams.npy_file_path,
+            f"train_dict_250000_{len(dataset_train)}.npy"), "rb")))
         train_dict = dict()
         for dicti in dict_lst:
             train_dict.update(dicti)
@@ -414,7 +457,8 @@ def eval_impl():
         items = list(train_dict_mean.values())
         train_arr = np.asarray(items)
         pos_score, neg_score = evaluate2(
-            enroll_dict_mean, enroll_dict_mean, train_arr, hparams, veri_file_path)
+            enroll_dict_mean, enroll_dict_mean, train_arr, hparams,
+            veri_file_path)
 
         eer = EER(np.array(pos_score), np.array(neg_score))
         print("EER with norm:", eer)

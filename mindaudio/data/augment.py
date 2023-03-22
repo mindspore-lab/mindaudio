@@ -4,7 +4,8 @@ import mindspore as ms
 import mindspore.dataset.audio as msaudio
 from mindspore.nn import Conv1d
 from .io import read
-from .spectrum import compute_amplitude, dB_to_amplitude, stft, istft, _pad_shape
+from .spectrum import compute_amplitude, dB_to_amplitude, stft, istft, \
+    _pad_shape
 from .processing import rescale, resample
 from .filters import notch_filter
 
@@ -23,15 +24,18 @@ __all__ = [
 ]
 
 
-def frequencymasking(waveform, iid_masks=False, frequency_mask_param=0, mask_start=0, mask_value=0.0):
+def frequencymasking(waveform, iid_masks=False, frequency_mask_param=0,
+                     mask_start=0, mask_value=0.0):
     """
     Apply masking to a spectrogram in the frequency domain.
 
     Args:
         waveforms (np.ndarray): A waveform to mask, shape should be
-                                    `[time]` or `[batch, time]` or `[batch, time, channels]`
-        iid_masks (bool): Whether to apply different masks to each example (default=false).
-        frequency_mask_param (int): Maximum possible length of the mask, range: [0, freq_length] (default=0).
+            `[time]` or `[batch, time]` or `[batch, time, channels]`
+        iid_masks (bool): Whether to apply different masks to each example
+            (default=false).
+        frequency_mask_param (int): Maximum possible length of the mask,
+            range: [0, freq_length] (default=0).
             Indices uniformly sampled from [0, frequency_mask_param].
         mask_start (int): Mask start takes effect when iid_masks=true,
             range: [0, freq_length-frequency_mask_param] (default=0).
@@ -45,20 +49,25 @@ def frequencymasking(waveform, iid_masks=False, frequency_mask_param=0, mask_sta
         >>> orignal = spectrum.spectrogram(waveform)
         >>> masked = augment.frequencymasking(orignal, frequency_mask_param=80)
     """
-    frequency_masking = msaudio.FrequencyMasking(iid_masks, frequency_mask_param, mask_start, mask_value)
+    frequency_masking = msaudio.FrequencyMasking(iid_masks,
+                                                 frequency_mask_param,
+                                                 mask_start, mask_value)
 
     return frequency_masking(waveform)
 
 
-def timemasking(waveform, iid_masks=False, frequency_mask_param=0, mask_start=0, mask_value=0.0):
+def timemasking(waveform, iid_masks=False, frequency_mask_param=0,
+                mask_start=0, mask_value=0.0):
     """
     Apply masking to a spectrogram in the time domain.
 
     Args:
         waveforms (np.ndarray): A waveform to mask, shape should be
-                                    `[time]` or `[batch, time]` or `[batch, time, channels]`
-        iid_masks (bool): Whether to apply different masks to each example (default=false).
-        frequency_mask_param (int): Maximum possible length of the mask, range: [0, freq_length] (default=0).
+            `[time]` or `[batch, time]` or `[batch, time, channels]`
+        iid_masks (bool): Whether to apply different masks to each example
+            (default=false).
+        frequency_mask_param (int): Maximum possible length of the mask,
+            range: [0, freq_length] (default=0).
             Indices uniformly sampled from [0, frequency_mask_param].
         mask_start (int): Mask start takes effect when iid_masks=true,
             range: [0, freq_length-frequency_mask_param] (default=0).
@@ -71,21 +80,25 @@ def timemasking(waveform, iid_masks=False, frequency_mask_param=0, mask_start=0,
         >>> masked = augment.timemasking(orignal, frequency_mask_param=80)
 
     """
-    time_masking = msaudio.TimeMasking(iid_masks, frequency_mask_param, mask_start, mask_value)
+    time_masking = msaudio.TimeMasking(iid_masks, frequency_mask_param,
+                                       mask_start, mask_value)
 
     return time_masking(waveform)
 
 
 def reverberate(waveforms, rir_waveform, rescale_amp="avg"):
     """
-    Reverberate a given signal with given a Room Impulse Response (RIR). It performs convolution between RIR and signal,
+    Reverberate a given signal with given a Room Impulse Response (RIR).
+    It performs convolution between RIR and signal,
     but without changing the original amplitude of the signal.
 
     Args:
         waveforms (np.ndarray): The audio signal to reverberate.
         rir_waveform (np.ndarray): The Room Impulse Response signal.
-        rescale_amp (str): Whether reverberated signal is rescaled (None) and with respect either to original signal
-            "peak" amplitude or "avg" average amplitude. Options: [None, "avg", "peak"].
+        rescale_amp (str): Whether reverberated signal is rescaled (None)
+            and with respect either to original signal
+            "peak" amplitude or "avg" average amplitude.
+            Options: [None, "avg", "peak"].
 
     Returns:
         np.ndarray, the reverberated signal.
@@ -120,7 +133,7 @@ def reverberate(waveforms, rir_waveform, rescale_amp="avg"):
     )
 
     # Compute index of the direct signal, so we can preserve alignment
-    value_max = np.max(np.abs(rir_waveform), axis=1, keepdims=True)
+    # value_max = np.max(np.abs(rir_waveform), axis=1, keepdims=True)
     direct_index = np.argmax(np.abs(rir_waveform))
 
     # Making sure the max is always positive (if not, flip)
@@ -151,23 +164,31 @@ def reverberate(waveforms, rir_waveform, rescale_amp="avg"):
     return waveforms
 
 
-def convolve1d(waveforms, kernel, padding=0, pad_type="constant", stride=1, groups=1, use_fft=True, rotation_index=0):
+def convolve1d(waveforms, kernel, padding=0, pad_type="constant", stride=1,
+               groups=1, use_fft=True, rotation_index=0):
     """Use mindspore.conv1d to perform 1d padding and convolution.
 
     Args:
         waveforms (np.ndarray): The audio signal to perform convolution on.
         kernel (np.ndarray): The filter kernel to apply during convolution.
-        padding (int, tuple): The padding size to apply at left side and right side.
-        pad_type (str): The type of padding to use. Options: ["constant", "edge"].
-        stride (int): The number of units to stride for the convolution operations. If `use_fft` is True, this will not
-            have effects.
-        groups (int): This option is passed to `conv1d` to split the input into groups for convolution. Input channels
+        padding (int, tuple): The padding size to apply at
+            left side and right side.
+        pad_type (str): The type of padding to use.
+            Options: ["constant", "edge"].
+        stride (int): The number of units to stride for the
+            convolution operations. If `use_fft` is True, this will not have
+            effects.
+        groups (int): This option is passed to `conv1d` to split the input
+            into groups for convolution. Input channels
             should be divisible by the number of groups.
-        use_fft (bool): When `use_fft` is passed `True`, then compute the convolution in the spectral domain using
-            complex multiply. This is more efficient on CPU when the size of the kernel is large (e.g. reverberation).
-            WARNING: Without padding, circular convolution occurs. This makes little difference in the case of
-            reverberation, but may make more difference with different kernels.
-        rotation_index (int): This option only applies if `use_fft` is true. If so, the kernel is rolled by this amount
+        use_fft (bool): When `use_fft` is passed `True`, then compute the
+            convolution in the spectral domain using complex multiply.
+            This is more efficient on CPU when the size of the kernel is large.
+            WARNING: Without padding, circular convolution occurs.
+            This makes little difference in the case of reverberation,
+            but may make more difference with different kernels.
+        rotation_index (int): This option only applies if `use_fft` is true.
+            If so, the kernel is rolled by this amount
             before convolution to shift the output location.
 
     Returns:
@@ -217,7 +238,8 @@ def convolve1d(waveforms, kernel, padding=0, pad_type="constant", stride=1, grou
     else:
         # Todo: the implementation can be optimized here.
         conv1d = Conv1d(1, 1, kernel_size=kernel.shape[-1],
-                        stride=stride, group=groups, padding=0, pad_mode='valid')
+                        stride=stride, group=groups, padding=0,
+                        pad_mode='valid')
         weight = ms.Tensor(np.expand_dims(kernel, 0))
         weight.set_dtype(ms.float32)
         conv1d.weight.set_data(weight)
@@ -231,7 +253,8 @@ def convolve1d(waveforms, kernel, padding=0, pad_type="constant", stride=1, grou
         convolved = np.squeeze(convolved, 1)
         return convolved
     if n_dim == 3:
-        return np.transpose(convolved, [0, 2, 1])  # transpose back to channel last
+        return np.transpose(convolved,
+                            [0, 2, 1])  # transpose back to channel last
 
 
 def rms_normalize(samples):
@@ -262,13 +285,14 @@ def caculate_rms(samples):
     return rms
 
 
-def add_noise(samples, backgroundlist, min_snr_in_db, max_snr_in_db, mix_prob=1.0):
+def add_noise(samples, backgroundlist, min_snr_in_db, max_snr_in_db,
+              mix_prob=1.0):
     """
     add background noise.
 
     Args:
-        samples (np.ndarray): The audio signal to perform convolution on.The shape should be
-            `[time]` or `[batch, time]` or `[batch, channels, time]`
+        samples (np.ndarray): The audio signal to perform convolution on.The
+        shape should be`[time]` or `[batch, time]` or `[batch, channels, time]`
         backgroundlist (list): List of paths to background audio files.
         min_snr_in_db(int): nimimum SNR in dB
         max_snr_in_db(int): maximum SNR in dB
@@ -298,6 +322,7 @@ def add_noise(samples, backgroundlist, min_snr_in_db, max_snr_in_db, mix_prob=1.
     batch, chanel, sample_lenth = samples.shape
 
     missing_num_samples = sample_lenth
+    pieces = None
     while missing_num_samples > 0:
         background_path = random.choice(backgroundlist)
         noise_audio, sr = read(background_path)
@@ -311,7 +336,7 @@ def add_noise(samples, backgroundlist, min_snr_in_db, max_snr_in_db, mix_prob=1.
             background_samples = rms_normalize(noise_audio)
             missing_num_samples -= background_num_samples
 
-        if 'pieces' in vars():
+        if pieces is not None:
             pieces = np.append(pieces, background_samples)
         else:
             pieces = background_samples
@@ -320,12 +345,14 @@ def add_noise(samples, backgroundlist, min_snr_in_db, max_snr_in_db, mix_prob=1.
 
     sample_rms = caculate_rms(samples)
     snr = np.random.uniform(min_snr_in_db, max_snr_in_db, 1)
-    background_scale = sample_rms/(10 ** (snr/20))
-    background_noise = (np.expand_dims(background, axis=0)) * (np.expand_dims(background_scale, axis=2))
+    background_scale = sample_rms / (10 ** (snr / 20))
+    background_noise = (np.expand_dims(background, axis=0)) * (
+        np.expand_dims(background_scale, axis=2))
     samples_added_noise = samples + background_noise
 
     if dimension_of_samples == 1:
-        samples_added_noise = samples_added_noise.squeeze(axis=1).squeeze(axis=0)
+        samples_added_noise = samples_added_noise.squeeze(axis=1).squeeze(
+            axis=0)
     elif dimension_of_samples == 2:
         samples_added_noise = samples_added_noise.squeeze(axis=1)
 
@@ -337,10 +364,12 @@ def add_reverb(samples, rirlist, reverb_prob=1.0):
         add reverb.
 
         Args:
-            samples (np.ndarray): The audio signal to perform convolution on. The shape should be
-            `[time]` or `[batch, time]` or `[batch, channels, time]`
+            samples (np.ndarray): The audio signal to perform convolution on.
+            The shape should be `[time]` or `[batch, time]`
+            or `[batch, channels, time]`
             rirlist (list): List of paths to RIR files.
-            reverb_prob(float): The chance that the audio signal will be reverbed.
+            reverb_prob(float): The chance that the audio signal will be
+                reverbed.
 
         Returns:
             samples(np.ndarray):samples added reverb
@@ -348,7 +377,8 @@ def add_reverb(samples, rirlist, reverb_prob=1.0):
         Examples:
             >>> import numpy as np
             >>> samples = np.random.rand(10, 1, 200960) - 0.5
-            >>> background_list = ['./samples/rir/air_binaural_aula_carolina_0_1_3_0_3_16k.wav']
+            >>> background_list =
+            ['./samples/rir/air_binaural_aula_carolina_0_1_3_0_3_16k.wav']
             >>> addrir = augment.add_reverb(samples, rir_list, 1.0)
 
     """
@@ -363,7 +393,8 @@ def add_reverb(samples, rirlist, reverb_prob=1.0):
         samples = np.expand_dims(samples, axis=2)
     elif orig_shapelen == 3:
         batch, chanel, times = samples.shape
-        samples = np.expand_dims(samples.reshape(batch*chanel, times), axis=2)
+        samples = np.expand_dims(samples.reshape(batch * chanel, times),
+                                 axis=2)
 
     rir_path = random.choice(rirlist)
     rir_waveform, sr = read(rir_path)
@@ -379,19 +410,22 @@ def add_reverb(samples, rirlist, reverb_prob=1.0):
     return res
 
 
-def add_babble(waveforms, lengths, speaker_count=3, snr_low=0, snr_high=0, mix_prob=1.0):
+def add_babble(waveforms, lengths, speaker_count=3, snr_low=0, snr_high=0,
+               mix_prob=1.0):
     """
         Simulate babble noise by mixing the signals in a batch.
 
         Args:
-            waveforms(np.ndarray): A batch of audio signals to process, with shape `[batch, time]` or
-                `[batch, time, channels]`.
-            lengths(np.ndarray): The length of each audio in the batch, with shape `[batch]`.
-            speaker_count(int): The number of signals to mix with the original signal.
+            waveforms(np.ndarray): A batch of audio signals to process,
+                with shape `[batch, time]` or `[batch, time, channels]`.
+            lengths(np.ndarray): The length of each audio in the batch,
+                with shape `[batch]`.
+            speaker_count(int): The number of signals to mix with the
+                original signal.
             snr_low(int): The low end of the mixing ratios, in decibels.
             snr_high(int): The high end of the mixing ratios, in decibels.
-            mix_prob(float): The probability that the batch of signals will bemixed with babble noise.
-                By default, every signal is mixed.
+            mix_prob(float): The probability that the batch of signals will
+                bemixed with babble noise.By default, every signal is mixed.
 
         Returns:
             waveforms(np.ndarray):array with processed waveforms.
@@ -413,11 +447,13 @@ def add_babble(waveforms, lengths, speaker_count=3, snr_low=0, snr_high=0, mix_p
             >>>     if wav_num == 0:
             >>>         waveforms = np.expand_dims(wav, axis=0)
             >>>     else:
-            >>>         wav = np.expand_dims(np.pad(wav, (0, maxlen-wavlen), 'constant'), axis=0)
+            >>>         wav = np.expand_dims(np.pad(wav, (0, maxlen-wavlen),\
+            'constant'), axis=0)
             >>>         waveforms = np.concatenate((waveforms, wav), axis=0)
             >>>     wav_num += 1
             >>> lengths = np.array(lenlist)/maxlen
-            >>> noisy_mindaudio = augment.add_babble(waveforms, lengths, speaker_count=3, snr_low=0, snr_high=0)
+            >>> noisy_mindaudio = augment.add_babble(waveforms, lengths, \
+            speaker_count=3, snr_low=0, snr_high=0)
 
     """
     babbled_waveform = waveforms.copy()
@@ -441,7 +477,7 @@ def add_babble(waveforms, lengths, speaker_count=3, snr_low=0, snr_high=0, mix_p
     babble_waveform = np.roll(waveforms, 1, axis=0)
     babble_len = np.roll(lengths, 1, axis=0)
     for i in range(1, speaker_count):
-        babble_waveform += np.roll(waveforms, 1+i, axis=0)
+        babble_waveform += np.roll(waveforms, 1 + i, axis=0)
         babble_len = np.maximum(babble_len, np.roll(babble_len, 1, axis=0))
 
     # Rescale and add to mixture
@@ -452,23 +488,28 @@ def add_babble(waveforms, lengths, speaker_count=3, snr_low=0, snr_high=0, mix_p
     return babbled_waveform
 
 
-def drop_freq(waveforms, drop_freq_low=1e-14, drop_freq_high=1, drop_count_low=1, drop_count_high=2,
+def drop_freq(waveforms, drop_freq_low=1e-14, drop_freq_high=1,
+              drop_count_low=1, drop_count_high=2,
               drop_width=0.05, drop_prob=1):
     """
-    Drops a random frequency from the signal.To teach models to learn to rely on all parts of the signal,
-    not just a few frequency bands.
+    Drops a random frequency from the signal.To teach models to learn to rely
+    on all parts of the signal,not just a few frequency bands.
 
     Args:
-        waveforms(np.ndarray): A batch of audio signals to process, with shape `[batch, time]` or
-            `[batch, time, channels]`.
-        drop_freq_low(float): The low end of frequencies that can be dropped,as a fraction of the sampling rate / 2.
-        drop_freq_high(float): The high end of frequencies that can be dropped, as a fraction of the
-            sampling rate / 2.
-        drop_count_low(int): The low end of number of frequencies that could be dropped.
-        drop_count_high(int): The high end of number of frequencies that could be dropped.
-        drop_width(float): The width of the frequency band to drop, as a fraction of the sampling_rate / 2.
-        drop_prob(float): The probability that the batch of signals will  have a frequency dropped. By default,
-            every batch has frequencies dropped.
+        waveforms(np.ndarray): A batch of audio signals to process,
+        with shape `[batch, time]` or`[batch, time, channels]`.
+        drop_freq_low(float): The low end of frequencies that can be dropped,
+            as a fraction of the sampling rate / 2.
+        drop_freq_high(float): The high end of frequencies that can be dropped,
+            as a fraction of the sampling rate / 2.
+        drop_count_low(int): The low end of number of frequencies that could
+            be dropped.
+        drop_count_high(int): The high end of number of frequencies that could
+            be dropped.
+        drop_width(float): The width of the frequency band to drop, as a
+            fraction of the sampling_rate / 2.
+        drop_prob(float): The probability that the batch of signals will have a
+            frequency dropped. By default,every batch has frequencies dropped.
 
     Returns:
         ndarray of shape `[batch, time]` or `[batch, time, channels]`
@@ -488,7 +529,8 @@ def drop_freq(waveforms, drop_freq_low=1e-14, drop_freq_high=1, drop_count_low=1
 
     # Add channels dimension
     if len(waveforms.shape) == 1:
-        dropped_waveform = np.expand_dims(np.expand_dims(dropped_waveform, 0), 2)
+        dropped_waveform = np.expand_dims(np.expand_dims(dropped_waveform, 0),
+                                          2)
     elif len(waveforms.shape) == 2:
         dropped_waveform = np.expand_dims(dropped_waveform, axis=2)
 
@@ -526,30 +568,38 @@ def drop_freq(waveforms, drop_freq_low=1e-14, drop_freq_high=1, drop_count_low=1
     if orig_shapelen == 2:
         dropped_waveform = np.squeeze(dropped_waveform, axis=2)
     elif orig_shapelen == 1:
-        dropped_waveform = np.squeeze(np.squeeze(dropped_waveform, axis=2), axis=0)
+        dropped_waveform = np.squeeze(np.squeeze(dropped_waveform, axis=2),
+                                      axis=0)
     return dropped_waveform
 
 
-def speed_perturb(waveform, orig_freq, speeds=[90, 100, 110], perturb_prob=1.0):
+def speed_perturb(waveform, orig_freq, speeds=[90, 100, 110],
+                  perturb_prob=1.0):
     """
-    Slightly speed up or slow down an audio signal.Resample the audio signal at a rate that is similar to the
-    original rate, to achieve a slightly slower or slightly faster signal.
+    Slightly speed up or slow down an audio signal.Resample the audio signal
+        at a rate that is similar to the original rate, to achieve a slightly
+        slower or slightly faster signal.
 
     Args:
-        waveform(np.ndarray): Shape should be `[batch, time]` or `[batch, time, channels]`.
+        waveform(np.ndarray): Shape should be `[batch, time]` or
+            `[batch, time, channels]`.
         orig_freq(int): The frequency of the original signal.
-        speeds(list): The speeds that the signal should be changed to, as a percentage of the original signal
-        (i.e. `speeds` is divided by 100 to get a ratio).
-        perturb_prob(float): The chance that the batch will be speed-perturbed. By default, every batch is perturbed.
+        speeds(list): The speeds that the signal should be changed to, as a
+            percentage of the original signal (i.e. `speeds` is
+            divided by 100 to get a ratio).
+        perturb_prob(float): The chance that the batch will be speed-perturbed.
+            By default, every batch is perturbed.
 
     Returns:
-        perturbed_waveform(np.ndarray): Shape `[batch, time]` or `[batch, time, channels]`.
+        perturbed_waveform(np.ndarray): Shape `[batch, time]` or
+        `[batch, time, channels]`.
 
     Example:
         >>> import mindaudio.data.io as io
         >>> import mindaudio.data.augment as augment
         >>> signal = io.read('./samples/ASR/1089-134686-0000.wav')
-        >>> perturbed_mindaudio = augment.speed_perturb(signal, orig_freq=16000, speeds=[90])
+        >>> perturbed_mindaudio = augment.speed_perturb(signal, \
+        orig_freq=16000, speeds=[90])
     """
 
     # Don't perturb (return early) 1-`perturb_prob` portion of the batches
@@ -564,28 +614,39 @@ def speed_perturb(waveform, orig_freq, speeds=[90, 100, 110], perturb_prob=1.0):
     return perturbed_waveform
 
 
-def drop_chunk(waveforms, lengths, drop_length_low=100, drop_length_high=1000, drop_count_low=1, drop_count_high=10,
+def drop_chunk(waveforms, lengths, drop_length_low=100, drop_length_high=1000,
+               drop_count_low=1, drop_count_high=10,
                drop_start=0, drop_end=None, drop_prob=1, noise_factor=0.0):
     """
-    This class drops portions of the input signal.Using `drop_chunk` as an augmentation strategy helps a models learn
-    to rely on all parts of the signal, since it can't expect a given part to be present.
+    This class drops portions of the input signal.Using `drop_chunk` as an
+    augmentation strategy helps a models learn to rely on all parts of the
+    signal, since it can't expect a given part to be present.
 
     Args:
-        waveforms(np.ndarray): Shape should be `[batch, time]` or `[batch, time, channels]`.
+        waveforms(np.ndarray): Shape should be `[batch, time]` or
+            `[batch, time, channels]`.
         lengths(np.ndarray): Shape should be a single dimension, `[batch]`.
-        drop_length_low(int): The low end of lengths for which to set the signal to zero, in samples.
-        drop_length_high(int): The high end of lengths for which to set the signal to zero, in samples.
-        drop_count_low(int): The low end of number of times that the signal can be dropped to zero.
-        drop_count_high(int): The high end of number of times that the signal can be dropped to zero.
+        drop_length_low(int): The low end of lengths for which to set the
+            signal to zero, in samples.
+        drop_length_high(int): The high end of lengths for which to set the
+            signal to zero, in samples.
+        drop_count_low(int): The low end of number of times that the signal
+            can be dropped to zero.
+        drop_count_high(int): The high end of number of times that the signal
+            can be dropped to zero.
         drop_start(int): The first index for which dropping will be allowed.
         drop_end(int): The last index for which dropping will be allowed.
-        drop_prob(float): The probability that the batch of signals will have a portion dropped. By default, every
+        drop_prob(float): The probability that the batch of signals will have
+            a portion dropped. By default, every
         batch has portions dropped.
-        noise_factor(float): The factor relative to average amplitude of an utterance to use for scaling the white
-        noise inserted. 1 keeps the average amplitude the same, while 0 inserts all 0's.
+        noise_factor(float): The factor relative to average amplitude of an
+            utterance to use for scaling the white
+        noise inserted. 1 keeps the average amplitude the same, while 0
+            inserts all 0's.
 
     Returns:
-        dropped_waveform(np.ndarray): Shape `[batch, time]` or `[batch, time, channels]`
+        dropped_waveform(np.ndarray): Shape `[batch, time]` or
+        `[batch, time, channels]`
 
     Example:
         >>> import mindaudio.data.io as io
@@ -604,11 +665,13 @@ def drop_chunk(waveforms, lengths, drop_length_low=100, drop_length_high=1000, d
         >>>     if wav_num == 0:
         >>>         waveforms = np.expand_dims(wav, axis=0)
         >>>     else:
-        >>>         wav = np.expand_dims(np.pad(wav, (0, maxlen-wavlen), 'constant'), axis=0)
+        >>>         wav = np.expand_dims(np.pad(wav, (0, maxlen-wavlen), \
+        'constant'), axis=0)
         >>>         waveforms = np.concatenate((waveforms, wav), axis=0)
         >>>     wav_num += 1
         >>> lengths = np.array(lenlist)/maxlen
-        >>> dropped_waveform = augment.drop_chunk(waveforms, lengths, drop_start=100, drop_end=200, noise_factor=0.0)
+        >>> dropped_waveform = augment.drop_chunk(waveforms, lengths, \
+        drop_start=100, drop_end=200, noise_factor=0.0)
 
 
     """
@@ -638,7 +701,8 @@ def drop_chunk(waveforms, lengths, drop_length_low=100, drop_length_high=1000, d
         return dropped_waveform
 
     # Store original amplitude for computing white noise amplitude
-    clean_amplitude = compute_amplitude(waveforms, np.expand_dims(lengths, axis=1))
+    clean_amplitude = compute_amplitude(waveforms,
+                                        np.expand_dims(lengths, axis=1))
 
     # Pick a number of times to drop
     drop_times = np.random.randint(
@@ -697,11 +761,13 @@ def drop_chunk(waveforms, lengths, drop_length_low=100, drop_length_high=1000, d
 def time_stretch(waveforms, rate=None) -> np.ndarray:
     """
     Time-stretch an audio series by a fixed rate.
-    Stretch Short Time Fourier Transform (STFT) in time without modifying pitch for a given rate.
+    Stretch Short Time Fourier Transform (STFT) in time without modifying
+    pitch for a given rate.
 
     Args:
         waveforms (np.ndarray): Shape `[batch, time]`or `[time]`
-        rate (float): Rate to speed up or slow down by. Default: None, will keep the original rate.
+        rate (float): Rate to speed up or slow down by. Default: None,
+        will keep the original rate.
 
     Returns:
         transfomed waveforms(np.ndarray): Shape `[batch, time]`
@@ -711,7 +777,7 @@ def time_stretch(waveforms, rate=None) -> np.ndarray:
         >>> y_fast = augment.time_stretch(signal, rate=2.0)
     """
     if rate <= 0:
-        raise ParameterError("rate must be a positive number")
+        raise ValueError("rate must be a positive number")
 
     # Construct the short-term Fourier transform (STFT)
     spec = stft(waveforms)
@@ -757,14 +823,16 @@ def _phase_vocoder(matrix, rate, hop_length=None, n_fft=None):
     matrix = np.pad(matrix, padding, mode="constant")
 
     for t, step in enumerate(time_steps):
-        columns = matrix[..., int(step) : int(step + 2)]
+        columns = matrix[..., int(step): int(step + 2)]
         alpha = np.mod(step, 1.0)
-        mag = (1.0 - alpha) * np.abs(columns[..., 0]) + alpha * np.abs(columns[..., 1])
+        mag = (1.0 - alpha) * np.abs(columns[..., 0]) + alpha * np.abs(
+            columns[..., 1])
         phase_complex = np.cos(phase_acc) + 1j * np.sin(phase_acc)
         if mag is not None:
             phase_complex *= mag
         d_stretch[..., t] = phase_complex
-        dphase = np.angle(columns[..., 1]) - np.angle(columns[..., 0]) - phi_advance
+        dphase = np.angle(columns[..., 1]) - np.angle(
+            columns[..., 0]) - phi_advance
         dphase = dphase - 2.0 * np.pi * np.round(dphase / (2.0 * np.pi))
         phase_acc += phi_advance + dphase
 
@@ -776,7 +844,8 @@ def pitch_shift(waveforms, sr, n_steps, bins_per_octave=12):
     Shift the waveform pitch with n_steps
 
     Args:
-        waveforms: np.ndarray Shape `[batch, time]`or `[time]` audio time series.
+        waveforms: np.ndarray Shape `[batch, time]`or `[time]` audio
+        time series.
         sr(int): audio sampling rate
         n_steps(float): steps(fractional) to shift
         bins_per_octave(float): steps per octave
@@ -798,15 +867,3 @@ def pitch_shift(waveforms, sr, n_steps, bins_per_octave=12):
         new_freq=sr,
     )
     return _pad_shape(y_shift, data_shape=waveforms_stretch.shape[-1])
-
-
-
-
-
-
-
-
-
-
-
-

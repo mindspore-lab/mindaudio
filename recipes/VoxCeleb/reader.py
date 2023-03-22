@@ -14,7 +14,8 @@ class DatasetGeneratorBatchEval:
         self.memmaps_label = {}
         self.reads = 0
         self.read_limit = read_limit
-        dataset_index = pickle.load(open(os.path.join(data_path, f"ind_sample.p"), "rb"))
+        dataset_index = pickle.load(
+            open(os.path.join(data_path, "ind_sample.p"), "rb"))
         for utterance, (file_ind, offset, length) in dataset_index.items():
             file_path = os.path.join(data_path, f"{file_ind}.npy")
             self.index_sample[utterance] = (file_path, offset, length)
@@ -106,13 +107,15 @@ class DatasetGeneratorBatch:
         if isinstance(data_paths, str):
             data_paths = [data_paths]
         for data_path in data_paths:
-            dataset_index = pickle.load(open(os.path.join(data_path, f"ind_sample.p"), "rb"))
+            dataset_index = pickle.load(
+                open(os.path.join(data_path, "ind_sample.p"), "rb"))
             local_batchlist = []
             for utterance, (file_ind, offset, length) in dataset_index.items():
                 file_path = os.path.join(data_path, f"{file_ind}.npy")
                 self.index_sample[utterance] = (file_path, offset, length)
                 local_batchlist.append(utterance)
-            label_index = pickle.load(open(os.path.join(data_path, f"ind_label.p"), "rb"))
+            label_index = pickle.load(
+                open(os.path.join(data_path, "ind_label.p"), "rb"))
             for utterance, (file_ind, offset, length) in label_index.items():
                 file_path = os.path.join(data_path, f"{file_ind}_label.npy")
                 self.index_label[utterance] = (file_path, offset, length)
@@ -132,7 +135,7 @@ class DatasetGeneratorBatch:
             self.flush_memmaps()
         fea = self.memmaps_sample[utt_path][offset_utt:offset_utt + length_utt]
         label = self.memmaps_label[label_path][offset_l:offset_l + length_l]
-        return fea.reshape((192, 301, 80)), label
+        return fea.reshape((-1, 301, 80)), label
 
     def flush_memmaps(self):
         for file_path in self.memmaps_sample:
