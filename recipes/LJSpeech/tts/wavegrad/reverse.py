@@ -102,7 +102,7 @@ for m in tqdm(range(S)):
         audio += sigma * noise
 
     if (m + 1) > (S - 50) and (m + 1) % 5 == 0:
-        write(args.save + '/%d_predicted_%s_%d.wav' % (global_step, old, m + 1), hps.sample_rate, audio[0])
+        write(args.save + '/%d_predicted_%s_%d.wav' % (global_step, old, m + 1), audio[0], hps.sample_rate)
         wavs.append(audio[0])
 
 
