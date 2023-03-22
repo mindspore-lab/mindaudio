@@ -53,7 +53,7 @@ After Voxceleb1 + Voxceleb2 dataset is prepared, you can run the code below to g
 
 Attention:Voxceleb1 + Voxceleb2 dataset is so big so that the time of processing audio data is so long, so we use multiprocess with 30 processes to precess audio data.
 
-If you mechine is not supported, please change the var "data_process_num" in the ecapatdnn.yaml file to the value your mechine support.
+If you mechine is not supported, please change the var `data_process_num` in the `ecapatdnn.yaml` file to the value your mechine support.
 
 Also, when the preprocessed audio data is generated, you can run the code below only to train speaker embeddings:
 
