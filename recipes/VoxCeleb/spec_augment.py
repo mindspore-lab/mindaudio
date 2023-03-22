@@ -5,7 +5,8 @@ import numpy as np
 import zipfile
 import mindaudio.data.io as io
 from mindaudio.data.processing import stereo_to_mono
-from mindaudio.data.augment import add_reverb, add_babble, add_noise, drop_freq, speed_perturb, drop_chunk
+from mindaudio.data.augment import add_reverb, add_babble, add_noise, \
+    drop_freq, speed_perturb, drop_chunk
 
 OPENRIR_URL = "http://www.openslr.org/resources/28/rirs_noises.zip"
 
@@ -16,8 +17,8 @@ class InputNormalization:
     Args:
         mean_norm : True, If True, the mean will be normalized.
         std_norm : True, If True, the standard deviation will be normalized.
-        norm_type : str, 'sentence' computes them at sentence level, 
-            'batch' at batch level, 'speaker' at speaker level.
+        norm_type : str, 'sentence' computes them at sentence level, 'batch'
+            at batch level, 'speaker' at speaker level.
     """
 
     def __init__(
@@ -104,7 +105,8 @@ class AddNoise:
 
     def construct(self, waveforms):
         noisy_waveform = add_noise(
-            waveforms, self.noise_data, self.snr_low, self.snr_high, self.mix_prob)
+            waveforms, self.noise_data, self.snr_low, self.snr_high,
+            self.mix_prob)
 
         # Normalizing to prevent clipping
         if self.normalize:
@@ -154,7 +156,8 @@ class AddBabble:
         self.mix_prob = mix_prob
 
     def construct(self, waveforms, lengths):
-        babbled_waveform = add_babble(waveforms, lengths, self.speaker_count, self.snr_low, self.snr_high,
+        babbled_waveform = add_babble(waveforms, lengths, self.speaker_count,
+                                      self.snr_low, self.snr_high,
                                       self.mix_prob)
         return babbled_waveform
 
@@ -223,14 +226,13 @@ class EnvCorrupt:
                 csv_file=reverb_csv,
             )
 
-
     def construct(self, waves, lens):
         """
         Returns the distorted waveforms.
 
         Args:
             waves : np array, The waveforms to distort.
-            lens : int, comparing to max waveform 
+            lens : int, comparing to max waveform.
         """
 
         if hasattr(self, "add_reverb"):
@@ -251,7 +253,7 @@ def prepare_openrir(folder, reverb_csv, noise_csv, max_noise_len):
         folder : str, The location of the folder containing the dataset.
         reverb_csv : str, Filename for storing the prepared reverb csv.
         noise_csv : str, Filename for storing the prepared noise csv.
-        max_noise_len : float, The maximum noise length in seconds. 
+        max_noise_len : float, The maximum noise length in seconds.
     """
 
     # Download and unpack if necessary
@@ -285,10 +287,10 @@ def prepare_csv(folder, filelist, csv_file, max_length=None):
     Iterate a set of wavs and write the corresponding csv file.
 
     Args:
-        folder : str, The folder relative to which the files in the list are listed.
+        folder : str, The folder relative to which the files in the list.
         filelist : str, The location of a file listing the files to be used.
         csv_file : str, The location to use for writing the csv file.
-        max_length : float, The maximum length in seconds. 
+        max_length : float, The maximum length in seconds.
     """
 
     with open(csv_file, "w") as w_csv_file:
@@ -317,7 +319,7 @@ def prepare_csv(folder, filelist, csv_file, max_length=None):
                         min(max_length * (index + 1), duration) * rate
                     )
                     new_filename = (
-                        filename[: -len(f".{ext}")] + f"_{index}.{ext}"
+                            filename[: -len(f".{ext}")] + f"_{index}.{ext}"
                     )
                     io.write(
                         new_filename, signal[start:stop], rate
