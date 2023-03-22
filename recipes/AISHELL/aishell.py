@@ -28,7 +28,7 @@ class AISHELL():
         super().__init__()
 
     def maybe_create_manifest(self):
-        if 0 and os.path.exists(self.manifest_path):
+        if os.path.exists(self.manifest_path):
             print('[manifest] found at', self.manifest_path)
             return
 

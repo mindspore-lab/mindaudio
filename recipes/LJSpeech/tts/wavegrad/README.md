@@ -32,7 +32,7 @@ From melspectrograms:
 
 | Model | Dataset | Checkpoint | Total Batch Size | Num Frames | Num Mels | Hardware | MindSpore Version |
 | -----| ----- | -----| -----| -----| -----| -----| -----|
-| WaveGrad (base) | LJSpeech-1.1 | [1M steps](https://download.mindspore.cn/toolkits/mindaudio/wavegrad/model_1000000_v190.ckpt) | 256 | 30 | 128 | 8 $\times$ Ascend | 1.9.0 |
+| WaveGrad (base) | LJSpeech-1.1 | [1M steps](https://download.mindspore.cn/toolkits/mindaudio/wavegrad/model_1m_base_v190.ckpt) | 256 | 30 | 128 | 8 $\times$ Ascend | 1.9.0 |
 | WaveGrad (base) | AiShell | [coming soon]() | 256 | 30 | 128 | 8 $\times$ Ascend | 1.9.0 |
 
 ## Train your own model
