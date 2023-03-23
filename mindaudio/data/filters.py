@@ -1,18 +1,19 @@
-import numpy as np
 from typing import Optional, Union
-from typing_extensions import Literal
+
 import mindspore.dataset.audio as msaudio
+import numpy as np
+from typing_extensions import Literal
 
 __all__ = [
-    'notch_filter',
-    'low_pass_filter',
-    'peaking_equalizer',
-    'contrast',
-    'riaa_biquad',
-    'treble_biquad',
-    'dcshift',
-    'filtfilt',
-    'mel'
+    "notch_filter",
+    "low_pass_filter",
+    "peaking_equalizer",
+    "contrast",
+    "riaa_biquad",
+    "treble_biquad",
+    "dcshift",
+    "filtfilt",
+    "mel",
 ]
 
 
@@ -49,8 +50,7 @@ def notch_filter(notch_freq, filter_width=101, notch_width=0.05):
     # Define sinc function, avoiding division by zero
     def sinc(x):
         # The zero is at the middle index
-        return np.concatenate([np.sin(x[:pad]) / x[:pad], np.ones(1),
-                               np.sin(x[pad + 1:]) / x[pad + 1:]])
+        return np.concatenate([np.sin(x[:pad]) / x[:pad], np.ones(1), np.sin(x[pad + 1 :]) / x[pad + 1 :],])
 
     hlpf = sinc(3 * (notch_freq - notch_width) * inputs)
     hlpf *= np.blackman(filter_width + 1)[:-1]
@@ -70,14 +70,13 @@ def cal_filter_by_coffs(waveform, b, a):
     # pylint: disable=C,R,W,E,F
     if waveform.ndim == 1:
         changed_waveform = waveform
-        o2 = 0.
-        o1 = 0.
-        i2 = 0.
-        i1 = 0.
+        o2 = 0.0
+        o1 = 0.0
+        i2 = 0.0
+        i1 = 0.0
         j = 0
         while j < waveform.shape[-1]:
-            o0 = waveform[j] * b[0] + i1 * b[1] + i2 * b[2] - o1 * a[1] - \
-                 o2 * a[2]
+            o0 = waveform[j] * b[0] + i1 * b[1] + i2 * b[2] - o1 * a[1] - o2 * a[2]
             i2 = i1
             i1 = waveform[j]
             o2 = o1
@@ -90,13 +89,12 @@ def cal_filter_by_coffs(waveform, b, a):
         i = 0
         while i < waveform.shape[0]:
             j = 0
-            o2 = 0.
-            o1 = 0.
-            i2 = 0.
-            i1 = 0.
+            o2 = 0.0
+            o1 = 0.0
+            i2 = 0.0
+            i1 = 0.0
             while j < waveform.shape[1]:
-                o0 = waveform[i][j] * b[0] + i1 * b[1] + i2 * b[2] - o1 * a[
-                    1] - o2 * a[2]
+                o0 = waveform[i][j] * b[0] + i1 * b[1] + i2 * b[2] - o1 * a[1] - o2 * a[2]
                 i2 = i1
                 i1 = waveform[i][j]
                 o2 = o1
@@ -191,7 +189,7 @@ def peaking_equalizer(waveform, sample_rate, center_freq, gain, q=0.707):
         >>> out_waveform = filters.peaking_equalizer(waveform, sample_rate, \
              center_freq, gain, quality_factor)
     """
-    aa = np.exp(gain / 40 * np.log(10.))
+    aa = np.exp(gain / 40 * np.log(10.0))
     w0 = 2 * np.pi * center_freq / sample_rate
     alpha = np.sin(w0) / (2 * q)
 
@@ -371,8 +369,7 @@ def hz_to_mel(frequencies, htk=False):
 
     if frequencies.ndim:
         log_t = frequencies >= min_log_hz
-        mels[log_t] = min_log_mel + np.log(
-            frequencies[log_t] / min_log_hz) / logstep
+        mels[log_t] = min_log_mel + np.log(frequencies[log_t] / min_log_hz) / logstep
     elif frequencies >= min_log_hz:
         mels = min_log_mel + np.log(frequencies / min_log_hz) / logstep
 
@@ -393,8 +390,7 @@ def mel_to_hz(mels, htk=False):
 
     if mels.ndim:
         log_t = mels >= min_log_mel
-        freqs[log_t] = min_log_hz * np.exp(
-            logstep * (mels[log_t] - min_log_mel))
+        freqs[log_t] = min_log_hz * np.exp(logstep * (mels[log_t] - min_log_mel))
     elif mels >= min_log_mel:
         freqs = min_log_hz * np.exp(logstep * (mels - min_log_mel))
 
@@ -411,8 +407,9 @@ def mel_frequencies(n_mels=128, fmin=0.0, fmax=11025.0, htk=False):
     return hz
 
 
-def mel(sr, n_fft, n_mels=128, fmin=0.0, fmax=None,
-        norm: Optional[Union[Literal["slaney"], float]] = "slaney"):
+def mel(
+    sr, n_fft, n_mels=128, fmin=0.0, fmax=None, norm: Optional[Union[Literal["slaney"], float]] = "slaney",
+):
     """Create a Mel filter-bank.
     This produces a linear transformation matrix to project FFT bins onto
     Mel-frequency bins.
@@ -459,10 +456,11 @@ def mel(sr, n_fft, n_mels=128, fmin=0.0, fmax=None,
 
     if isinstance(norm, str):
         if norm == "slaney":
-            enorm = 2.0 / (mel_freqs[2: n_mels + 2] - mel_freqs[:n_mels])
+            enorm = 2.0 / (mel_freqs[2 : n_mels + 2] - mel_freqs[:n_mels])
             weights *= enorm[:, np.newaxis]
     else:
         import mindaudio.data.processing as processing
+
         weights = processing.normalize(weights, norm=norm, axis=-1)
 
     return weights

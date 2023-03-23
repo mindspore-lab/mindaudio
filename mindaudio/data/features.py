@@ -1,26 +1,27 @@
-import numpy as np
-from scipy.ndimage import median_filter
 import mindspore as ms
-from mindspore import nn, Tensor
-from mindspore.dataset.audio.utils import BorderType, create_dct, NormMode, \
-    WindowType
 import mindspore.dataset.audio as msaudio
-from .spectrum import melspectrogram, amplitude_to_dB, stft, istft, magphase
+import numpy as np
+from mindspore import Tensor, nn
+from mindspore.dataset.audio.utils import BorderType, NormMode, WindowType, create_dct
+from scipy.ndimage import median_filter
+
+from .spectrum import amplitude_to_dB, istft, magphase, melspectrogram, stft
 
 __all__ = [
-    'spectral_centroid',
-    'context_window',
-    'compute_deltas',
-    'fbank',
-    'mfcc',
-    'complex_norm',
-    'angle',
-    'harmonic'
+    "spectral_centroid",
+    "context_window",
+    "compute_deltas",
+    "fbank",
+    "mfcc",
+    "complex_norm",
+    "angle",
+    "harmonic",
 ]
 
 
-def spectral_centroid(waveforms, sample_rate, n_fft=400, win_length=None,
-                      hop_length=None, pad=0, window="hann"):
+def spectral_centroid(
+    waveforms, sample_rate, n_fft=400, win_length=None, hop_length=None, pad=0, window="hann",
+):
     """
     Create a spectral centroid from an audio signal.
 
@@ -52,8 +53,7 @@ def spectral_centroid(waveforms, sample_rate, n_fft=400, win_length=None,
     win_length = win_length if win_length else n_fft
     hop_length = hop_length if hop_length else win_length // 2
     window = WindowType(window)
-    spectralcentroid = msaudio.SpectralCentroid(sample_rate, n_fft, win_length,
-                                                hop_length, pad, window)
+    spectralcentroid = msaudio.SpectralCentroid(sample_rate, n_fft, win_length, hop_length, pad, window)
 
     return spectralcentroid(waveforms)
 
@@ -102,8 +102,7 @@ def context_window(waveforms, left_frames=0, right_frames=0):
     elif len(input_shape) == 4:
         x = waveforms.transpose((0, 2, 3, 1))
     else:
-        raise TypeError("Input dimension must be 2, 3 or 4, but got {}".format(
-            len(input_shape)))
+        raise TypeError("Input dimension must be 2, 3 or 4, but got {}".format(len(input_shape)))
 
     if first_call:
         first_call = False
@@ -117,16 +116,20 @@ def context_window(waveforms, left_frames=0, right_frames=0):
 
     # Computing context using the estimated kernel
     in_channel, out_channel = x_shape[1], kernel.shape[0]
-    conv = nn.Conv1d(in_channel, out_channel, kernel_size,
-                     padding=max_frame, pad_mode='pad',
-                     group=x.shape[1], weight_init=Tensor(kernel))
+    conv = nn.Conv1d(
+        in_channel,
+        out_channel,
+        kernel_size,
+        padding=max_frame,
+        pad_mode="pad",
+        group=x.shape[1],
+        weight_init=Tensor(kernel),
+    )
     x_tensor = Tensor(x, ms.float32)
     context = conv(x_tensor)
     # Retrieving the original dimensionality for multi-channel case
     if len(x_shape) == 4:
-        context = context.reshape((x_shape[0], context.shape[1],
-                                   x_shape[2], context.shape[-1])
-                                  )
+        context = context.reshape((x_shape[0], context.shape[1], x_shape[2], context.shape[-1]))
         context = context.transpose((0, 3, 1, 2))
 
     if len(x_shape) == 2:
@@ -173,10 +176,21 @@ def compute_deltas(specgram, win_length=5, pad_mode="edge"):
     return compute_deltas_ms(specgram)
 
 
-def fbank(waveforms, deltas=False, context=False, n_mels=40, n_fft=400,
-          sample_rate=16000, f_min=0.0, f_max=None,
-          left_frames=5, right_frames=5, win_length=None, hop_length=None,
-          window="hann"):
+def fbank(
+    waveforms,
+    deltas=False,
+    context=False,
+    n_mels=40,
+    n_fft=400,
+    sample_rate=16000,
+    f_min=0.0,
+    f_max=None,
+    left_frames=5,
+    right_frames=5,
+    win_length=None,
+    hop_length=None,
+    window="hann",
+):
     """
     Generate filter bank features.
 
@@ -218,12 +232,18 @@ def fbank(waveforms, deltas=False, context=False, n_mels=40, n_fft=400,
         (10, 40, 101)
     """
 
-    melspcgram = melspectrogram(waveforms, n_fft=n_fft, win_length=win_length,
-                                hop_length=hop_length, window=window,
-                                n_mels=n_mels, sample_rate=sample_rate,
-                                f_min=f_min, f_max=f_max)
-    fbanks = amplitude_to_dB(wavform=melspcgram, stype="power", ref=1.0,
-                             top_db=80.0)
+    melspcgram = melspectrogram(
+        waveforms,
+        n_fft=n_fft,
+        win_length=win_length,
+        hop_length=hop_length,
+        window=window,
+        n_mels=n_mels,
+        sample_rate=sample_rate,
+        f_min=f_min,
+        f_max=f_max,
+    )
+    fbanks = amplitude_to_dB(wavform=melspcgram, stype="power", ref=1.0, top_db=80.0)
     if deltas:
         delta1 = compute_deltas(fbanks)
         delta2 = compute_deltas(delta1)
@@ -233,10 +253,23 @@ def fbank(waveforms, deltas=False, context=False, n_mels=40, n_fft=400,
     return fbanks
 
 
-def mfcc(waveforms, deltas=True, context=True, n_mels=23, n_mfcc=20, n_fft=400,
-         sample_rate=16000, f_min=0.0,
-         f_max=None, left_frames=5, right_frames=5, win_length=None,
-         hop_length=None, norm="ortho", log_mels=False):
+def mfcc(
+    waveforms,
+    deltas=True,
+    context=True,
+    n_mels=23,
+    n_mfcc=20,
+    n_fft=400,
+    sample_rate=16000,
+    f_min=0.0,
+    f_max=None,
+    left_frames=5,
+    right_frames=5,
+    win_length=None,
+    hop_length=None,
+    norm="ortho",
+    log_mels=False,
+):
     """Generate Mel-frequency cepstrum coefficients (MFCC) features from input
     audio signal.
 
@@ -281,14 +314,19 @@ def mfcc(waveforms, deltas=True, context=True, n_mels=23, n_mfcc=20, n_fft=400,
     norm = NormMode(norm)
 
     if n_mfcc > n_mels:
-        raise ValueError(
-            'The number of MFCC coefficients must be no more than # mel bins.')
+        raise ValueError("The number of MFCC coefficients must be no more than # mel bins.")
     dct = create_dct(n_mfcc=n_mfcc, n_mels=n_mels, norm=norm)
 
-    melspec = melspectrogram(waveforms, sample_rate=sample_rate, n_fft=n_fft,
-                             n_mels=n_mels, f_min=f_min,
-                             f_max=f_max, win_length=win_length,
-                             hop_length=hop_length)
+    melspec = melspectrogram(
+        waveforms,
+        sample_rate=sample_rate,
+        n_fft=n_fft,
+        n_mels=n_mels,
+        f_min=f_min,
+        f_max=f_max,
+        win_length=win_length,
+        hop_length=hop_length,
+    )
     if log_mels:
         melspec = np.log(melspec + 1e-6)
     else:
@@ -299,14 +337,11 @@ def mfcc(waveforms, deltas=True, context=True, n_mels=23, n_mfcc=20, n_fft=400,
     if len(melspecgram_shape) == 2:
         mfccs = np.matmul(melspec.transpose((1, 0)), dct).transpose((1, 0))
     elif len(melspecgram_shape) == 3:
-        mfccs = np.matmul(melspec.transpose((0, 2, 1)), dct).transpose(
-            (0, 2, 1))
+        mfccs = np.matmul(melspec.transpose((0, 2, 1)), dct).transpose((0, 2, 1))
     elif len(melspecgram_shape) == 4:
-        mfccs = np.matmul(melspec.transpose((0, 1, 3, 2)), dct).transpose(
-            (0, 1, 3, 2))
+        mfccs = np.matmul(melspec.transpose((0, 1, 3, 2)), dct).transpose((0, 1, 3, 2))
     else:
-        raise TypeError("Unsupported MelSpectrogram shape {}".format(
-            len(melspecgram_shape)))
+        raise TypeError("Unsupported MelSpectrogram shape {}".format(len(melspecgram_shape)))
 
     if deltas:
         delta1 = compute_deltas(mfccs)
@@ -436,8 +471,7 @@ def hpss(spectrogram, *, kernel_size=31, power=2.0, mask=False, margin=1.0):
 
     # margin minimum is 1.0
     if margin_harmonic < 1 or margin_perc < 1:
-        raise TypeError(
-            "Margins must be >= 1.0. " "A typical range is between 1 and 10.")
+        raise TypeError("Margins must be >= 1.0. " "A typical range is between 1 and 10.")
 
     # shape for kernels
     perc_shape = [1 for _ in spectrogram.shape]
@@ -455,19 +489,17 @@ def hpss(spectrogram, *, kernel_size=31, power=2.0, mask=False, margin=1.0):
 
     split_zeros = margin_harmonic == 1 and margin_perc == 1
 
-    mask_harmonic = soft_mask(
-        harm, perc * margin_harmonic, power=power, split_zeros=split_zeros
-    )
+    mask_harmonic = soft_mask(harm, perc * margin_harmonic, power=power, split_zeros=split_zeros)
 
-    mask_perc = soft_mask(
-        perc, harm * margin_perc, power=power, split_zeros=split_zeros
-    )
+    mask_perc = soft_mask(perc, harm * margin_perc, power=power, split_zeros=split_zeros)
 
     if mask:
         return mask_harmonic, mask_perc
 
-    return (spectrogram * mask_harmonic) * phase, (
-                spectrogram * mask_perc) * phase
+    return (
+        (spectrogram * mask_harmonic) * phase,
+        (spectrogram * mask_perc) * phase,
+    )
 
 
 def harmonic(y_input, **kwargs):
@@ -489,7 +521,7 @@ def harmonic(y_input, **kwargs):
         >>> harm = features.harmonic(waveform, margin=3.0)
     """
     # STFT
-    y_stft = stft(y_input, n_fft=2048, pad_mode='constant')
+    y_stft = stft(y_input, n_fft=2048, pad_mode="constant")
 
     # Remove percussive
     stft_harm = hpss(y_stft, **kwargs)[0]

@@ -2,19 +2,20 @@
 Data preparation, from mindaudio VoxCeleb recipe.
 """
 
-import os
 import csv
-import logging
 import glob
+import logging
+import os
 import pickle
 import random
 import shutil
 import time
 
 import numpy as np
+from tqdm.contrib import tqdm
+
 import mindaudio.data.io as io
 from mindaudio.data.processing import stereo_to_mono
-from tqdm.contrib import tqdm
 
 logger = logging.getLogger(__name__)
 VOX_OPT_FILE = "opt_voxceleb_prepare.pkl"
@@ -71,17 +72,17 @@ def save_pkl(obj, file):
 
 
 def prepare_voxceleb(
-        data_folder_path,
-        save_folder_path,
-        verification_pairs_file,
-        splits=("train", "dev", "test"),
-        split_ratio=(90, 10),
-        seg_dur=3.0,
-        skip_prep=False,
-        amp_th=5e-04,
-        source=None,
-        split_speaker=False,
-        random_segment=False,
+    data_folder_path,
+    save_folder_path,
+    verification_pairs_file,
+    splits=("train", "dev", "test"),
+    split_ratio=(90, 10),
+    seg_dur=3.0,
+    skip_prep=False,
+    amp_th=5e-04,
+    source=None,
+    split_speaker=False,
+    random_segment=False,
 ):
     """
     Prepares the csv files for the Voxceleb1 or Voxceleb2 datasets.
@@ -111,14 +112,11 @@ def prepare_voxceleb(
 
     # Create the data folder contains VoxCeleb1 test data from the source
     if source is not None:
-        if not os.path.exists(
-                os.path.join(data_folder_path, "wav", "id10270")):
-            shutil.unpack_archive(os.path.join(source, VOX_TEST_WAV),
-                                  data_folder_path)
+        if not os.path.exists(os.path.join(data_folder_path, "wav", "id10270")):
+            shutil.unpack_archive(os.path.join(source, VOX_TEST_WAV), data_folder_path)
         if not os.path.exists(os.path.join(data_folder_path, "meta")):
             shutil.copytree(
-                os.path.join(source, "meta"),
-                os.path.join(data_folder_path, "meta")
+                os.path.join(source, "meta"), os.path.join(data_folder_path, "meta"),
             )
 
     # Check if this phase is already done (if so, skip it)
@@ -141,19 +139,14 @@ def prepare_voxceleb(
 
     # Creating csv file for training data
     if "train" in splits:
-        prepare_csv_file(
-            seg_dur, wav_lst_train, save_csv_train, random_segment, amp_th
-        )
+        prepare_csv_file(seg_dur, wav_lst_train, save_csv_train, random_segment, amp_th)
 
     if "dev" in splits:
-        prepare_csv_file(seg_dur, wav_lst_dev, save_csv_dev, random_segment,
-                         amp_th)
+        prepare_csv_file(seg_dur, wav_lst_dev, save_csv_dev, random_segment, amp_th)
 
     # For PLDA verification
     if "test" in splits:
-        prepare_csv_enrol_test(
-            data_folder_path, save_folder_path, verification_pairs_file
-        )
+        prepare_csv_enrol_test(data_folder_path, save_folder_path, verification_pairs_file)
 
     # Saving options (useful to skip this phase when already done)
     save_pkl(save_conf, save_option)
@@ -190,9 +183,7 @@ def skip(splits, save_folder, save_conf):
 
 
 # Used for verification split
-def get_utt_split_lists(
-        data_folders, split_ratio, verification_pairs_file, split_speaker=False
-):
+def get_utt_split_lists(data_folders, split_ratio, verification_pairs_file, split_speaker=False):
     """
     Splits the audio file list into train and dev.
     This function automatically removes verification test files from the
@@ -203,10 +194,7 @@ def get_utt_split_lists(
 
     print("Getting file list...")
     for data_folder in data_folders:
-        test_list = [
-            line.rstrip("\n").split(" ")[1]
-            for line in open(verification_pairs_file)
-        ]
+        test_list = [line.rstrip("\n").split(" ")[1] for line in open(verification_pairs_file)]
         test_list = set(sorted(test_list))
 
         test_speakers = [snt.split("/")[0] for snt in test_list]
@@ -257,16 +245,12 @@ def get_chunks(seg_dur, audio_id, audio_duration):
     """
     num_chunks = int(audio_duration / seg_dur)  # all in milliseconds
 
-    chunk_list = [
-        audio_id + "_" + str(i * seg_dur) + "_" + str(i * seg_dur + seg_dur)
-        for i in range(num_chunks)
-    ]
+    chunk_list = [audio_id + "_" + str(i * seg_dur) + "_" + str(i * seg_dur + seg_dur) for i in range(num_chunks)]
 
     return chunk_list
 
 
-def prepare_csv_file(seg_dur, wav_lst, csv_file, random_segment=False,
-                     amp_th=0):
+def prepare_csv_file(seg_dur, wav_lst, csv_file, random_segment=False, amp_th=0):
     """
     Creates the csv file given a list of wav files.
     """
@@ -323,8 +307,7 @@ def prepare_csv_file(seg_dur, wav_lst, csv_file, random_segment=False,
                 end_sample = int(float(e) * SAMPLERATE)
 
                 #  Avoid chunks with very small energy
-                mean_sig = np.mean(
-                    np.abs(signal[start_sample_index:end_sample]))
+                mean_sig = np.mean(np.abs(signal[start_sample_index:end_sample]))
                 if mean_sig < amp_th:
                     continue
 
@@ -343,9 +326,7 @@ def prepare_csv_file(seg_dur, wav_lst, csv_file, random_segment=False,
 
     # Writing the csv lines
     with open(csv_file, mode="w") as csv_f:
-        csv_writer = csv.writer(
-            csv_f, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
-        )
+        csv_writer = csv.writer(csv_f, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
         for line in csv_output_header:
             csv_writer.writerow(line)
 
@@ -359,9 +340,7 @@ def prepare_csv_enrol_test(data_folders, save_folder, verification_pairs_file):
     Creates the csv file for test data (useful for verification)
     """
 
-    csv_output_head = [
-        ["ID", "duration", "wav", "start", "stop", "spk_id"]
-    ]
+    csv_output_head = [["ID", "duration", "wav", "start", "stop", "spk_id"]]
 
     for each_data_folder in data_folders:
 
@@ -414,9 +393,7 @@ def prepare_csv_enrol_test(data_folders, save_folder, verification_pairs_file):
 
         # Writing the csv lines
         with open(csv_file_path, mode="w") as csv_f:
-            csv_writer = csv.writer(
-                csv_f, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
-            )
+            csv_writer = csv.writer(csv_f, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
             for each_line in csv_output:
                 csv_writer.writerow(each_line)
 
@@ -455,8 +432,6 @@ def prepare_csv_enrol_test(data_folders, save_folder, verification_pairs_file):
 
         # Writing the csv lines
         with open(csv_file_path, mode="w") as csv_f:
-            csv_writer = csv.writer(
-                csv_f, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
-            )
+            csv_writer = csv.writer(csv_f, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
             for each_line in csv_output:
                 csv_writer.writerow(each_line)

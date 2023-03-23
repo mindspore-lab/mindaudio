@@ -1,6 +1,7 @@
 """data process"""
 import os
 import pickle
+
 import numpy as np
 
 np.random.seed(58)
@@ -14,8 +15,7 @@ class DatasetGeneratorBatchEval:
         self.memmaps_label = {}
         self.reads = 0
         self.read_limit = read_limit
-        dataset_index = pickle.load(
-            open(os.path.join(data_path, "ind_sample.p"), "rb"))
+        dataset_index = pickle.load(open(os.path.join(data_path, "ind_sample.p"), "rb"))
         for utterance, (file_ind, offset, length) in dataset_index.items():
             file_path = os.path.join(data_path, f"{file_ind}.npy")
             self.index_sample[utterance] = (file_path, offset, length)
@@ -29,7 +29,7 @@ class DatasetGeneratorBatchEval:
         self.reads += 1
         if self.reads >= self.read_limit:
             self.flush_memmaps()
-        fea = self.memmaps_sample[utt_path][offset_utt:offset_utt + length_utt]
+        fea = self.memmaps_sample[utt_path][offset_utt : offset_utt + length_utt]
         label = utt
         return fea.reshape((1, 301, 80)), label
 
@@ -49,10 +49,10 @@ class DatasetGenerator:
         self.label = []
         filelist = os.path.join(data_dir, "fea.lst")
         labellist = os.path.join(data_dir, "label.lst")
-        with open(filelist, 'r') as fpF:
+        with open(filelist, "r") as fpF:
             for file in fpF:
                 self.data.append(os.path.join(data_dir, file.strip()))
-        with open(labellist, 'r') as fpL:
+        with open(labellist, "r") as fpL:
             for label in fpL:
                 self.label.append(os.path.join(data_dir, label.strip()))
         if drop:
@@ -75,12 +75,12 @@ class DatasetGeneratorTrain:
         self.label = []
         filelist = os.path.join(data_dir, "fea.lst")
         labellist = os.path.join(data_dir, "label.lst")
-        with open(filelist, 'r') as fpF:
+        with open(filelist, "r") as fpF:
             for file in fpF:
-                self.data.append(data_dir + '/' + file.strip())
-        with open(labellist, 'r') as fpL:
+                self.data.append(data_dir + "/" + file.strip())
+        with open(labellist, "r") as fpL:
             for label in fpL:
-                self.label.append(data_dir + '/' + label.strip())
+                self.label.append(data_dir + "/" + label.strip())
         if drop:
             self.data.pop()
             self.label.pop()
@@ -107,15 +107,13 @@ class DatasetGeneratorBatch:
         if isinstance(data_paths, str):
             data_paths = [data_paths]
         for data_path in data_paths:
-            dataset_index = pickle.load(
-                open(os.path.join(data_path, "ind_sample.p"), "rb"))
+            dataset_index = pickle.load(open(os.path.join(data_path, "ind_sample.p"), "rb"))
             local_batchlist = []
             for utterance, (file_ind, offset, length) in dataset_index.items():
                 file_path = os.path.join(data_path, f"{file_ind}.npy")
                 self.index_sample[utterance] = (file_path, offset, length)
                 local_batchlist.append(utterance)
-            label_index = pickle.load(
-                open(os.path.join(data_path, "ind_label.p"), "rb"))
+            label_index = pickle.load(open(os.path.join(data_path, "ind_label.p"), "rb"))
             for utterance, (file_ind, offset, length) in label_index.items():
                 file_path = os.path.join(data_path, f"{file_ind}_label.npy")
                 self.index_label[utterance] = (file_path, offset, length)
@@ -133,8 +131,8 @@ class DatasetGeneratorBatch:
         self.reads += 1
         if self.reads >= self.read_limit:
             self.flush_memmaps()
-        fea = self.memmaps_sample[utt_path][offset_utt:offset_utt + length_utt]
-        label = self.memmaps_label[label_path][offset_l:offset_l + length_l]
+        fea = self.memmaps_sample[utt_path][offset_utt : offset_utt + length_utt]
+        label = self.memmaps_label[label_path][offset_l : offset_l + length_l]
         return fea.reshape((-1, 301, 80)), label
 
     def flush_memmaps(self):

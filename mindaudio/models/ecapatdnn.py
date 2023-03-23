@@ -13,20 +13,28 @@
 # limitations under the License.
 # ============================================================================
 
-import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
 import mindspore.ops as ops
+import numpy as np
 from mindspore import Tensor
-from mindspore.common.initializer import initializer, XavierUniform
+from mindspore.common.initializer import XavierUniform, initializer
 
 ms.set_seed(0)
 
 
 class MyBatchNorm1d(nn.Cell):
     def __init__(
-            self, num_features, eps=1e-5, momentum=0.9, affine=True, gamma_init="ones",
-            beta_init="zeros", moving_mean_init="zeros", moving_var_init="ones", use_batch_statistics=None,
+        self,
+        num_features,
+        eps=1e-5,
+        momentum=0.9,
+        affine=True,
+        gamma_init="ones",
+        beta_init="zeros",
+        moving_mean_init="zeros",
+        moving_var_init="ones",
+        use_batch_statistics=None,
     ):
         super(MyBatchNorm1d, self).__init__()
         self.norm2d = nn.BatchNorm2d(num_features=num_features)
@@ -45,14 +53,7 @@ class MyBatchNorm1d(nn.Cell):
 
 class TDNNBlock(nn.Cell):
     def __init__(
-            self,
-            in_channels,
-            out_channels,
-            kernel_size,
-            dilation,
-            bias,
-            activation=nn.ReLU,
-            groups=1,
+        self, in_channels, out_channels, kernel_size, dilation, bias, activation=nn.ReLU, groups=1,
     ):
         super(TDNNBlock, self).__init__()
         self.conv = nn.Conv1d(
@@ -61,8 +62,8 @@ class TDNNBlock(nn.Cell):
             kernel_size=kernel_size,
             dilation=dilation,
             has_bias=bias,
-            weight_init='he_uniform',
-            bias_init='truncatedNormal'
+            weight_init="he_uniform",
+            bias_init="truncatedNormal",
         )
         self.activation = activation()
         self.norm = MyBatchNorm1d(num_features=out_channels)
@@ -77,7 +78,7 @@ class TDNNBlock(nn.Cell):
 
 class Res2NetBlock(nn.Cell):
     def __init__(
-            self, in_channels, out_channels, scale=8, kernel_size=3, dilation=1, bias=True, groups=1
+        self, in_channels, out_channels, scale=8, kernel_size=3, dilation=1, bias=True, groups=1,
     ):
         super(Res2NetBlock, self).__init__()
         assert in_channels % scale == 0
@@ -87,13 +88,7 @@ class Res2NetBlock(nn.Cell):
         hidden_channel = out_channels // scale
         self.blocks = nn.CellList(
             [
-                TDNNBlock(
-                    in_channel,
-                    hidden_channel,
-                    kernel_size=kernel_size,
-                    dilation=dilation,
-                    bias=bias,
-                )
+                TDNNBlock(in_channel, hidden_channel, kernel_size=kernel_size, dilation=dilation, bias=bias,)
                 for i in range(scale - 1)
             ]
         )
@@ -134,13 +129,21 @@ class SEBlock(nn.Cell):
         super(SEBlock, self).__init__()
 
         self.conv1 = nn.Conv1d(
-            in_channels=in_channels, out_channels=se_channels, kernel_size=1, has_bias=True, weight_init='he_uniform',
-            bias_init='truncatedNormal'
+            in_channels=in_channels,
+            out_channels=se_channels,
+            kernel_size=1,
+            has_bias=True,
+            weight_init="he_uniform",
+            bias_init="truncatedNormal",
         )
         self.relu = ms.nn.ReLU()
         self.conv2 = ms.nn.Conv1d(
-            in_channels=se_channels, out_channels=out_channels, kernel_size=1, has_bias=True, weight_init='he_uniform',
-            bias_init='truncatedNormal'
+            in_channels=se_channels,
+            out_channels=out_channels,
+            kernel_size=1,
+            has_bias=True,
+            weight_init="he_uniform",
+            bias_init="truncatedNormal",
         )
         self.sigmoid = ms.nn.Sigmoid()
         self.print = ops.operations.Print()
@@ -172,39 +175,25 @@ class SERes2NetBlock(nn.Cell):
     """
 
     def __init__(
-            self,
-            in_channels,
-            out_channels,
-            res2net_scale=8,
-            se_channels=128,
-            kernel_size=1,
-            dilation=1,
-            activation=nn.ReLU,
-            bias=True,
-            groups=1,
+        self,
+        in_channels,
+        out_channels,
+        res2net_scale=8,
+        se_channels=128,
+        kernel_size=1,
+        dilation=1,
+        activation=nn.ReLU,
+        bias=True,
+        groups=1,
     ):
         super().__init__()
         self.out_channels = out_channels
         self.tdnn1 = TDNNBlock(
-            in_channels,
-            out_channels,
-            kernel_size=1,
-            dilation=1,
-            bias=bias,
-            activation=activation,
-            groups=groups,
+            in_channels, out_channels, kernel_size=1, dilation=1, bias=bias, activation=activation, groups=groups,
         )
-        self.res2net_block = Res2NetBlock(
-            out_channels, out_channels, res2net_scale, kernel_size, dilation, bias
-        )
+        self.res2net_block = Res2NetBlock(out_channels, out_channels, res2net_scale, kernel_size, dilation, bias,)
         self.tdnn2 = TDNNBlock(
-            out_channels,
-            out_channels,
-            kernel_size=1,
-            dilation=1,
-            activation=activation,
-            bias=bias,
-            groups=groups,
+            out_channels, out_channels, kernel_size=1, dilation=1, activation=activation, bias=bias, groups=groups,
         )
         self.se_block = SEBlock(out_channels, se_channels, out_channels)
 
@@ -214,8 +203,8 @@ class SERes2NetBlock(nn.Cell):
                 in_channels=in_channels,
                 out_channels=out_channels,
                 kernel_size=1,
-                weight_init='he_uniform',
-                bias_init='truncatedNormal'
+                weight_init="he_uniform",
+                bias_init="truncatedNormal",
             )
 
     def construct(self, x, lengths=None):
@@ -253,8 +242,12 @@ class AttentiveStatisticsPooling(nn.Cell):
             self.tdnn = TDNNBlock(channels, attention_channels, 1, 1, bias=bias)
         self.tanh = nn.Tanh()
         self.conv = nn.Conv1d(
-            in_channels=attention_channels, out_channels=channels, kernel_size=1,
-            has_bias=bias, weight_init='he_uniform', bias_init='truncatedNormal'
+            in_channels=attention_channels,
+            out_channels=channels,
+            kernel_size=1,
+            has_bias=bias,
+            weight_init="he_uniform",
+            bias_init="truncatedNormal",
         )
         self.sqrt = ms.ops.Sqrt()
         self.pow = ms.ops.Pow()
@@ -307,18 +300,18 @@ class EcapaTDNN(nn.Cell):
     """
 
     def __init__(
-            self,
-            input_size,
-            lin_neurons=192,
-            activation=nn.ReLU,
-            channels=(512, 512, 512, 512, 1536),
-            kernel_sizes=(5, 3, 3, 3, 1),
-            dilations=(1, 2, 3, 4, 1),
-            attention_channels=128,
-            res2net_scale=8,
-            se_channels=128,
-            global_context=False,
-            groups=(1, 1, 1, 1, 1),
+        self,
+        input_size,
+        lin_neurons=192,
+        activation=nn.ReLU,
+        channels=(512, 512, 512, 512, 1536),
+        kernel_sizes=(5, 3, 3, 3, 1),
+        dilations=(1, 2, 3, 4, 1),
+        attention_channels=128,
+        res2net_scale=8,
+        se_channels=128,
+        global_context=False,
+        groups=(1, 1, 1, 1, 1),
     ):
 
         super().__init__()
@@ -328,15 +321,7 @@ class EcapaTDNN(nn.Cell):
 
         # The initial TDNN layer
         self.blocks.append(
-            TDNNBlock(
-                input_size,
-                channels[0],
-                kernel_sizes[0],
-                dilations[0],
-                True,
-                activation,
-                groups[0],
-            )
+            TDNNBlock(input_size, channels[0], kernel_sizes[0], dilations[0], True, activation, groups[0],)
         )
 
         # SE-Res2Net layers
@@ -357,21 +342,12 @@ class EcapaTDNN(nn.Cell):
 
         # Multi-layer feature aggregation
         self.mfa = TDNNBlock(
-            channels[-1],
-            channels[-1],
-            kernel_sizes[-1],
-            dilations[-1],
-            True,
-            activation,
-            groups=groups[-1],
+            channels[-1], channels[-1], kernel_sizes[-1], dilations[-1], True, activation, groups=groups[-1],
         )
 
         # Attentive Statistical Pooling
         self.asp = AttentiveStatisticsPooling(
-            channels[-1],
-            attention_channels=attention_channels,
-            bias=True,
-            global_context=global_context,
+            channels[-1], attention_channels=attention_channels, bias=True, global_context=global_context,
         )
         self.asp_bn = MyBatchNorm1d(num_features=channels[-1] * 2)
 
@@ -381,8 +357,8 @@ class EcapaTDNN(nn.Cell):
             out_channels=lin_neurons,
             kernel_size=1,
             has_bias=True,
-            weight_init='he_uniform',
-            bias_init='truncatedNormal'
+            weight_init="he_uniform",
+            bias_init="truncatedNormal",
         )
         self.expandDim = ms.ops.ExpandDims()
         self.softmax = ms.ops.Softmax(axis=2)
@@ -430,11 +406,7 @@ class Classifier(nn.Cell):
     """
 
     def __init__(
-            self,
-            input_size,
-            lin_blocks=0,
-            lin_neurons=192,
-            out_neurons=1211,
+        self, input_size, lin_blocks=0, lin_neurons=192, out_neurons=1211,
     ):
 
         super().__init__()
@@ -442,18 +414,13 @@ class Classifier(nn.Cell):
 
         for _ in range(lin_blocks):
             self.blocks.extend(
-                [
-                    MyBatchNorm1d(num_features=input_size),
-                    nn.Dense(in_channels=input_size, out_channels=lin_neurons),
-                ]
+                [MyBatchNorm1d(num_features=input_size), nn.Dense(in_channels=input_size, out_channels=lin_neurons),]
             )
             input_size = lin_neurons
         input_size = lin_neurons
         # Final Layer
         tensor1 = initializer(XavierUniform(), [out_neurons, input_size], ms.float32)
-        self.weight = ms.Parameter(
-            tensor1
-        )
+        self.weight = ms.Parameter(tensor1)
         self.norm = ms.ops.L2Normalize(axis=1)
         self.print = ops.operations.Print()
         self.matmul = ms.ops.MatMul()
