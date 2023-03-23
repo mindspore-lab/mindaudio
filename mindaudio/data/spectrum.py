@@ -1,26 +1,30 @@
+import mindspore as ms
+import mindspore.dataset.audio as msaudio
 import numpy as np
+from mindspore.dataset.audio.utils import (
+    BorderType,
+    MelType,
+    NormType,
+    WindowType,
+)
 from numpy import fft
 from scipy.signal import get_window
-import mindspore as ms
-from mindspore.dataset.audio.utils import BorderType, WindowType, ScaleType, NormType, MelType
-import mindspore.dataset.audio as msaudio
-
 
 __all__ = [
-    'amplitude_to_dB',
-    'dB_to_amplitude',
-    'stft',
-    'istft',
-    'compute_amplitude',
-    'spectrogram',
-    'melspectrogram',
-    'magphase',
-    'melscale',
-    'resynthesize'
+    "amplitude_to_dB",
+    "dB_to_amplitude",
+    "stft",
+    "istft",
+    "compute_amplitude",
+    "spectrogram",
+    "melspectrogram",
+    "magphase",
+    "melscale",
+    "resynthesize",
 ]
 
-#Define max block sizes(256 KB)
-MAX_MEM_BLOCK = 2**8 * 2**10
+# Define max block sizes(256 KB)
+MAX_MEM_BLOCK = 2 ** 8 * 2 ** 10
 
 
 def amplitude_to_dB(wavform, stype="power", ref=1.0, amin=1e-10, top_db=80.0):
@@ -123,8 +127,16 @@ def _expand_to(x, ndim, axes):
     return x.reshape(shape)
 
 
-def stft(waveforms, n_fft=512, win_length=None, hop_length=None, window="hann", center=True,
-         pad_mode="constant", return_complex=True):
+def stft(
+    waveforms,
+    n_fft=512,
+    win_length=None,
+    hop_length=None,
+    window="hann",
+    center=True,
+    pad_mode="constant",
+    return_complex=True,
+):
     """
     Short-time Fourier transform (STFT).
 
@@ -207,13 +219,22 @@ def stft(waveforms, n_fft=512, win_length=None, hop_length=None, window="hann", 
                 padding,
                 mode=pad_mode,
             )
-            af_frames = frame(waveforms_pre, frame_length=n_fft, hop_length=hop_length)[..., :start_k]
+            af_frames = frame(waveforms_pre, frame_length=n_fft, hop_length=hop_length)[
+                ..., :start_k
+            ]
             the_shape_of_frames = af_frames.shape
             extra = the_shape_of_frames[-1]
 
-            if tail_k * hop_length - n_fft // 2 + n_fft <= waveforms.shape[-1] + n_fft // 2:
+            if (
+                tail_k * hop_length - n_fft // 2 + n_fft
+                <= waveforms.shape[-1] + n_fft // 2
+            ):
                 padding[-1] = (0, n_fft // 2)
-                y_post = np.pad(waveforms[..., (tail_k) * hop_length - n_fft // 2:], padding, mode=pad_mode)
+                y_post = np.pad(
+                    waveforms[..., (tail_k) * hop_length - n_fft // 2 :],
+                    padding,
+                    mode=pad_mode,
+                )
                 y_frames_post = frame(y_post, frame_length=n_fft, hop_length=hop_length)
                 extra += y_frames_post.shape[-1]
             else:
@@ -225,8 +246,8 @@ def stft(waveforms, n_fft=512, win_length=None, hop_length=None, window="hann", 
         start = 0
         extra = 0
         if n_fft > waveforms.shape[-1]:
-            raise ParameterError(
-                f"n_fft={n_fft} is too large for uncentered analysis of input signal of length={y.shape[-1]}"
+            raise ValueError(
+                f"n_fft={n_fft} is too large for uncentered analysis of input signal of length={waveforms.shape[-1]}"
             )
     # Window the time series.
     y_frames = frame(waveforms[..., start:], frame_length=n_fft, hop_length=hop_length)
@@ -246,11 +267,15 @@ def stft(waveforms, n_fft=512, win_length=None, hop_length=None, window="hann", 
     else:
         off_start = 0
 
-    n_columns = max(int(MAX_MEM_BLOCK // (np.prod(y_frames.shape[:-1]) * y_frames.itemsize)),1)
+    n_columns = max(
+        int(MAX_MEM_BLOCK // (np.prod(y_frames.shape[:-1]) * y_frames.itemsize)), 1
+    )
 
     for bl_s in range(0, y_frames.shape[-1], n_columns):
         bl_t = min(bl_s + n_columns, y_frames.shape[-1])
-        stft_matrix[..., bl_s + off_start: bl_t + off_start] = fft.rfft(fft_window * y_frames[..., bl_s:bl_t], axis=-2)
+        stft_matrix[..., bl_s + off_start : bl_t + off_start] = fft.rfft(
+            fft_window * y_frames[..., bl_s:bl_t], axis=-2
+        )
 
     if return_complex:
         return stft_matrix
@@ -280,7 +305,7 @@ def frame(x, frame_length=2048, hop_length=64):
     if isinstance(x, ms.Tensor):
         x_frames = ms.Tensor(x_frames)
     for i in range(frame_length):
-        x_frames[..., i, :] = x[..., i:i + num_frame * hop_length][..., ::hop_length]
+        x_frames[..., i, :] = x[..., i : i + num_frame * hop_length][..., ::hop_length]
     return x_frames
 
 
@@ -323,7 +348,15 @@ def overlap_add(output_buffer, frames, hop_length):
         output_buffer[..., sample : (sample + n_fft)] += frames[..., sample_frame]
 
 
-def istft(stft_matrix, n_fft=None, win_length=None, hop_length=None, window="hann", center=True, length=None):
+def istft(
+    stft_matrix,
+    n_fft=None,
+    win_length=None,
+    hop_length=None,
+    window="hann",
+    center=True,
+    length=None,
+):
     # pylint: disable=C,R,W,E,F
     """
     Inverse short-time Fourier transform (ISTFT).
@@ -396,8 +429,8 @@ def istft(stft_matrix, n_fft=None, win_length=None, hop_length=None, window="han
     shape.append(expected_signal_len)
     y = np.zeros(shape, dtype=np.float_)
 
-    n_columns = 2 ** 8 * 2 ** 10 // (
-        np.prod(stft_matrix.shape[:-1]) * stft_matrix.itemsize
+    n_columns = (
+        2 ** 8 * 2 ** 10 // (np.prod(stft_matrix.shape[:-1]) * stft_matrix.itemsize)
     )
     n_columns = max(n_columns, 1)
 
@@ -462,7 +495,7 @@ def _window_sumsquare(window, n_frames, win_length, n_fft, hop_length):
     n_fft = len(win_sq)
     for i in range(n_frames):
         sample = i * hop_length
-        x[sample: min(n, sample + n_fft)] += win_sq[: max(0, min(n_fft, n - sample))]
+        x[sample : min(n, sample + n_fft)] += win_sq[: max(0, min(n_fft, n - sample))]
     return x
 
 
@@ -516,8 +549,19 @@ def compute_amplitude(waveforms, lengths=None, amp_type="avg", dB=False):
         return out
 
 
-def spectrogram(waveforms, n_fft=400, win_length=None, hop_length=None, pad=0, window="hann", power=2.0,
-                 normalized=False, center=True, pad_mode="reflect", onesided=True):
+def spectrogram(
+    waveforms,
+    n_fft=400,
+    win_length=None,
+    hop_length=None,
+    pad=0,
+    window="hann",
+    power=2.0,
+    normalized=False,
+    center=True,
+    pad_mode="reflect",
+    onesided=True,
+):
     """
         Create a spectrogram from an audio signal.
 
@@ -529,8 +573,8 @@ def spectrogram(waveforms, n_fft=400, win_length=None, hop_length=None, pad=0, w
             hop_length (int): Length of hop between STFT windows (default=None, will use win_length // 2).
             pad (int): Two sided padding of signal (default=0).
             window (str, Callable): Window function that is applied/multiplied to each frame/window,
-                which can be 'bartlett', 'blackman', 'hamming', 'hann' or 'kaiser' (default='hann'). Currently kaiser
-                window is not supported on macOS.
+                which can be 'bartlett', 'blackman', 'hamming', 'hann' or 'kaiser' (default='hann').
+                Currently kaiser window is not supported on macOS.
             power (float): Exponent for the magnitude spectrogram, which must be greater
                 than or equal to 0, e.g., 1 for energy, 2 for power, etc. (default=2.0).
             normalized (bool): Whether to normalize by magnitude after stft (default=False).
@@ -552,14 +596,40 @@ def spectrogram(waveforms, n_fft=400, win_length=None, hop_length=None, pad=0, w
     hop_length = hop_length if hop_length else win_length // 2
     window = WindowType(window)
     pad_mode = BorderType(pad_mode)
-    spectrogram = msaudio.Spectrogram(n_fft, win_length, hop_length, pad, window, power, normalized,
-                                    center, pad_mode, onesided)
+    spectrogram = msaudio.Spectrogram(
+        n_fft,
+        win_length,
+        hop_length,
+        pad,
+        window,
+        power,
+        normalized,
+        center,
+        pad_mode,
+        onesided,
+    )
     return spectrogram(waveforms)
 
 
-def melspectrogram(waveforms, n_fft=400, win_length=None, hop_length=None, pad=0, window="hann", power=2.0,
-                 normalized=False, center=True, pad_mode="reflect", onesided=True, n_mels=128, sample_rate=16000,
-                 f_min=0, f_max=None, norm=NormType.NONE, mel_type=MelType.HTK):
+def melspectrogram(
+    waveforms,
+    n_fft=400,
+    win_length=None,
+    hop_length=None,
+    pad=0,
+    window="hann",
+    power=2.0,
+    normalized=False,
+    center=True,
+    pad_mode="reflect",
+    onesided=True,
+    n_mels=128,
+    sample_rate=16000,
+    f_min=0,
+    f_max=None,
+    norm=NormType.NONE,
+    mel_type=MelType.HTK,
+):
     """
     Create a mel-scaled spectrogram from an audio signal.
 
@@ -571,11 +641,11 @@ def melspectrogram(waveforms, n_fft=400, win_length=None, hop_length=None, pad=0
         hop_length (int): Length of hop between STFT windows (default=None, will use win_length // 2).
         pad (int): Two sided padding of signal (default=0).
         window (str, Callable): Window function that is applied/multiplied to each frame/window,
-            which can be 'bartlett', 'blackman', 'hamming', 'hann' or 'kaiser' (default='hann'). Currently kaiser
-            window is not supported on macOS.
+            which can be 'bartlett', 'blackman', 'hamming', 'hann' or 'kaiser' (default='hann').
+            Currently kaiser window is not supported on macOS.
 
-        power (float): Exponent for the magnitude spectrogram, which must be greater
-            than or equal to 0, e.g., 1 for energy, 2 for power, etc. (default=2.0).
+        power (float): Exponent for the magnitude spectrogram, which must be
+            greater than or equal to 0, e.g., 1 for energy, 2 for power, etc. (default=2.0).
         normalized (bool): Whether to normalize by magnitude after stft (default=False).
         center (bool): Whether to pad waveform on both sides (default=True).
         pad_mode (str): Controls the padding method used when center is True,
@@ -605,11 +675,28 @@ def melspectrogram(waveforms, n_fft=400, win_length=None, hop_length=None, pad=0
     window = WindowType(window)
     pad_mode = BorderType(pad_mode)
 
-    spectrogram = msaudio.Spectrogram(n_fft=n_fft, win_length=win_length, hop_length=hop_length, pad=pad, window=window,
-                                      power=power, normalized=normalized, center=center, pad_mode=pad_mode, onesided=onesided)
+    spectrogram = msaudio.Spectrogram(
+        n_fft=n_fft,
+        win_length=win_length,
+        hop_length=hop_length,
+        pad=pad,
+        window=window,
+        power=power,
+        normalized=normalized,
+        center=center,
+        pad_mode=pad_mode,
+        onesided=onesided,
+    )
 
-    melscale = msaudio.MelScale(n_mels=n_mels, sample_rate=sample_rate, f_min=f_min, f_max=f_max,
-                                n_stft=n_fft // 2 + 1, norm=norm, mel_type=mel_type)
+    melscale = msaudio.MelScale(
+        n_mels=n_mels,
+        sample_rate=sample_rate,
+        f_min=f_min,
+        f_max=f_max,
+        n_stft=n_fft // 2 + 1,
+        norm=norm,
+        mel_type=mel_type,
+    )
 
     specgram = spectrogram(waveforms)
 
@@ -638,7 +725,7 @@ def magphase(waveform, power, iscomplex=True):
     if iscomplex:
         mag = np.abs(waveform)
 
-        #Prevent NaNs and return magnitude 0, phase 1+0j for zero
+        # Prevent NaNs and return magnitude 0, phase 1+0j for zero
         zero_to_ones = mag == 0
         mag_nonzero = mag + zero_to_ones
         # Compute real and imaginary seprately, because complex division can produce Nans
@@ -653,8 +740,16 @@ def magphase(waveform, power, iscomplex=True):
         return magphase_from_ms(waveform)
 
 
-def melscale(spec, n_mels=128, sample_rate=16000, f_min=0, f_max=None, n_stft=201, norm=NormType.NONE,
-        mel_type=MelType.HTK):
+def melscale(
+    spec,
+    n_mels=128,
+    sample_rate=16000,
+    f_min=0,
+    f_max=None,
+    n_stft=201,
+    norm=NormType.NONE,
+    mel_type=MelType.HTK,
+):
     """
         Convert normal STFT to STFT at the Mel scale
 
@@ -678,7 +773,9 @@ def melscale(spec, n_mels=128, sample_rate=16000, f_min=0, f_max=None, n_stft=20
             >>> melscale_spec = spectrum.melscale(spec, n_stft=1024 // 2 +1)
         """
     f_max = f_max if f_max is not None else sample_rate // 2
-    mel_scale = msaudio.MelScale(n_mels, sample_rate, f_min, f_max, n_stft, norm, mel_type)
+    mel_scale = msaudio.MelScale(
+        n_mels, sample_rate, f_min, f_max, n_stft, norm, mel_type
+    )
     return mel_scale(spec)
 
 
@@ -700,17 +797,11 @@ def resynthesize(enhanced_mag, noisy_inputs, normalize_wavs=True):
         >>> enhanced_wav = spectrum.resynthesize(mag, waveform1, normalize_wavs=False)
     """
 
-    #To extract phase of input noisy
+    # To extract phase of input noisy
     noisy_feats = stft(noisy_inputs, return_complex=False)
     noisy_phase = np.arctan2(noisy_feats[:, :, 1], noisy_feats[:, :, 0])
 
-    pre_stack = np.stack(
-            [
-                np.cos(noisy_phase),
-                np.sin(noisy_phase),
-            ],
-            axis=-1,
-        )
+    pre_stack = np.stack([np.cos(noisy_phase), np.sin(noisy_phase),], axis=-1,)
     # using enhanced magnitude to combine data
     complex_predictions = np.expand_dims(enhanced_mag, -1) * pre_stack
     result = complex_predictions[:, :, 0] + 1j * complex_predictions[:, :, 1]
@@ -720,6 +811,7 @@ def resynthesize(enhanced_mag, noisy_inputs, normalize_wavs=True):
     # peaked amplitudes, ignore lengths, need to normalize.
     if normalize_wavs:
         from .processing import normalize
+
         pred_wavs = normalize(pred_wavs, norm="max")
 
     return pred_wavs

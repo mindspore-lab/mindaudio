@@ -75,3 +75,33 @@ class CTC(nn.Cell):
             mindspore.Tensor: argmax applied 2d tensor (B, Tmax)
         """
         return np.argmax(self.ctc_lo(hs_pad), axis=2)
+
+
+class NetWithCTCLoss(nn.Cell):
+    """
+    NetWithCTCLoss definition
+    """
+
+    def __init__(self, network, ascend=False):
+        super(NetWithCTCLoss, self).__init__(auto_prefix=False)
+        if ascend:
+            self.loss = ops.CTCLoss(
+                ctc_merge_repeated=True, ignore_longer_outputs_than_inputs=True
+            )
+        else:
+            self.loss = ops.CTCLoss(ctc_merge_repeated=True)
+        self.network = network
+        self.ReduceMean_false = ops.ReduceMean(keep_dims=False)
+        self.squeeze_op = ops.Squeeze(0)
+        self.cast_op = ops.Cast()
+
+    def construct(self, inputs, input_length, target_indices, label_values):
+        predict, output_length = self.network(inputs, input_length)
+        predict = self.cast_op(predict, mstype.float32)
+        loss = self.loss(
+            predict,
+            target_indices,
+            label_values,
+            self.cast_op(output_length, mstype.int32),
+        )
+        return self.ReduceMean_false(loss[0])

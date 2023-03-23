@@ -1,8 +1,10 @@
-import numpy as np
 import os
 import sys
+
 import mindspore
-sys.path.append('.')
+import numpy as np
+
+sys.path.append(".")
 import mindaudio.data.io as io
 import mindaudio.data.processing as processing
 import mindaudio.data.spectrum as spectrum
@@ -16,7 +18,7 @@ def test_normalize():
 
 def test_unitarize():
     root_path = os.sys.path[0]
-    data_path = os.path.join(root_path, 'samples', 'ASR', 'BAC009S0002W0122.wav')
+    data_path = os.path.join(root_path, "samples", "ASR", "BAC009S0002W0122.wav")
     waveform, sr = io.read(data_path)
     waveforms = processing.unitarize(waveform)
     print(waveforms)
@@ -31,7 +33,7 @@ def test_resample():
 
 def test_rescale():
     root_path = sys.path[0]
-    data_path = os.path.join(root_path, 'samples', 'ASR', 'BAC009S0002W0122.wav')
+    data_path = os.path.join(root_path, "samples", "ASR", "BAC009S0002W0122.wav")
     waveform, sr = io.read(data_path)
     ori_apm = spectrum.compute_amplitude(waveform)
     print(ori_apm)
@@ -65,7 +67,6 @@ def test_sliding_window_cmn():
     print(after_CMN)
 
 
-
 def test_invert_channels():
     waveform = np.array([1, 2, 3])
     out_waveform = processing.invert_channels(waveform)
@@ -96,7 +97,9 @@ def test_clip():
     out_waveform = processing.clip(waveform, offset_factor, duration_factor)
     print(out_waveform)
 
-    waveform = np.array([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]).T
+    waveform = np.array(
+        [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]
+    ).T
     out_waveform = processing.clip(waveform, offset_factor, duration_factor)
     print(out_waveform)
 
@@ -105,32 +108,46 @@ def test_insert_in_background():
     offset_factor = 0.2
     waveform1 = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     background_audio1 = np.array([0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0])
-    out_waveform1 = processing.insert_in_background(waveform1, offset_factor, background_audio1)
+    out_waveform1 = processing.insert_in_background(
+        waveform1, offset_factor, background_audio1
+    )
     print(out_waveform1)
 
     waveform2 = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-    background_audio2 = np.array([[0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0],
-                                 [0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1]]).T
-    out_waveform2 = processing.insert_in_background(waveform2, offset_factor, background_audio2)
+    background_audio2 = np.array(
+        [[0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0], [0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1]]
+    ).T
+    out_waveform2 = processing.insert_in_background(
+        waveform2, offset_factor, background_audio2
+    )
     print(out_waveform2)
 
-    waveform3 = np.array([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-                         [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]).T
+    waveform3 = np.array(
+        [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]
+    ).T
     background_audio3 = np.array([1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0])
-    out_waveform3 = processing.insert_in_background(waveform3, offset_factor, background_audio3)
+    out_waveform3 = processing.insert_in_background(
+        waveform3, offset_factor, background_audio3
+    )
     print(out_waveform3)
 
-    waveform4 = np.array([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-                         [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]).T
-    background_audio4 = np.array([[0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
-                                 [0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1]]).T
-    out_waveform4 = processing.insert_in_background(waveform4, offset_factor, background_audio4)
+    waveform4 = np.array(
+        [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]]
+    ).T
+    background_audio4 = np.array(
+        [[0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0], [0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1]]
+    ).T
+    out_waveform4 = processing.insert_in_background(
+        waveform4, offset_factor, background_audio4
+    )
     print(out_waveform4)
+
 
 def test_overlap_add():
     np_signal = np.random.randn(3, 3, 40)
     ma_signal = mindspore.Tensor(np_signal, mindspore.float32)
     overlapped = processing.overlap_and_add(ma_signal, 40)
+    print(overlapped)
 
 
 if __name__ == "__main__":

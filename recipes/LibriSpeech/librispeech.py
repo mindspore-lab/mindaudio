@@ -32,7 +32,6 @@ def _download_data(root):
 
 
 def creat_json_dict(root):
-    #root = '/home/litingyu/data/LibriSpeech'
     for dataset_type, libri_urls in LIBRI_SPEECH_URLS.items():
         split_dir = os.path.join(root, dataset_type)
         if not os.path.exists(split_dir):
