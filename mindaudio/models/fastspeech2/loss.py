@@ -58,4 +58,4 @@ class FastSpeech2Loss(nn.Cell):
         for i in range(len(self.names)):
             self.slr(self.names[i], losses[i])
 
-        return losses
+        return total_loss
