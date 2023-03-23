@@ -1,4 +1,5 @@
 import math
+
 import mindspore as ms
 import mindspore.nn as nn
 import mindspore.numpy as np

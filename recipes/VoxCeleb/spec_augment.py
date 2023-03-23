@@ -1,12 +1,13 @@
-import mindspore as ms
 import os
-import wget
-import numpy as np
 import zipfile
+
+import mindspore as ms
+import numpy as np
+import wget
+
 import mindaudio.data.io as io
+from mindaudio.data.augment import add_babble, add_noise, add_reverb, drop_chunk, drop_freq, speed_perturb
 from mindaudio.data.processing import stereo_to_mono
-from mindaudio.data.augment import add_reverb, add_babble, add_noise, \
-    drop_freq, speed_perturb, drop_chunk
 
 OPENRIR_URL = "http://www.openslr.org/resources/28/rirs_noises.zip"
 
@@ -22,10 +23,7 @@ class InputNormalization:
     """
 
     def __init__(
-            self,
-            mean_norm=True,
-            std_norm=True,
-            norm_type="global",
+        self, mean_norm=True, std_norm=True, norm_type="global",
     ):
         self.mean_norm = mean_norm
         self.std_norm = std_norm
@@ -39,13 +37,10 @@ class InputNormalization:
             # Avoiding padded time steps
             actual_size = x_input.shape[1]
 
-            current_mean, current_std = self._compute_current_stats(
-                x_input[snt_id, 0:actual_size, ...]
-            )
+            current_mean, current_std = self._compute_current_stats(x_input[snt_id, 0:actual_size, ...])
 
             if self.norm_type == "sentence":
-                x_input[snt_id] = (x_input[snt_id] -
-                                   current_mean) / current_std
+                x_input[snt_id] = (x_input[snt_id] - current_mean) / current_std
 
         return x_input
 
@@ -70,17 +65,17 @@ class AddNoise:
     """
 
     def __init__(
-            self,
-            csv_file=None,
-            csv_keys=None,
-            sorting="random",
-            num_workers=0,
-            snr_low=0,
-            snr_high=0,
-            pad_noise=False,
-            mix_prob=1.0,
-            start_index=None,
-            normalize=False,
+        self,
+        csv_file=None,
+        csv_keys=None,
+        sorting="random",
+        num_workers=0,
+        snr_low=0,
+        snr_high=0,
+        pad_noise=False,
+        mix_prob=1.0,
+        start_index=None,
+        normalize=False,
     ):
         self.csv_file = csv_file
         self.csv_keys = csv_keys
@@ -93,8 +88,7 @@ class AddNoise:
         self.start_index = start_index
         self.normalize = normalize
         self.noise_data = []
-        noise_dataset = ms.dataset.CSVDataset(
-            dataset_files=self.csv_file, shuffle=True)
+        noise_dataset = ms.dataset.CSVDataset(dataset_files=self.csv_file, shuffle=True)
         noise_dataset = noise_dataset.project(columns=["wav"])
 
         iterator = noise_dataset.create_dict_iterator(num_epochs=1)
@@ -104,15 +98,11 @@ class AddNoise:
             self.noise_data.append(str(wav_file))
 
     def construct(self, waveforms):
-        noisy_waveform = add_noise(
-            waveforms, self.noise_data, self.snr_low, self.snr_high,
-            self.mix_prob)
+        noisy_waveform = add_noise(waveforms, self.noise_data, self.snr_low, self.snr_high, self.mix_prob,)
 
         # Normalizing to prevent clipping
         if self.normalize:
-            abs_max, _ = ms.ops.max(
-                ms.ops.abs(noisy_waveform), axis=1, keep_dims=True
-            )
+            abs_max, _ = ms.ops.max(ms.ops.abs(noisy_waveform), axis=1, keep_dims=True)
             noisy_waveform = noisy_waveform / abs_max.clamp(min=1.0)
 
         return noisy_waveform
@@ -122,15 +112,12 @@ class AddReverb:
     # This class convolve an audio signal with an impulse response.
 
     def __init__(
-            self,
-            csv_file,
-            reverb_prob=1.0,
+        self, csv_file, reverb_prob=1.0,
     ):
         self.csv_file = csv_file
         self.reverb_prob = reverb_prob
         self.rir_data = []
-        rir_dataset = ms.dataset.CSVDataset(
-            dataset_files=self.csv_file, shuffle=True)
+        rir_dataset = ms.dataset.CSVDataset(dataset_files=self.csv_file, shuffle=True)
         rir_dataset = rir_dataset.project(columns=["wav"])
 
         iterator = rir_dataset.create_dict_iterator(num_epochs=1)
@@ -148,7 +135,7 @@ class AddBabble:
     # Simulate babble noise by mixing the signals in a batch.
 
     def __init__(
-            self, speaker_count=3, snr_low=0, snr_high=0, mix_prob=1,
+        self, speaker_count=3, snr_low=0, snr_high=0, mix_prob=1,
     ):
         self.speaker_count = speaker_count
         self.snr_low = snr_low
@@ -156,9 +143,9 @@ class AddBabble:
         self.mix_prob = mix_prob
 
     def construct(self, waveforms, lengths):
-        babbled_waveform = add_babble(waveforms, lengths, self.speaker_count,
-                                      self.snr_low, self.snr_high,
-                                      self.mix_prob)
+        babbled_waveform = add_babble(
+            waveforms, lengths, self.speaker_count, self.snr_low, self.snr_high, self.mix_prob,
+        )
         return babbled_waveform
 
 
@@ -168,31 +155,27 @@ class EnvCorrupt:
     """
 
     def __init__(
-            self,
-            openrir_folder=None,
-            openrir_max_noise_len=None,
-            reverb_csv=None,
-            noise_csv=None,
-            reverb_prob=1.0,
-            babble_prob=1.0,
-            noise_prob=1.0,
-            noise_num_workers=0,
-            noise_snr_low=0,
-            noise_snr_high=0,
-            babble_speaker_count=0,
-            babble_snr_low=0,
-            babble_snr_high=0,
-
+        self,
+        openrir_folder=None,
+        openrir_max_noise_len=None,
+        reverb_csv=None,
+        noise_csv=None,
+        reverb_prob=1.0,
+        babble_prob=1.0,
+        noise_prob=1.0,
+        noise_num_workers=0,
+        noise_snr_low=0,
+        noise_snr_high=0,
+        babble_speaker_count=0,
+        babble_snr_low=0,
+        babble_snr_high=0,
     ):
         # Download and prepare openrir
         if openrir_folder and (not noise_csv or not reverb_csv):
             open_noise_csv = os.path.join(openrir_folder, "noise.csv")
             open_reverb_csv = os.path.join(openrir_folder, "reverb.csv")
             prepare_openrir(
-                openrir_folder,
-                open_reverb_csv,
-                open_noise_csv,
-                openrir_max_noise_len,
+                openrir_folder, open_reverb_csv, open_noise_csv, openrir_max_noise_len,
             )
 
             # Specify filepath and sample rate if not specified already
@@ -221,10 +204,7 @@ class EnvCorrupt:
             )
 
         if reverb_prob > 0.0 and reverb_csv is not None:
-            self.add_reverb = AddReverb(
-                reverb_prob=reverb_prob,
-                csv_file=reverb_csv,
-            )
+            self.add_reverb = AddReverb(reverb_prob=reverb_prob, csv_file=reverb_csv,)
 
     def construct(self, waves, lens):
         """
@@ -269,16 +249,12 @@ def prepare_openrir(folder, reverb_csv, noise_csv, max_noise_len):
 
     # Prepare noise csv if necessary
     if not os.path.isfile(noise_csv):
-        noise_filelist = os.path.join(
-            folder, "RIRS_NOISES", "pointsource_noises", "noise_list"
-        )
+        noise_filelist = os.path.join(folder, "RIRS_NOISES", "pointsource_noises", "noise_list")
         prepare_csv(folder, noise_filelist, noise_csv, max_noise_len)
 
     # Prepare reverb csv if necessary
     if not os.path.isfile(reverb_csv):
-        rir_filelist = os.path.join(
-            folder, "RIRS_NOISES", "real_rirs_isotropic_noises", "rir_list"
-        )
+        rir_filelist = os.path.join(folder, "RIRS_NOISES", "real_rirs_isotropic_noises", "rir_list")
         prepare_csv(folder, rir_filelist, reverb_csv)
 
 
@@ -315,15 +291,9 @@ def prepare_csv(folder, filelist, csv_file, max_length=None):
                 os.remove(filename)
                 for index in range(int(duration / max_length)):
                     start = int(max_length * index * rate)
-                    stop = int(
-                        min(max_length * (index + 1), duration) * rate
-                    )
-                    new_filename = (
-                            filename[: -len(f".{ext}")] + f"_{index}.{ext}"
-                    )
-                    io.write(
-                        new_filename, signal[start:stop], rate
-                    )
+                    stop = int(min(max_length * (index + 1), duration) * rate)
+                    new_filename = filename[: -len(f".{ext}")] + f"_{index}.{ext}"
+                    io.write(new_filename, signal[start:stop], rate)
                     csv_row = (
                         f"{wav_id}_{index}",
                         str((stop - start) / rate),
@@ -333,9 +303,7 @@ def prepare_csv(folder, filelist, csv_file, max_length=None):
                     )
                     w_csv_file.write(",".join(csv_row))
             else:
-                w_csv_file.write(
-                    ",".join((wav_id, str(duration), filename, ext, "\n"))
-                )
+                w_csv_file.write(",".join((wav_id, str(duration), filename, ext, "\n")))
 
 
 class TimeDomainSpecAugment:
@@ -350,19 +318,19 @@ class TimeDomainSpecAugment:
     """
 
     def __init__(
-            self,
-            speeds=[95, 100, 105],
-            sample_rate=16000,
-            perturb_prob=1.0,
-            drop_freq_prob=1.0,
-            drop_chunk_prob=1.0,
-            drop_chunk_length_low=1000,
-            drop_chunk_length_high=2000,
-            drop_chunk_count_low=0,
-            drop_chunk_count_high=5,
-            drop_freq_count_low=0,
-            drop_freq_count_high=3,
-            drop_chunk_noise_factor=0,
+        self,
+        speeds=[95, 100, 105],
+        sample_rate=16000,
+        perturb_prob=1.0,
+        drop_freq_prob=1.0,
+        drop_chunk_prob=1.0,
+        drop_chunk_length_low=1000,
+        drop_chunk_length_high=2000,
+        drop_chunk_count_low=0,
+        drop_chunk_count_high=5,
+        drop_freq_count_low=0,
+        drop_freq_count_high=3,
+        drop_chunk_noise_factor=0,
     ):
         self.speeds = speeds
         self.sample_rate = sample_rate

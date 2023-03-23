@@ -1,8 +1,7 @@
 """Loss scale cell for loss scale training."""
 
-from mindspore import ops, nn
+from mindspore import RowTensor, nn, ops
 from mindspore.nn import TrainOneStepWithLossScaleCell
-from mindspore import RowTensor
 
 _grad_scale = ops.composite.MultitypeFuncGraph("grad_scale")
 reciprocal = ops.operations.Reciprocal()
@@ -10,17 +9,16 @@ reciprocal = ops.operations.Reciprocal()
 
 @_grad_scale.register("Tensor", "Tensor")
 def tensor_grad_scale(scale, grad):
-    return grad * ops.functional.cast(reciprocal(scale),
-                                      ops.functional.dtype(grad))
+    return grad * ops.functional.cast(reciprocal(scale), ops.functional.dtype(grad))
 
 
 @_grad_scale.register("Tensor", "RowTensor")
 def tensor_grad_scale_row_tensor(scale, grad):
-    return RowTensor(grad.indices,
-                     grad.values * ops.functional.cast(reciprocal(scale),
-                                                       ops.functional.dtype(
-                                                           grad.values)),
-                     grad.dense_shape)
+    return RowTensor(
+        grad.indices,
+        grad.values * ops.functional.cast(reciprocal(scale), ops.functional.dtype(grad.values)),
+        grad.dense_shape,
+    )
 
 
 _grad_overflow = ops.composite.MultitypeFuncGraph("_grad_overflow")
@@ -55,10 +53,7 @@ class ClipGradients(nn.Cell):
         self.cast = ops.operations.Cast()
         self.dtype = ops.operations.DType()
 
-    def construct(self,
-                  grads,
-                  clip_type,
-                  clip_value):
+    def construct(self, grads, clip_type, clip_value):
         if clip_type not in (0, 1):
             return grads
 
@@ -66,13 +61,13 @@ class ClipGradients(nn.Cell):
         for grad in grads:
             dt = self.dtype(grad)
             if clip_type == 0:
-                t = ops.composite.clip_by_value(grad, self.cast(
-                    ops.functional.tuple_to_array((-clip_value,)), dt),
-                    self.cast(ops.functional.tuple_to_array(
-                                                        (clip_value,)), dt))
+                t = ops.composite.clip_by_value(
+                    grad,
+                    self.cast(ops.functional.tuple_to_array((-clip_value,)), dt),
+                    self.cast(ops.functional.tuple_to_array((clip_value,)), dt),
+                )
             else:
-                t = self.clip_by_norm(grad, self.cast(
-                    ops.functional.tuple_to_array((clip_value,)), dt))
+                t = self.clip_by_norm(grad, self.cast(ops.functional.tuple_to_array((clip_value,)), dt),)
             new_grads = new_grads + (t,)
         return new_grads
 
@@ -84,7 +79,8 @@ class TrainOneStepWithLossScaleCellv2(TrainOneStepWithLossScaleCell):
 
     def __init__(self, network, optimizer, scale_sense):
         super(TrainOneStepWithLossScaleCellv2, self).__init__(
-            network=network, optimizer=optimizer, scale_sense=scale_sense)
+            network=network, optimizer=optimizer, scale_sense=scale_sense
+        )
         self.clip_gradients = ClipGradients()
 
     def construct(self, *inputs):
@@ -94,13 +90,11 @@ class TrainOneStepWithLossScaleCellv2(TrainOneStepWithLossScaleCell):
         output = self.network.output
 
         status, scaling_sens = self.start_overflow_check(loss, scaling_sens)
-        scaling_sens_filled = \
-            ops.composite.ones_like(loss) * ops.functional.cast(
-                                                  scaling_sens,
-                                                  ops.functional.dtype(loss))
+        scaling_sens_filled = ops.composite.ones_like(loss) * ops.functional.cast(
+            scaling_sens, ops.functional.dtype(loss)
+        )
         grads = self.grad(self.network, weights)(*inputs, scaling_sens_filled)
-        grads = self.hyper_map(
-            ops.functional.partial(_grad_scale, scaling_sens), grads)
+        grads = self.hyper_map(ops.functional.partial(_grad_scale, scaling_sens), grads)
         grads = self.clip_gradients(grads, 0, 1.0)
         # apply grad reducer on grads
         grads = self.grad_reducer(grads)
