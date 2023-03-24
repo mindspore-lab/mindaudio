@@ -73,6 +73,3 @@ After your model is trained,  you can run the code below to generate preprocesse
 Also, when the preprocessed testing audio data is generated, you can run the code below only to evalute speaker verification:
 
 `python speaker_verification_cosine.py --need_generate_data=False`
-
-Attention, when you changed your pretrained model .ckpt file, you should delete the `enroll_dict_bleeched.npy` file in the `npy_file_path` so that you can get the
-new evalution result with your new pretrained model.
