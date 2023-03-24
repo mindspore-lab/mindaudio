@@ -367,8 +367,8 @@ def _fmt_chunk(file_to_read, endian):
         if ext_chunk_size >= 22:
             extensible_chunk_data = file_to_read.read(22)
             bytes_read += 22
-            valid_bits_per_sample = extensible_chunk_data[:2]
-            channel_mask = extensible_chunk_data[2 : 2 + 4]
+            # valid_bits_per_sample = extensible_chunk_data[:2]
+            # channel_mask = extensible_chunk_data[2 : 2 + 4]
             raw_guid = extensible_chunk_data[2 + 4 : 2 + 4 + 16]
 
             # GUID template {XXXXXXXX-0000-0010-8000-00AA00389B71} (RFC-2361)
