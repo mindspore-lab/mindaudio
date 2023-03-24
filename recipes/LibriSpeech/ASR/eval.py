@@ -3,19 +3,19 @@ Eval DeepSpeech2
 """
 import argparse
 import json
-import pickle
-import numpy as np
 import os
-from mindspore import nn
-from mindspore import context
-from mindspore.train.serialization import load_checkpoint, load_param_into_net
-import mindspore.ops as ops
-import mindspore.common.dtype as mstype
+import pickle
 
-from mindaudio.models.deepspeech2 import DeepSpeechModel
+import mindspore.common.dtype as mstype
+import mindspore.ops as ops
+import numpy as np
 from mindaudio.models.decoders.greedydecoder import MSGreedyDecoder
+from mindaudio.models.deepspeech2 import DeepSpeechModel
+from mindspore import context, nn
+from mindspore.train.serialization import load_checkpoint, load_param_into_net
+
+from dataset import create_dataset
 from hparams.hparams import parse_args
-from dataset import create_base_dataset, eval_data_pipeline
 
 
 class PredictWithSoftmax(nn.Cell):
@@ -37,45 +37,63 @@ class PredictWithSoftmax(nn.Cell):
         return x, output_sizes
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     rank_id = 0
     group_size = 1
     args = parse_args()
-    context.set_context(device_id=args.device_id,mode=context.GRAPH_MODE,
-                        device_target=args.device_target, save_graphs=False)
+    context.set_context(
+        device_id=args.device_id,
+        mode=context.GRAPH_MODE,
+        device_target=args.device_target,
+        save_graphs=False,
+    )
 
     labels = args.labels
 
-    model = PredictWithSoftmax(DeepSpeechModel(batch_size=args.EvalDataConfig.batch_size,
-                                               rnn_hidden_size=args.ModelConfig.hidden_size,
-                                               nb_layers=args.ModelConfig.hidden_layers,
-                                               labels=labels,
-                                               rnn_type=args.ModelConfig.rnn_type,
-                                               audio_conf=args.DataConfig.SpectConfig,
-                                               bidirectional=args.bidirectional))
+    model = PredictWithSoftmax(
+        DeepSpeechModel(
+            batch_size=args.EvalDataConfig.batch_size,
+            rnn_hidden_size=args.ModelConfig.hidden_size,
+            nb_layers=args.ModelConfig.hidden_layers,
+            labels=labels,
+            rnn_type=args.ModelConfig.rnn_type,
+            audio_conf=args.DataConfig.SpectConfig,
+            bidirectional=args.bidirectional,
+        )
+    )
 
-    ds_eval = create_base_dataset(manifest_path=args.EvalDataConfig.test_manifest,
-                                   labels=args.labels, rank=rank_id, group_size=group_size)
-    ds_eval = eval_data_pipeline(ds_eval, batch_size=args.EvalDataConfig.batch_size,
-                                   audio_conf=args.DataConfig.SpectConfig)
+    ds_eval = create_dataset(
+        audio_conf=args.DataConfig.SpectConfig,
+        manifest_filepath=args.DataConfig.test_manifest,
+        labels=labels,
+        normalize=True,
+        train_mode=False,
+        batch_size=args.DataConfig.batch_size,
+        rank=0,
+        group_size=1,
+    )
 
     param_dict = load_checkpoint(args.Pretrained_ckpt)
     load_param_into_net(model, param_dict)
     # load_param_into_net(model, param_dict)
-    print('Successfully loading the pre-trained model')
+    print("Successfully loading the pre-trained model")
 
-    if args.Decoder_type == 'greedy':
-        decoder = MSGreedyDecoder(labels=labels, blank_index=labels.index('_'))
+    if args.Decoder_type == "greedy":
+        decoder = MSGreedyDecoder(labels=labels, blank_index=labels.index("_"))
     else:
         raise NotImplementedError("Only greedy decoder is supported now")
-    target_decoder = MSGreedyDecoder(labels, blank_index=labels.index('_'))
+    target_decoder = MSGreedyDecoder(labels, blank_index=labels.index("_"))
 
     model.set_train(False)
     total_cer, total_wer, num_tokens, num_chars = 0, 0, 0, 0
     output_data = []
     for data in ds_eval.create_dict_iterator():
-        inputs, input_length, target_indices, targets = data['inputs'], data['input_length'], data['target_indices'], \
-            data['label_values']
+        inputs, input_length, target_indices, targets = (
+            data["inputs"],
+            data["input_length"],
+            data["target_indices"],
+            data["label_values"],
+        )
 
         split_targets = []
         start, count, last_id = 0, 0, 0
@@ -102,15 +120,22 @@ if __name__ == '__main__':
             total_wer += wer_inst
             total_cer += cer_inst
             num_tokens += len(reference.split())
-            num_chars += len(reference.replace(' ', ''))
+            num_chars += len(reference.replace(" ", ""))
             if args.verbose:
                 print("Ref:", reference.lower())
                 print("Hyp:", transcript.lower())
-                print("WER:", float(wer_inst) / len(reference.split()),
-                      "CER:", float(cer_inst) / len(reference.replace(' ', '')), "\n")
+                print(
+                    "WER:",
+                    float(wer_inst) / len(reference.split()),
+                    "CER:",
+                    float(cer_inst) / len(reference.replace(" ", "")),
+                    "\n",
+                )
     wer = float(total_wer) / num_tokens
     cer = float(total_cer) / num_chars
 
-    print('Test Summary \t'
-          'Average WER {wer:.3f}\t'
-          'Average CER {cer:.3f}\t'.format(wer=wer * 100, cer=cer * 100))
+    print(
+        "Test Summary \t"
+        "Average WER {wer:.3f}\t"
+        "Average CER {cer:.3f}\t".format(wer=wer * 100, cer=cer * 100)
+    )

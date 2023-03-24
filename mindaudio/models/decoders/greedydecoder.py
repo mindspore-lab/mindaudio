@@ -1,9 +1,9 @@
-from six.moves import xrange
-import numpy as np
 import Levenshtein as Lev
+import numpy as np
+from six.moves import xrange
 
 
-class Decoder():
+class Decoder:
     """
     Basic decoder class from which all other decoders inherit. Implements several
     helper functions. Subclasses should implement the decode() method.
@@ -17,9 +17,11 @@ class Decoder():
         self.labels = labels
         self.int_to_char = {i: c for (i, c) in enumerate(labels)}
         self.blank_index = blank_index
-        space_index = len(labels)  # To prevent errors in decode, we add an out of bounds index for the space
-        if ' ' in labels:
-            space_index = labels.index(' ')
+        space_index = len(
+            labels
+        )  # To prevent errors in decode, we add an out of bounds index for the space
+        if " " in labels:
+            space_index = labels.index(" ")
         self.space_index = space_index
 
     def wer(self, s1, s2):
@@ -40,7 +42,7 @@ class Decoder():
         w1 = [chr(word2char[w]) for w in s1.split()]
         w2 = [chr(word2char[w]) for w in s2.split()]
 
-        return Lev.distance(''.join(w1), ''.join(w2))
+        return Lev.distance("".join(w1), "".join(w2))
 
     def cer(self, s1, s2):
         """
@@ -50,7 +52,7 @@ class Decoder():
             s1 (string): space-separated sentence
             s2 (string): space-separated sentence
         """
-        s1, s2, = s1.replace(' ', ''), s2.replace(' ', '')
+        s1, s2, = s1.replace(" ", ""), s2.replace(" ", "")
         return Lev.distance(s1, s2)
 
     def decode(self, probs, sizes=None):
@@ -69,18 +71,17 @@ class Decoder():
 
 
 class GreedyDecoder(Decoder):
-
-    def convert_to_strings(self,
-                           sequences,
-                           sizes=None,
-                           remove_repetitions=False,
-                           return_offsets=False):
+    def convert_to_strings(
+        self, sequences, sizes=None, remove_repetitions=False, return_offsets=False
+    ):
         """Given a list of numeric sequences, returns the corresponding strings"""
         strings = []
         offsets = [] if return_offsets else None
         for x in xrange(len(sequences)):
             seq_len = sizes[x] if sizes is not None else len(sequences[x])
-            string, string_offsets = self.process_string(sequences[x], seq_len, remove_repetitions)
+            string, string_offsets = self.process_string(
+                sequences[x], seq_len, remove_repetitions
+            )
             strings.append([string])  # We only return one path
             if return_offsets:
                 offsets.append([string_offsets])
@@ -98,15 +99,19 @@ class MSGreedyDecoder(GreedyDecoder):
         """
         process string
         """
-        string = ''
+        string = ""
         offsets = []
         for i in range(size):
             char = self.int_to_char[sequence[i].item()]
             if char != self.int_to_char[self.blank_index]:
-                if remove_repetitions and i != 0 and char == self.int_to_char[sequence[i - 1].item()]:
+                if (
+                    remove_repetitions
+                    and i != 0
+                    and char == self.int_to_char[sequence[i - 1].item()]
+                ):
                     pass
                 elif char == self.labels[self.space_index]:
-                    string += ' '
+                    string += " "
                     offsets.append(i)
                 else:
                     string = string + char
@@ -118,5 +123,7 @@ class MSGreedyDecoder(GreedyDecoder):
         sizes = sizes.asnumpy()
 
         max_probs = np.argmax(probs, axis=-1)
-        strings, offsets = self.convert_to_strings(max_probs, sizes, remove_repetitions=True, return_offsets=True)
+        strings, offsets = self.convert_to_strings(
+            max_probs, sizes, remove_repetitions=True, return_offsets=True
+        )
         return strings, offsets

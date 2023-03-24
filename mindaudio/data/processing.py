@@ -1,28 +1,27 @@
-import numbers
+import math
+
+import mindspore as ms
+import mindspore.dataset.audio as msaudio
 import numpy as np
 import scipy
-import math
-import mindspore as ms
-from mindspore import Tensor, Parameter, ops
-from mindspore.dataset.audio import ResampleMethod
-import mindspore.dataset.audio as msaudio
-from .spectrum import dB_to_amplitude, amplitude_to_dB, compute_amplitude, frame
+from mindspore import Parameter, Tensor, ops
 
+from .spectrum import amplitude_to_dB, compute_amplitude, dB_to_amplitude, frame
 
 __all__ = [
-    'normalize',
-    'unitarize',
-    'resample',
-    'rescale',
-    'stereo_to_mono',
-    'trim',
-    'split',
-    'sliding_window_cmn',
-    'invert_channels',
-    'loop',
-    'clip',
-    'insert_in_background',
-    'overlap_and_add',
+    "normalize",
+    "unitarize",
+    "resample",
+    "rescale",
+    "stereo_to_mono",
+    "trim",
+    "split",
+    "sliding_window_cmn",
+    "invert_channels",
+    "loop",
+    "clip",
+    "insert_in_background",
+    "overlap_and_add",
 ]
 
 
@@ -49,7 +48,9 @@ def normalize(waveforms, norm="max", axis=0):
     """
 
     # get the smallest normal as the threshold
-    if np.issubdtype(waveforms.dtype, np.floating) or np.issubdtype(waveforms.dtype, np.complexfloating):
+    if np.issubdtype(waveforms.dtype, np.floating) or np.issubdtype(
+        waveforms.dtype, np.complexfloating
+    ):
         dtype = waveforms.dtype
     else:
         dtype = np.float32
@@ -128,8 +129,15 @@ def unitarize(waveforms, lengths=None, amp_type="avg", eps=1e-14):
     return waveforms / den
 
 
-def resample(waveform, orig_freq=16000, new_freq=16000, res_type="fft",
-             lowpass_filter_width=6, rolloff=0.99, beta=None):
+def resample(
+    waveform,
+    orig_freq=16000,
+    new_freq=16000,
+    res_type="fft",
+    lowpass_filter_width=6,
+    rolloff=0.99,
+    beta=None,
+):
     """
     Resample a signal from one frequency to another. A resample method can be given.
 
@@ -168,8 +176,13 @@ def resample(waveform, orig_freq=16000, new_freq=16000, res_type="fft",
         return np.asarray(y_hat, dtype=waveform.dtype)
 
     else:
-        resample_function = msaudio.Resample(orig_freq=orig_freq, new_freq=new_freq,
-                                         lowpass_filter_width=lowpass_filter_width, rolloff=rolloff, beta=beta)
+        resample_function = msaudio.Resample(
+            orig_freq=orig_freq,
+            new_freq=new_freq,
+            lowpass_filter_width=lowpass_filter_width,
+            rolloff=rolloff,
+            beta=beta,
+        )
         return resample_function(waveform)
 
 
@@ -207,7 +220,9 @@ def rescale(waveforms, target_lvl, lengths=None, amp_type="avg", dB=False):
 
     waveforms = unitarize(waveforms, lengths=lengths, amp_type=amp_type)
     if dB:
-        out_waveforms = dB_to_amplitude(np.array(target_lvl), ref=1.0, power=0.5) * waveforms
+        out_waveforms = (
+            dB_to_amplitude(np.array(target_lvl), ref=1.0, power=0.5) * waveforms
+        )
     else:
         out_waveforms = target_lvl * waveforms
 
@@ -251,8 +266,8 @@ def trim(waveforms, top_db=60, reference=np.max, frame_length=2048, hop_length=5
 
     Args:
         waveforms (np.ndarray): The audio signal in shape (n,) or (n, n_channel).
-        top_db (float): The threshold in decibels below `reference`. The audio segments below this threshold compared to
-            `reference` will be considered as silence.
+        top_db (float): The threshold in decibels below `reference`. The audio segments below this threshold
+            compared to `reference` will be considered as silence.
         reference (float, Callable): The reference amplitude. By default, `np.max` is used to serve as the reference
             amplitude.
         frame_length (int): The number of frames per analysis.
@@ -298,7 +313,10 @@ def trim(waveforms, top_db=60, reference=np.max, frame_length=2048, hop_length=5
     else:
         index.append(edges[-1][-1])
 
-    return waveforms[int(index[0] * hop_length):int(index[1] * hop_length)], np.array(index) * hop_length
+    return (
+        waveforms[int(index[0] * hop_length) : int(index[1] * hop_length)],
+        np.array(index) * hop_length,
+    )
 
 
 def split(waveforms, top_db=60, reference=np.max, frame_length=2048, hop_length=512):
@@ -307,10 +325,10 @@ def split(waveforms, top_db=60, reference=np.max, frame_length=2048, hop_length=
 
     Args:
         waveforms (np.ndarray): The audio signal in shape (n,) or (n, n_channel).
-        top_db (float): The threshold in decibels below `reference`. The audio segments below this threshold compared to
-            `reference` will be considered as silence.
-        reference (float, Callable): The reference amplitude. By default, `np.max` is used to serve as the reference
-            amplitude.
+        top_db (float): The threshold in decibels below `reference`. The audio segments below this threshold
+            compared to `reference` will be considered as silence.
+        reference (float, Callable): The reference amplitude. By default, `np.max` is used to serve as the
+            reference amplitude.
         frame_length (int): The number of frames per analysis.
         hop_length (int): The number of frames between analysis.
 
@@ -359,7 +377,9 @@ def split(waveforms, top_db=60, reference=np.max, frame_length=2048, hop_length=
     return edges.reshape((-1, 2))
 
 
-def sliding_window_cmn(x, cmn_window=600, min_cmn_window=100, center=False, norm_vars=False):
+def sliding_window_cmn(
+    x, cmn_window=600, min_cmn_window=100, center=False, norm_vars=False
+):
     """
     Apply sliding-window cepstral mean (and optionally variance) normalization per utterance.
 
@@ -381,7 +401,9 @@ def sliding_window_cmn(x, cmn_window=600, min_cmn_window=100, center=False, norm
         >>> waveform = np.random.random([1, 20, 10])
         >>> after_CMN = processing.sliding_window_cmn(waveform, 500, 200)
     """
-    sliding_window_cmn_ms = msaudio.SlidingWindowCmn(cmn_window, min_cmn_window, center, norm_vars)
+    sliding_window_cmn_ms = msaudio.SlidingWindowCmn(
+        cmn_window, min_cmn_window, center, norm_vars
+    )
     return sliding_window_cmn_ms(x)
 
 
@@ -493,7 +515,7 @@ def insert_in_background(waveform, offset_factor, background_audio):
         >>> out_waveform = processing.insert_in_background(waveform, offset_factor, background_audio)
     """
     if offset_factor < 0.0 or offset_factor > 1.0:
-        print('Offset factor number exceed range [0, 1].')
+        print("Offset factor number exceed range [0, 1].")
         return waveform
 
     if background_audio is None:
@@ -533,8 +555,8 @@ def overlap_and_add(signal, frame_step):
         frame_step(int): An integer denoting overlap offsets. Must be less than or equal to frame_length.
 
     Returns:
-        overlapped(mindspore.tensor): With shape [..., output_size] containing the overlap-added frames of signal's
-            inner-most two dimensions. output_size = (frames - 1) * frame_step + frame_length
+        overlapped(mindspore.tensor): With shape [..., output_size] containing the overlap-added frames
+            of signal's inner-most two dimensions. output_size = (frames - 1) * frame_step + frame_length
     Based on
     https://github.com/tensorflow/tensorflow/blob/r1.12/tensorflow/contrib/signal/python/ops/reconstruction_ops.py
 
@@ -555,8 +577,9 @@ def overlap_and_add(signal, frame_step):
     output_size = frame_step * (frames - 1) + frame_length
     output_subframes = output_size // cal_frame_length
 
-    frame = np.lib.stride_tricks.sliding_window_view(np.arange(0, output_subframes),
-                                                     subframes_per_frame)[::cal_frame_step, :]
+    frame = np.lib.stride_tricks.sliding_window_view(
+        np.arange(0, output_subframes), subframes_per_frame
+    )[::cal_frame_step, :]
     frame = Tensor(frame.reshape(-1), ms.int32)
 
     new_zeros = ops.Zeros()

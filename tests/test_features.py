@@ -1,26 +1,30 @@
-import numpy as np
 import os
 import sys
-sys.path.append('.')
-import mindaudio.data.io as io
+
+import numpy as np
+
+sys.path.append(".")
 import mindaudio.data.features as features
+import mindaudio.data.io as io
 import mindaudio.data.spectrum as spectrum
 
 
-class TestOperators():
-
+class TestOperators:
     def setup_method(self):
         self.root_path = sys.path[0]
-        self.data_path = os.path.join('samples', 'ASR', 'BAC009S0002W0122.wav')
+        self.data_path = os.path.join("samples", "ASR", "BAC009S0002W0122.wav")
         self.test_data, self.sr = io.read(os.path.join(self.root_path, self.data_path))
 
     def test_spectral_centroid(self):
-        spectralcentroid = features.spectral_centroid(self.test_data, self.sr)  # (channel, time)
-        print(spectralcentroid.shape)
+        centroid = features.spectral_centroid(self.test_data, self.sr)
+        # (channel, time)
+        print(centroid.shape)
 
     def test_context_window(self):
-        input_arrs = [np.random.randn(10, 101, 60).astype(dtype=np.float32),
-                      np.random.randn(10, 101, 60, 2).astype(dtype=np.float32)]
+        input_arrs = [
+            np.random.randn(10, 101, 60).astype(dtype=np.float32),
+            np.random.randn(10, 101, 60, 2).astype(dtype=np.float32),
+        ]
         left_frames = [3, 4, 5, 0]
         right_frames = [5, 4, 3, 0]
         for left, right in zip(left_frames, right_frames):
@@ -53,7 +57,6 @@ class TestOperators():
         angle = features.complex_norm(inputs_arr)
         print(angle)
 
-
     def test_harmonic(self):
         harm = features.harmonic(self.test_data)
         print(harm)
@@ -64,5 +67,3 @@ if __name__ == "__main__":
     test.setup_method()
     test.test_harmonic()
     test.test_mfcc()
-
-

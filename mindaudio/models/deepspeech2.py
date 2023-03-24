@@ -3,16 +3,18 @@ DeepSpeech2 model
 """
 
 import math
-import numpy as np
 
 import mindspore.nn as nn
 import mindspore.ops as ops
+import numpy as np
 from mindspore import Tensor
+
 
 class SequenceWise(nn.Cell):
     """
     SequenceWise FC Layers.
     """
+
     def __init__(self, module):
         super(SequenceWise, self).__init__()
         self.module = module
@@ -32,12 +34,25 @@ class SequenceWise(nn.Cell):
         self.init_parameters_data()
         for _, m in self.cells_and_names():
             if isinstance(m, nn.Dense):
-                m.weight.set_data(Tensor(
-                    np.random.uniform(-1. / m.in_channels, 1. / m.in_channels, m.weight.data.shape).astype("float32")))
+                m.weight.set_data(
+                    Tensor(
+                        np.random.uniform(
+                            -1.0 / m.in_channels,
+                            1.0 / m.in_channels,
+                            m.weight.data.shape,
+                        ).astype("float32")
+                    )
+                )
                 if m.bias is not None:
-                    m.bias.set_data(Tensor(
-                        np.random.uniform(-1. / m.in_channels, 1. / m.in_channels, m.bias.data.shape).astype(
-                            "float32")))
+                    m.bias.set_data(
+                        Tensor(
+                            np.random.uniform(
+                                -1.0 / m.in_channels,
+                                1.0 / m.in_channels,
+                                m.bias.data.shape,
+                            ).astype("float32")
+                        )
+                    )
 
 
 class MaskConv(nn.Cell):
@@ -49,13 +64,29 @@ class MaskConv(nn.Cell):
     def __init__(self):
         super(MaskConv, self).__init__()
         self.zeros = ops.ZerosLike()
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=(41, 11), stride=(2, 2), pad_mode='pad', padding=(20, 20, 5, 5))
+        self.conv1 = nn.Conv2d(
+            1,
+            32,
+            kernel_size=(41, 11),
+            stride=(2, 2),
+            pad_mode="pad",
+            padding=(20, 20, 5, 5),
+        )
         self.bn1 = nn.BatchNorm2d(num_features=32)
-        self.conv2 = nn.Conv2d(32, 32, kernel_size=(21, 11), stride=(2, 1), pad_mode='pad', padding=(10, 10, 5, 5))
+        self.conv2 = nn.Conv2d(
+            32,
+            32,
+            kernel_size=(21, 11),
+            stride=(2, 1),
+            pad_mode="pad",
+            padding=(10, 10, 5, 5),
+        )
         self.bn2 = nn.BatchNorm2d(num_features=32)
         self.tanh = nn.Tanh()
         self._initialize_weights()
-        self.module_list = nn.CellList([self.conv1, self.bn1, self.tanh, self.conv2, self.bn2, self.tanh])
+        self.module_list = nn.CellList(
+            [self.conv1, self.bn1, self.tanh, self.conv2, self.bn2, self.tanh]
+        )
 
     def construct(self, x, lengths):
         for module in self.module_list:
@@ -70,16 +101,20 @@ class MaskConv(nn.Cell):
         for _, m in self.cells_and_names():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.set_data(Tensor(np.random.normal(0, np.sqrt(2. / n),
-                                                          m.weight.data.shape).astype("float32")))
+                m.weight.set_data(
+                    Tensor(
+                        np.random.normal(
+                            0, np.sqrt(2.0 / n), m.weight.data.shape
+                        ).astype("float32")
+                    )
+                )
                 if m.bias is not None:
                     m.bias.set_data(
-                        Tensor(np.zeros(m.bias.data.shape, dtype="float32")))
+                        Tensor(np.zeros(m.bias.data.shape, dtype="float32"))
+                    )
             elif isinstance(m, nn.BatchNorm2d):
-                m.gamma.set_data(
-                    Tensor(np.ones(m.gamma.data.shape, dtype="float32")))
-                m.beta.set_data(
-                    Tensor(np.zeros(m.beta.data.shape, dtype="float32")))
+                m.gamma.set_data(Tensor(np.ones(m.gamma.data.shape, dtype="float32")))
+                m.beta.set_data(Tensor(np.zeros(m.beta.data.shape, dtype="float32")))
 
 
 class BatchRNN(nn.Cell):
@@ -91,12 +126,20 @@ class BatchRNN(nn.Cell):
         hidden_size(int):  rnn hidden size
         num_layers(int):  rnn layers
         bidirectional(bool): use bidirectional rnn (default=True). Currently, only bidirectional rnn is implemented.
-        batch_norm(bool): whether to use batchnorm in RNN. Currently, GPU does not support batch_norm1D (default=False).
+        batch_norm(bool): whether to use batchnorm in RNN.
         rnn_type (str):  rnn type to use (default='LSTM'). Currently, only LSTM is supported.
     """
 
-    def __init__(self, batch_size, input_size, hidden_size, num_layers, bidirectional=False, batch_norm=False,
-                 rnn_type='LSTM'):
+    def __init__(
+        self,
+        batch_size,
+        input_size,
+        hidden_size,
+        num_layers,
+        bidirectional=False,
+        batch_norm=False,
+        rnn_type="LSTM",
+    ):
         super(BatchRNN, self).__init__()
         self.batch_size = batch_size
         self.input_size = input_size
@@ -118,8 +161,13 @@ class BatchRNN(nn.Cell):
 
         for i in range(num_layers):
             layers.append(
-                nn.LSTM(input_size=input_size_list[i], hidden_size=hidden_size, bidirectional=bidirectional,
-                        has_bias=self.has_bias))
+                nn.LSTM(
+                    input_size=input_size_list[i],
+                    hidden_size=hidden_size,
+                    bidirectional=bidirectional,
+                    has_bias=self.has_bias,
+                )
+            )
         self.lstms = nn.CellList(layers)
 
         if batch_norm:
@@ -153,8 +201,16 @@ class DeepSpeechModel(nn.Cell):
         bidirectional(bool): use bidirectional rnn (default=True)
     """
 
-    def __init__(self, batch_size, labels, rnn_hidden_size, nb_layers, audio_conf, rnn_type='LSTM',
-                 bidirectional=True):
+    def __init__(
+        self,
+        batch_size,
+        labels,
+        rnn_hidden_size,
+        nb_layers,
+        audio_conf,
+        rnn_type="LSTM",
+        bidirectional=True,
+    ):
         super(DeepSpeechModel, self).__init__()
         self.batch_size = batch_size
         self.hidden_size = rnn_hidden_size
@@ -183,9 +239,15 @@ class DeepSpeechModel(nn.Cell):
         rnn_input_size = int(math.floor(rnn_input_size + 2 * 10 - 21) / 2 + 1)
         rnn_input_size *= 32
 
-        self.RNN = BatchRNN(batch_size=self.batch_size, input_size=rnn_input_size, num_layers=nb_layers,
-                            hidden_size=rnn_hidden_size, bidirectional=bidirectional, batch_norm=False,
-                            rnn_type=self.rnn_type)
+        self.RNN = BatchRNN(
+            batch_size=self.batch_size,
+            input_size=rnn_input_size,
+            num_layers=nb_layers,
+            hidden_size=rnn_hidden_size,
+            bidirectional=bidirectional,
+            batch_norm=False,
+            rnn_type=self.rnn_type,
+        )
         fully_connected = nn.Dense(rnn_hidden_size, num_classes, has_bias=False)
         self.fc = SequenceWise(fully_connected)
 
@@ -208,7 +270,9 @@ class DeepSpeechModel(nn.Cell):
         containing the size sequences that will be output by the network.
         """
         for i in range(len(self.stride)):
-            seq_len = self.add(self.div(self.add(seq_len, self.pre[i]), self.stride[i]), 1)
+            seq_len = self.add(
+                self.div(self.add(seq_len, self.pre[i]), self.stride[i]), 1
+            )
         return seq_len
 
     def get_conv_num(self):
