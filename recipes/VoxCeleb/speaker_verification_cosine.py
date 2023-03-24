@@ -745,13 +745,8 @@ def eval_impl():
     veri_file_path = hparams.veri_file_path
     if not os.path.exists(os.path.join(hparams.npy_file_path)):
         os.makedirs(hparams.npy_file_path, exist_ok=False)
-    fpath = os.path.join(hparams.npy_file_path, "enroll_dict_bleeched.npy")
-    if os.path.isfile(fpath):
-        print(f"find cache file:{fpath}, continue")
-        enroll_dict = pickle.load(open(fpath, "rb"))
-    else:
-        enroll_dict = compute_embeddings(model, dataset_enroll, dur=len(dataset_enroll), exc_set=excluded_set,)
-        pickle.dump(enroll_dict, open(fpath, "wb"))
+
+    enroll_dict = compute_embeddings(model, dataset_enroll, dur=len(dataset_enroll), exc_set=excluded_set,)
     eer = evaluate(enroll_dict, enroll_dict, veri_file_path)
     print("eer baseline:", eer)
 
