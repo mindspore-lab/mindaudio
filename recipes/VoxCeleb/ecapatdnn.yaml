@@ -45,7 +45,7 @@ base_lrate: 0.000001                                            # base learning 
 max_lrate: 0.0001                                               # max learning rate of cyclic LR
 momentum: 0.95                                                  # weight decay for optimizer
 weight_decay: 0.000002                                          # momentum for optimizer
-num_epochs: 80                                                  # training epoch
+num_epochs: 25                                                  # training epoch
 minibatch_size: 192                                             # batch size
 emb_size: 192                                                   # embedding dim
 step_size: 65000                                                # steps to achieve max learning rate cyclic LR
