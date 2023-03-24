@@ -19,36 +19,40 @@ import re
 from multiprocessing import Process
 
 import moxing as mox
+from flyspeech.adapter.log import get_logger
 from mindspore.communication.management import get_group_size, get_rank
 from mindspore.train.callback import Callback
 
-from flyspeech.adapter.log import get_logger
-
 logger = get_logger()
-os.environ.pop('CREDENTIAL_PROFILES_FILE', None)
-os.environ.pop('AWS_SHARED_CREDENTIALS_FILE', None)
+os.environ.pop("CREDENTIAL_PROFILES_FILE", None)
+os.environ.pop("AWS_SHARED_CREDENTIALS_FILE", None)
 
 
 def _sort_obs_ckpt(obs_path):
     """Sorts checkpoint files by name."""
     file_list = mox.file.list_directory(obs_path)
-    ckpt_list = [x for x in file_list if x.endswith('.ckpt')]
+    ckpt_list = [x for x in file_list if x.endswith(".ckpt")]
     if not ckpt_list:
         return None
 
     # sort the ckpt_file_list according to the ckpt name.
     fake_ckpt_list = []
     for ckpt in ckpt_list:
-        if ckpt.count('_') == 2:
+        if ckpt.count("_") == 2:
             fake_ckpt_list.append(ckpt)
         else:
-            prefix, suffix = ckpt.split('-')
-            new_ckpt = prefix + '_0' + '-' + suffix
+            prefix, suffix = ckpt.split("-")
+            new_ckpt = prefix + "_0" + "-" + suffix
             fake_ckpt_list.append(new_ckpt)
 
-    fake_ckpt_list.sort(key=lambda x: (-int(re.split(r'[_|\-|.]', x)[1]), -int(re.split(r'[_|\-|.]', x)[2]), -int(
-        re.split(r'[_|\-|.]', x)[3])))
-    sorted_ckpt_list = [x.replace('_0', '') for x in fake_ckpt_list]
+    fake_ckpt_list.sort(
+        key=lambda x: (
+            -int(re.split(r"[_|\-|.]", x)[1]),
+            -int(re.split(r"[_|\-|.]", x)[2]),
+            -int(re.split(r"[_|\-|.]", x)[3]),
+        )
+    )
+    sorted_ckpt_list = [x.replace("_0", "") for x in fake_ckpt_list]
     return sorted_ckpt_list
 
 
@@ -79,23 +83,27 @@ class OBSUpdate(Callback):
             if os.path.exists(self.local_file_dir):
                 files = os.listdir(self.local_file_dir)
                 if files:
-                    files.sort(key=lambda fn: os.path.getatime(self.local_file_dir + '/' + fn))
+                    files.sort(
+                        key=lambda fn: os.path.getatime(self.local_file_dir + "/" + fn)
+                    )
                     name_ext = os.path.splitext(files[-1])
-                    if name_ext[-1] != '.ckpt':
-                        raise ValueError('Invalid file, checkpoint file should be .ckpt file')
+                    if name_ext[-1] != ".ckpt":
+                        raise ValueError(
+                            "Invalid file, checkpoint file should be .ckpt file"
+                        )
                     newest_ckpt_file = os.path.join(self.local_file_dir, files[-1])
             else:
-                logger.warning('this path not exist')
-            obs_ckpt_dir = os.path.join(self.obs_file_dir, 'model')
+                logger.warning("this path not exist")
+            obs_ckpt_dir = os.path.join(self.obs_file_dir, "model")
             if not mox.file.exists(obs_ckpt_dir):
                 mox.file.mk_dir(obs_ckpt_dir)
             file_list = mox.file.list_directory(obs_ckpt_dir)
-            ckpt_file = [x for x in file_list if x.endswith('.ckpt')]
+            ckpt_file = [x for x in file_list if x.endswith(".ckpt")]
             if len(ckpt_file) >= self.config.keep_checkpoint_max:
                 oldest_ckpt = _sort_obs_ckpt(obs_ckpt_dir)[-1]
                 mox.file.remove(obs_ckpt_dir, oldest_ckpt)
 
-            obs_ckpt_file = os.path.join(obs_ckpt_dir, newest_ckpt_file.split('/')[-1])
+            obs_ckpt_file = os.path.join(obs_ckpt_dir, newest_ckpt_file.split("/")[-1])
             mox.file.copy(newest_ckpt_file, obs_ckpt_file)
 
 
@@ -120,7 +128,7 @@ class CloudSummaryCallback(Callback):
         cb_params = run_context.original_args()
         cur_step_num = cb_params.cur_step_num
         if cur_step_num % self.steps_size == 0:
-            obs_summary_dir = os.path.join(self.obs_file_dir, 'summary')
+            obs_summary_dir = os.path.join(self.obs_file_dir, "summary")
             if not mox.file.exists(obs_summary_dir):
                 mox.file.mk_dir(obs_summary_dir)
             mox.file.copy_parallel(self.local_file_dir, obs_summary_dir)
@@ -151,7 +159,9 @@ class BaseSyncCallback(Callback):
 class BaseSyncDirCallback(BaseSyncCallback):
     """Parent class of SyncDirCallback."""
 
-    def __init__(self, local_path: str, obs_path: str, delete_old: bool = False) -> None:
+    def __init__(
+        self, local_path: str, obs_path: str, delete_old: bool = False
+    ) -> None:
         super(BaseSyncDirCallback, self).__init__(local_path, obs_path)
         self.delete_old = delete_old
 
@@ -164,23 +174,28 @@ class BaseSyncDirCallback(BaseSyncCallback):
 
         mox.file.copy_parallel(self.local_path, self.obs_path)
 
-        log_message = '[SyncDirCallback] Finish synchronising {} to {}.'.format(self.local_path, self.obs_path)
+        log_message = "[SyncDirCallback] Finish synchronising {} to {}.".format(
+            self.local_path, self.obs_path
+        )
         logger.info(log_message)
 
 
 class BaseSyncFileCallback(BaseSyncCallback):
-
     def sync_file(self):
         mox.file.copy(self.local_path, self.obs_path)
 
-        log_message = '[SyncFileCallback] Finish synchronising {} to {}.'.format(self.local_path, self.obs_path)
+        log_message = "[SyncFileCallback] Finish synchronising {} to {}.".format(
+            self.local_path, self.obs_path
+        )
         logger.info(log_message)
 
 
 class SyncDirCallback(BaseSyncDirCallback):
     """Class for synchronising folders to OBS."""
 
-    def __init__(self, local_path: str, obs_path: str, steps_size: int, delete_old: bool = False) -> None:
+    def __init__(
+        self, local_path: str, obs_path: str, steps_size: int, delete_old: bool = False
+    ) -> None:
         """Init method of SyncDirCallback.
 
         Args:
@@ -209,11 +224,12 @@ class SyncDirCallback(BaseSyncDirCallback):
             sync_process = Process(target=self.sync_dir)
             sync_process.start()
         else:
-            logger.info('[SyncDirCallback] Local directory %s does not exist!', self.local_path)
+            logger.info(
+                "[SyncDirCallback] Local directory %s does not exist!", self.local_path
+            )
 
 
 class SyncDirEndCallback(BaseSyncDirCallback):
-
     def end(self, run_context):  # pylint: disable=W0613
         if not self.is_sync:
             return
@@ -221,7 +237,10 @@ class SyncDirEndCallback(BaseSyncDirCallback):
         if os.path.exists(self.local_path) and self.is_sync:
             self.sync_dir()
         else:
-            logger.info('[SyncDirEndCallback] Local directory %s does not exist!', self.local_path)
+            logger.info(
+                "[SyncDirEndCallback] Local directory %s does not exist!",
+                self.local_path,
+            )
 
 
 class SyncFileCallback(BaseSyncFileCallback):
@@ -248,7 +267,9 @@ class SyncFileCallback(BaseSyncFileCallback):
             sync_process = Process(target=self.sync_file)
             sync_process.start()
         else:
-            logger.info('[SyncFileCallback] Local file %s does not exist!', self.local_path)
+            logger.info(
+                "[SyncFileCallback] Local file %s does not exist!", self.local_path
+            )
 
 
 class SyncFileEndCallback(BaseSyncFileCallback):
@@ -262,4 +283,6 @@ class SyncFileEndCallback(BaseSyncFileCallback):
         if os.path.exists(self.local_path) and self.is_sync:
             self.sync_file()
         else:
-            logger.info('[SyncFileEndCallback] Local file %s does not exist!', self.local_path)
+            logger.info(
+                "[SyncFileEndCallback] Local file %s does not exist!", self.local_path
+            )

@@ -16,7 +16,8 @@ def tensor_grad_scale(scale, grad):
 def tensor_grad_scale_row_tensor(scale, grad):
     return RowTensor(
         grad.indices,
-        grad.values * ops.functional.cast(reciprocal(scale), ops.functional.dtype(grad.values)),
+        grad.values
+        * ops.functional.cast(reciprocal(scale), ops.functional.dtype(grad.values)),
         grad.dense_shape,
     )
 
@@ -67,7 +68,10 @@ class ClipGradients(nn.Cell):
                     self.cast(ops.functional.tuple_to_array((clip_value,)), dt),
                 )
             else:
-                t = self.clip_by_norm(grad, self.cast(ops.functional.tuple_to_array((clip_value,)), dt),)
+                t = self.clip_by_norm(
+                    grad,
+                    self.cast(ops.functional.tuple_to_array((clip_value,)), dt),
+                )
             new_grads = new_grads + (t,)
         return new_grads
 

@@ -26,7 +26,11 @@ __all__ = [
 
 
 def frequencymasking(
-    waveform, iid_masks=False, frequency_mask_param=0, mask_start=0, mask_value=0.0,
+    waveform,
+    iid_masks=False,
+    frequency_mask_param=0,
+    mask_start=0,
+    mask_value=0.0,
 ):
     """
     Apply masking to a spectrogram in the frequency domain.
@@ -51,13 +55,19 @@ def frequencymasking(
         >>> orignal = spectrum.spectrogram(waveform)
         >>> masked = augment.frequencymasking(orignal, frequency_mask_param=80)
     """
-    frequency_masking = msaudio.FrequencyMasking(iid_masks, frequency_mask_param, mask_start, mask_value)
+    frequency_masking = msaudio.FrequencyMasking(
+        iid_masks, frequency_mask_param, mask_start, mask_value
+    )
 
     return frequency_masking(waveform)
 
 
 def timemasking(
-    waveform, iid_masks=False, frequency_mask_param=0, mask_start=0, mask_value=0.0,
+    waveform,
+    iid_masks=False,
+    frequency_mask_param=0,
+    mask_start=0,
+    mask_value=0.0,
 ):
     """
     Apply masking to a spectrogram in the time domain.
@@ -81,7 +91,9 @@ def timemasking(
         >>> masked = augment.timemasking(orignal, frequency_mask_param=80)
 
     """
-    time_masking = msaudio.TimeMasking(iid_masks, frequency_mask_param, mask_start, mask_value)
+    time_masking = msaudio.TimeMasking(
+        iid_masks, frequency_mask_param, mask_start, mask_value
+    )
 
     return time_masking(waveform)
 
@@ -139,7 +151,12 @@ def reverberate(waveforms, rir_waveform, rescale_amp="avg"):
     # rir_waveform[mask] = -rir_waveform[mask]
 
     # Use FFT to compute convolution, because of long reverberation filter
-    waveforms = convolve1d(waveforms=waveforms, kernel=rir_waveform, use_fft=True, rotation_index=direct_index,)
+    waveforms = convolve1d(
+        waveforms=waveforms,
+        kernel=rir_waveform,
+        use_fft=True,
+        rotation_index=direct_index,
+    )
 
     if len(orig_shape) == 1:
         waveforms = np.squeeze(np.squeeze(waveforms, 0), -1)
@@ -151,12 +168,21 @@ def reverberate(waveforms, rir_waveform, rescale_amp="avg"):
         lengths = waveforms.shape[1]
 
     # Rescale to the peak amplitude of the clean waveform
-    waveforms = rescale(waveforms, orig_amplitude, lengths=lengths, amp_type=rescale_amp)
+    waveforms = rescale(
+        waveforms, orig_amplitude, lengths=lengths, amp_type=rescale_amp
+    )
     return waveforms
 
 
 def convolve1d(
-    waveforms, kernel, padding=0, pad_type="constant", stride=1, groups=1, use_fft=True, rotation_index=0,
+    waveforms,
+    kernel,
+    padding=0,
+    pad_type="constant",
+    stride=1,
+    groups=1,
+    use_fft=True,
+    rotation_index=0,
 ):
     """Use mindspore.conv1d to perform 1d padding and convolution.
 
@@ -208,7 +234,6 @@ def convolve1d(
 
     # This approach uses FFT, which is more efficient if the kernel is large
     if use_fft:
-
         # Pad kernel to same length as signal, ensuring correct alignment
         zero_length = waveforms.shape[-1] - kernel.shape[-1]
 
@@ -229,7 +254,15 @@ def convolve1d(
 
     else:
         # Todo: the implementation can be optimized here.
-        conv1d = Conv1d(1, 1, kernel_size=kernel.shape[-1], stride=stride, group=groups, padding=0, pad_mode="valid",)
+        conv1d = Conv1d(
+            1,
+            1,
+            kernel_size=kernel.shape[-1],
+            stride=stride,
+            group=groups,
+            padding=0,
+            pad_mode="valid",
+        )
         weight = ms.Tensor(np.expand_dims(kernel, 0))
         weight.set_dtype(ms.float32)
         conv1d.weight.set_data(weight)
@@ -255,7 +288,7 @@ def rms_normalize(samples):
 
     Returns:
         samples(np.ndarray):samples normalised.
-        """
+    """
     rms = np.sqrt(np.square(samples).mean(keepdims=True))
     return samples / (rms + 1e-8)
 
@@ -334,7 +367,9 @@ def add_noise(samples, backgroundlist, min_snr_in_db, max_snr_in_db, mix_prob=1.
     sample_rms = caculate_rms(samples)
     snr = np.random.uniform(min_snr_in_db, max_snr_in_db, 1)
     background_scale = sample_rms / (10 ** (snr / 20))
-    background_noise = (np.expand_dims(background, axis=0)) * (np.expand_dims(background_scale, axis=2))
+    background_noise = (np.expand_dims(background, axis=0)) * (
+        np.expand_dims(background_scale, axis=2)
+    )
     samples_added_noise = samples + background_noise
 
     if dimension_of_samples == 1:
@@ -347,25 +382,25 @@ def add_noise(samples, backgroundlist, min_snr_in_db, max_snr_in_db, mix_prob=1.
 
 def add_reverb(samples, rirlist, reverb_prob=1.0):
     """
-        add reverb.
+    add reverb.
 
-        Args:
-            samples (np.ndarray): The audio signal to perform convolution on.
-            The shape should be `[time]` or `[batch, time]`
-            or `[batch, channels, time]`
-            rirlist (list): List of paths to RIR files.
-            reverb_prob(float): The chance that the audio signal will be
-                reverbed.
+    Args:
+        samples (np.ndarray): The audio signal to perform convolution on.
+        The shape should be `[time]` or `[batch, time]`
+        or `[batch, channels, time]`
+        rirlist (list): List of paths to RIR files.
+        reverb_prob(float): The chance that the audio signal will be
+            reverbed.
 
-        Returns:
-            samples(np.ndarray):samples added reverb
+    Returns:
+        samples(np.ndarray):samples added reverb
 
-        Examples:
-            >>> import numpy as np
-            >>> samples = np.random.rand(10, 1, 200960) - 0.5
-            >>> background_list =
-            ['./samples/rir/air_binaural_aula_carolina_0_1_3_0_3_16k.wav']
-            >>> addrir = augment.add_reverb(samples, rir_list, 1.0)
+    Examples:
+        >>> import numpy as np
+        >>> samples = np.random.rand(10, 1, 200960) - 0.5
+        >>> background_list =
+        ['./samples/rir/air_binaural_aula_carolina_0_1_3_0_3_16k.wav']
+        >>> addrir = augment.add_reverb(samples, rir_list, 1.0)
 
     """
     if np.random.rand(1) > reverb_prob:
@@ -395,7 +430,9 @@ def add_reverb(samples, rirlist, reverb_prob=1.0):
     return res
 
 
-def add_babble(waveforms, lengths, speaker_count=3, snr_low=0, snr_high=0, mix_prob=1.0):
+def add_babble(
+    waveforms, lengths, speaker_count=3, snr_low=0, snr_high=0, mix_prob=1.0
+):
     """
         Simulate babble noise by mixing the signals in a batch.
 
@@ -473,7 +510,13 @@ def add_babble(waveforms, lengths, speaker_count=3, snr_low=0, snr_high=0, mix_p
 
 
 def drop_freq(
-    waveforms, drop_freq_low=1e-14, drop_freq_high=1, drop_count_low=1, drop_count_high=2, drop_width=0.05, drop_prob=1,
+    waveforms,
+    drop_freq_low=1e-14,
+    drop_freq_high=1,
+    drop_count_low=1,
+    drop_count_high=2,
+    drop_width=0.05,
+    drop_prob=1,
 ):
     """
     Drops a random frequency from the signal.To teach models to learn to rely
@@ -518,7 +561,9 @@ def drop_freq(
         dropped_waveform = np.expand_dims(dropped_waveform, axis=2)
 
     # Pick number of frequencies to drop
-    drop_count = np.random.randint(low=drop_count_low, high=drop_count_high + 1, size=(1,))
+    drop_count = np.random.randint(
+        low=drop_count_low, high=drop_count_high + 1, size=(1,)
+    )
     drop_count = drop_count[0]
 
     # Pick a frequency to drop
@@ -535,7 +580,11 @@ def drop_freq(
 
     # Subtract each frequency
     for frequency in drop_frequency:
-        notch_kernel = notch_filter(frequency, filter_length, drop_width,)
+        notch_kernel = notch_filter(
+            frequency,
+            filter_length,
+            drop_width,
+        )
         drop_filter = convolve1d(drop_filter, notch_kernel, pad)
 
     # Apply filter
@@ -688,7 +737,11 @@ def drop_chunk(
     clean_amplitude = compute_amplitude(waveforms, np.expand_dims(lengths, axis=1))
 
     # Pick a number of times to drop
-    drop_times = np.random.randint(low=drop_count_low, high=drop_count_high + 1, size=(batch_size,),)
+    drop_times = np.random.randint(
+        low=drop_count_low,
+        high=drop_count_high + 1,
+        size=(batch_size,),
+    )
 
     # Iterate batch to set mask
     for i in range(batch_size):
@@ -696,7 +749,11 @@ def drop_chunk(
             continue
 
         # Pick lengths
-        length = np.random.randint(low=drop_length_low, high=drop_length_high + 1, size=(drop_times[i],),)
+        length = np.random.randint(
+            low=drop_length_low,
+            high=drop_length_high + 1,
+            size=(drop_times[i],),
+        )
 
         # Compute range of starting locations
         start_min = drop_start
@@ -710,7 +767,11 @@ def drop_chunk(
         start_max = max(0, start_max - length.max())
 
         # Pick starting locations
-        start = np.random.randint(low=start_min, high=start_max + 1, size=(drop_times[i],),)
+        start = np.random.randint(
+            low=start_min,
+            high=start_max + 1,
+            size=(drop_times[i],),
+        )
 
         end = start + length
 
@@ -832,5 +893,9 @@ def pitch_shift(waveforms, sr, n_steps, bins_per_octave=12):
     rate = 2.0 ** (-float(n_steps) / bins_per_octave)
     waveforms_stretch = time_stretch(waveforms, rate=rate)
     # Stretch in time, then resample
-    y_shift = resample(waveforms_stretch, orig_freq=float(sr) / rate, new_freq=sr,)
+    y_shift = resample(
+        waveforms_stretch,
+        orig_freq=float(sr) / rate,
+        new_freq=sr,
+    )
     return _pad_shape(y_shift, data_shape=waveforms_stretch.shape[-1])

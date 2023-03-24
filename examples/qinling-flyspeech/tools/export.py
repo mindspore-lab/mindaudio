@@ -17,13 +17,19 @@
 python export.py
 """
 import argparse
-import numpy as np
-import mindspore
-from mindspore import Tensor, load_checkpoint, load_param_into_net, export, context
 
-from flyspeech.decode.predict_net import Attention, CTCGreedySearch, CTCPrefixBeamSearch, AttentionRescoring, PredictNet
-from flyspeech.model.asr_model import init_asr_model
+import mindspore
+import numpy as np
 from flyspeech.adapter.config import get_config
+from flyspeech.decode.predict_net import (
+    Attention,
+    AttentionRescoring,
+    CTCGreedySearch,
+    CTCPrefixBeamSearch,
+    PredictNet,
+)
+from flyspeech.model.asr_model import init_asr_model
+from mindspore import Tensor, context, export, load_checkpoint, load_param_into_net
 
 context.set_context(mode=context.GRAPH_MODE, device_target="Ascend")
 
@@ -65,8 +71,10 @@ def run_export(args_param):
         net_rescore = AttentionRescoring(network, config.beam_size)
         _export_attention_rescoring(param_dict, net_ctc, net_rescore, args_param)
     else:
-        raise ValueError("only support mode ['attention', 'ctc_greedy_search', 'ctc_prefix_beam_search',"
-                         "attention_rescoring]")
+        raise ValueError(
+            "only support mode ['attention', 'ctc_greedy_search', 'ctc_prefix_beam_search',"
+            "attention_rescoring]"
+        )
 
 
 def _export_ctc_greedy_search(param_dict, net, args_param):
@@ -75,17 +83,24 @@ def _export_ctc_greedy_search(param_dict, net, args_param):
     for k, v in param_dict.items():
         new_key = k
         if "encoder" in k:
-            new_key = k.replace('acc_net.', '')
+            new_key = k.replace("acc_net.", "")
         elif "decoder" in k or "ctc" in k:
             new_key = "backbone." + k
         if "network" in new_key:
-            new_key = new_key.replace('network.', '')
+            new_key = new_key.replace("network.", "")
         new_dict[new_key] = v
     load_param_into_net(net, new_dict)
     input_x = Tensor(np.zeros([1, 1200, 80], np.float32))
     input_mask = Tensor(np.zeros([1, 1, 1200], np.float32))
     length = Tensor(np.zeros([1], np.float32))
-    export(net, input_x, input_mask, length, file_name=args_param.decode_mode, file_format=args_param.export_type)
+    export(
+        net,
+        input_x,
+        input_mask,
+        length,
+        file_name=args_param.decode_mode,
+        file_format=args_param.export_type,
+    )
 
 
 def _export_ctc_prefix_beam_search(param_dict, net, args_param):
@@ -94,13 +109,20 @@ def _export_ctc_prefix_beam_search(param_dict, net, args_param):
     for k, v in param_dict.items():
         new_key = "backbone." + k
         if "network" in new_key:
-            new_key = new_key.replace('network.', '')
+            new_key = new_key.replace("network.", "")
         new_dict[new_key] = v
     load_param_into_net(net, new_dict)
     input_x = Tensor(np.zeros([1, 1200, 80], np.float32))
     input_mask = Tensor(np.zeros([1, 1, 1200], np.float32))
     length = Tensor(np.zeros([1], np.float32))
-    export(net, input_x, input_mask, length, file_name=args_param.decode_mode, file_format=args_param.export_type)
+    export(
+        net,
+        input_x,
+        input_mask,
+        length,
+        file_name=args_param.decode_mode,
+        file_format=args_param.export_type,
+    )
 
 
 def _export_attention(param_dict, net, args_param, is_full_graph):
@@ -120,8 +142,19 @@ def _export_attention(param_dict, net, args_param, is_full_graph):
         scores = Tensor(np.zeros([10, 1], np.float32))
         end_flag = Tensor(np.zeros([10, 1], np.float32))
         base_index = Tensor(np.zeros([1, 1], np.float32))
-        export(net, xs_pad, xs_masks, xs_lengths, hyps_sub_masks, input_ids_tensor, scores, end_flag, base_index,
-               file_name=args_param.decode_mode, file_format=args_param.export_type)
+        export(
+            net,
+            xs_pad,
+            xs_masks,
+            xs_lengths,
+            hyps_sub_masks,
+            input_ids_tensor,
+            scores,
+            end_flag,
+            base_index,
+            file_name=args_param.decode_mode,
+            file_format=args_param.export_type,
+        )
     # for not full_graph, Ascend310 infer supported now.
     else:
         # for encoder
@@ -130,22 +163,28 @@ def _export_attention(param_dict, net, args_param, is_full_graph):
             if "encoder" in k:
                 new_key = "backbone." + k
                 if "network" in new_key:
-                    new_key = new_key.replace('network.', '')
+                    new_key = new_key.replace("network.", "")
                 new_dict_encoder[new_key] = v
 
         encoder_net = net.backbone.acc_net.encoder
         load_param_into_net(encoder_net, new_dict_encoder)
         xs_pad = Tensor(np.zeros([1, 1200, 80], np.float32))
         xs_masks = Tensor(np.zeros([1, 1, 299], np.float32))
-        export(encoder_net, xs_pad, xs_masks, xs_masks, file_name=args_param.decode_mode + '_encoder',
-               file_format=args_param.export_type)
+        export(
+            encoder_net,
+            xs_pad,
+            xs_masks,
+            xs_masks,
+            file_name=args_param.decode_mode + "_encoder",
+            file_format=args_param.export_type,
+        )
 
         # for predict
         new_dict_predict = {}
         for k, v in param_dict.items():
-            new_key = 'backbone.' + k
+            new_key = "backbone." + k
             if "network" in new_key:
-                new_key = new_key.replace('network.', '')
+                new_key = new_key.replace("network.", "")
             new_dict_predict[new_key] = v
         load_param_into_net(net, new_dict_predict)
         encoder_out_np = Tensor(np.zeros([10, 299, 256], np.float32))
@@ -156,8 +195,19 @@ def _export_attention(param_dict, net, args_param, is_full_graph):
         end_flag = Tensor(np.zeros([10, 1], np.float32))
         scores = Tensor(np.zeros([10, 1], np.float32))
         base_index = Tensor(np.zeros([1, 1], np.int32))
-        export(net, encoder_out_np, encoder_mask_np, inputs_ids, hyps_mask, valid_length, end_flag, scores,
-               base_index, file_name=args_param.decode_mode + '_predict', file_format=args_param.export_type)
+        export(
+            net,
+            encoder_out_np,
+            encoder_mask_np,
+            inputs_ids,
+            hyps_mask,
+            valid_length,
+            end_flag,
+            scores,
+            base_index,
+            file_name=args_param.decode_mode + "_predict",
+            file_format=args_param.export_type,
+        )
 
 
 def _export_attention_rescoring(param_dict, net_ctc, net_rescore, args_param):
@@ -167,39 +217,72 @@ def _export_attention_rescoring(param_dict, net_ctc, net_rescore, args_param):
     for k, v in param_dict.items():
         new_key = "backbone." + k
         if "network" in new_key:
-            new_key = new_key.replace('network.', '')
+            new_key = new_key.replace("network.", "")
         new_dict_ctc[new_key] = v
     load_param_into_net(net_ctc, new_dict_ctc)
     input_x = Tensor(np.zeros([1, 1200, 80], np.float32))
     input_mask = Tensor(np.zeros([1, 1, 1200], np.float32))
     length = Tensor(np.zeros([1], np.float32))
-    export(net_ctc, input_x, input_mask, length, file_name=args_param.decode_mode + '_ctc',
-           file_format=args_param.export_type)
+    export(
+        net_ctc,
+        input_x,
+        input_mask,
+        length,
+        file_name=args_param.decode_mode + "_ctc",
+        file_format=args_param.export_type,
+    )
 
     # export for rescore
     new_dict_rescore = {}
     for k, v in param_dict.items():
         new_key = "backbone." + k
         if "network" in new_key:
-            new_key = new_key.replace('network.', '')
+            new_key = new_key.replace("network.", "")
         new_dict_rescore[new_key] = v
     load_param_into_net(net_rescore, new_dict_rescore)
     encoder_out = Tensor(np.zeros([10, 299, 256], np.float32))
     encoder_mask = Tensor(np.zeros([10, 1, 299], np.float32))
     hyps_in_pad = Tensor(np.zeros([10, 31], np.int32))
     hyps_sub_masks = Tensor(np.zeros([10, 31, 31], np.float32))
-    export(net_rescore, encoder_out, encoder_mask, hyps_in_pad, hyps_sub_masks,
-           file_name=args_param.decode_mode + '_rescore', file_format=args_param.export_type)
+    export(
+        net_rescore,
+        encoder_out,
+        encoder_mask,
+        hyps_in_pad,
+        hyps_sub_masks,
+        file_name=args_param.decode_mode + "_rescore",
+        file_format=args_param.export_type,
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="export model")
-    parser.add_argument("--decode_mode", required=True, help="support [attention, ctc_greedy_search,"
-                                                             "ctc_prefix_beam_search,attention_rescoring]")
-    parser.add_argument("--decode_ckpt", required=True, help="the checkpoint that needs to be converted")
-    parser.add_argument("--export_type", type=str, default='MINDIR', help="supported file formats: [MINDIR, ONNX, AIR]")
-    parser.add_argument("--config_path", type=str, default='config/asr_conformer.yaml', help="config file")
-    parser.add_argument("--cmvn_file", type=str, default='/path/train/global_cmvn', help="cmvn file")
-    parser.add_argument("--dict", type=str, default='/path/dict/lang_char.txt', help="dict file")
+    parser.add_argument(
+        "--decode_mode",
+        required=True,
+        help="support [attention, ctc_greedy_search,"
+        "ctc_prefix_beam_search,attention_rescoring]",
+    )
+    parser.add_argument(
+        "--decode_ckpt", required=True, help="the checkpoint that needs to be converted"
+    )
+    parser.add_argument(
+        "--export_type",
+        type=str,
+        default="MINDIR",
+        help="supported file formats: [MINDIR, ONNX, AIR]",
+    )
+    parser.add_argument(
+        "--config_path",
+        type=str,
+        default="config/asr_conformer.yaml",
+        help="config file",
+    )
+    parser.add_argument(
+        "--cmvn_file", type=str, default="/path/train/global_cmvn", help="cmvn file"
+    )
+    parser.add_argument(
+        "--dict", type=str, default="/path/dict/lang_char.txt", help="dict file"
+    )
     args = parser.parse_args()
     run_export(args)

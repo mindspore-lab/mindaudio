@@ -19,6 +19,7 @@
 
 """Calculate times."""
 import sys
+
 from mindaudio.data.io import read
 
 scp = sys.argv[1]

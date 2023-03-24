@@ -13,8 +13,8 @@
 # limitations under the License.
 # ============================================================================
 """Define net-related methods."""
-import numpy as np
 import mindspore
+import numpy as np
 
 
 def get_activation(act):
@@ -23,15 +23,19 @@ def get_activation(act):
     from flyspeech.layers.swish import Swish
 
     activation_funcs = {
-        'tanh': mindspore.nn.Tanh,
-        'relu': mindspore.nn.ReLU,
-        'swish': Swish,
-        'gelu': mindspore.nn.GELU,
+        "tanh": mindspore.nn.Tanh,
+        "relu": mindspore.nn.ReLU,
+        "swish": Swish,
+        "gelu": mindspore.nn.GELU,
     }
 
     return activation_funcs[act]()
 
 
 def get_parameter_numel(net: mindspore.nn.Cell):
-    num = (np.array([np.prod(item.shape) for item in net.get_parameters()]).sum() / 1024 / 1024)
-    return str(num)[:5] + 'M'
+    num = (
+        np.array([np.prod(item.shape) for item in net.get_parameters()]).sum()
+        / 1024
+        / 1024
+    )
+    return str(num)[:5] + "M"

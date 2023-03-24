@@ -21,7 +21,7 @@ import os
 
 import yaml
 
-BASE_CONFIG = 'base_config'
+BASE_CONFIG = "base_config"
 
 
 class Config(dict):
@@ -51,7 +51,7 @@ class Config(dict):
         # load from file
         for arg in args:
             if isinstance(arg, str):
-                if arg.endswith('yaml') or arg.endswith('yml'):
+                if arg.endswith("yaml") or arg.endswith("yml"):
                     raw_dict = Config._file2dict(arg)
                     cfg_dict.update(raw_dict)
 
@@ -104,7 +104,7 @@ class Config(dict):
         option_cfg_dict = {}
         for full_key, value in options.items():
             d = option_cfg_dict
-            key_list = full_key.split('.')
+            key_list = full_key.split(".")
             for sub_key in key_list[:-1]:
                 d.setdefault(sub_key, Config())
                 d = d[sub_key]
@@ -141,7 +141,7 @@ class Config(dict):
             file_name(str): Config file.
         """
         if not file_name:
-            raise NameError(f'The {file_name} cannot be empty.')
+            raise NameError(f"The {file_name} cannot be empty.")
 
         with open(os.path.realpath(file_name)) as f:
             cfg_dict = yaml.load(f, Loader=yaml.FullLoader)
@@ -150,7 +150,11 @@ class Config(dict):
         if BASE_CONFIG in cfg_dict:
             cfg_dir = os.path.dirname(file_name)
             base_file_names = cfg_dict.pop(BASE_CONFIG)
-            base_file_names = (base_file_names if isinstance(base_file_names, list) else [base_file_names])
+            base_file_names = (
+                base_file_names
+                if isinstance(base_file_names, list)
+                else [base_file_names]
+            )
 
             cfg_dict_list = list()
             for base_file_name in base_file_names:
@@ -184,11 +188,13 @@ class Config(dict):
 
     @staticmethod
     def _save_yaml(config, path):
-        with open(path, 'w') as f:
+        with open(path, "w") as f:
             yaml.dump(config, f)
 
 
-def parse_cli_to_yaml(parser, cfg, helper=None, choices=None, cfg_path='asr_config.yaml'):
+def parse_cli_to_yaml(
+    parser, cfg, helper=None, choices=None, cfg_path="asr_config.yaml"
+):
     """Parse command line arguments to the configuration according to the
     default yaml.
 
@@ -198,16 +204,22 @@ def parse_cli_to_yaml(parser, cfg, helper=None, choices=None, cfg_path='asr_conf
         helper: Helper description.
         cfg_path: Path to the default yaml config.
     """
-    parser = argparse.ArgumentParser(description='[REPLACE THIS at config.py]', parents=[parser])
+    parser = argparse.ArgumentParser(
+        description="[REPLACE THIS at config.py]", parents=[parser]
+    )
     helper = {} if helper is None else helper
     choices = {} if choices is None else choices
     for item in cfg:
         if not isinstance(cfg[item], list) and not isinstance(cfg[item], dict):
-            help_description = (helper[item] if item in helper else 'Please reference to {}'.format(cfg_path))
+            help_description = (
+                helper[item]
+                if item in helper
+                else "Please reference to {}".format(cfg_path)
+            )
             choice = choices[item] if item in choices else None
             if isinstance(cfg[item], bool):
                 parser.add_argument(
-                    '--' + item,
+                    "--" + item,
                     type=ast.literal_eval,
                     default=cfg[item],
                     choices=choice,
@@ -215,7 +227,7 @@ def parse_cli_to_yaml(parser, cfg, helper=None, choices=None, cfg_path='asr_conf
                 )
             else:
                 parser.add_argument(
-                    '--' + item,
+                    "--" + item,
                     type=type(cfg[item]),
                     default=cfg[item],
                     choices=choice,
@@ -238,25 +250,29 @@ def merge(args, cfg):
     return cfg
 
 
-def get_config(config=''):
+def get_config(config=""):
     """Get Config according to the yaml file and cli arguments."""
-    if config == '':
-        raise ValueError("config name should be choose in ['asr_config', 'asr_conformer', "
-                         "'asr_conformer_bidecoder.yaml', asr_transformer]")
-    yaml_file = 'config/' + config + '.yaml'
-    parser = argparse.ArgumentParser(description='default name', add_help=False)
+    if config == "":
+        raise ValueError(
+            "config name should be choose in ['asr_config', 'asr_conformer', "
+            "'asr_conformer_bidecoder.yaml', asr_transformer]"
+        )
+    yaml_file = "config/" + config + ".yaml"
+    parser = argparse.ArgumentParser(description="default name", add_help=False)
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parser.add_argument(
-        '--config_path',
+        "--config_path",
         type=str,
         default=os.path.join(current_dir, yaml_file),
-        help='Config file path',
+        help="Config file path",
     )
     path_args, _ = parser.parse_known_args()
     cfg_path = path_args.config_path
     cfg = Config(cfg_path)
     args = parse_cli_to_yaml(parser=parser, cfg=cfg, cfg_path=path_args.config_path)
-    args.train_url = os.path.join(args.train_url, str(int(datetime.datetime.now().timestamp())))
+    args.train_url = os.path.join(
+        args.train_url, str(int(datetime.datetime.now().timestamp()))
+    )
 
     merge(args, cfg)
     return cfg

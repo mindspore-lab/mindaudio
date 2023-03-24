@@ -25,7 +25,9 @@ class GlobalCMVN(mindspore.nn.Cell):
         norm_var (bool): Whether variance normalization is performed, default: True
     """
 
-    def __init__(self, mean: mindspore.Tensor, istd: mindspore.Tensor, norm_var: bool = True):
+    def __init__(
+        self, mean: mindspore.Tensor, istd: mindspore.Tensor, norm_var: bool = True
+    ):
         """Construct an CMVN object."""
         super().__init__()
         assert mean.shape == istd.shape

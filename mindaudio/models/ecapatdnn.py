@@ -51,7 +51,14 @@ class MyBatchNorm1d(nn.Cell):
 
 class TDNNBlock(nn.Cell):
     def __init__(
-        self, in_channels, out_channels, kernel_size, dilation, bias, activation=nn.ReLU, groups=1,
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        dilation,
+        bias,
+        activation=nn.ReLU,
+        groups=1,
     ):
         super(TDNNBlock, self).__init__()
         self.conv = nn.Conv1d(
@@ -76,7 +83,14 @@ class TDNNBlock(nn.Cell):
 
 class Res2NetBlock(nn.Cell):
     def __init__(
-        self, in_channels, out_channels, scale=8, kernel_size=3, dilation=1, bias=True, groups=1,
+        self,
+        in_channels,
+        out_channels,
+        scale=8,
+        kernel_size=3,
+        dilation=1,
+        bias=True,
+        groups=1,
     ):
         super(Res2NetBlock, self).__init__()
         assert in_channels % scale == 0
@@ -86,7 +100,13 @@ class Res2NetBlock(nn.Cell):
         hidden_channel = out_channels // scale
         self.blocks = nn.CellList(
             [
-                TDNNBlock(in_channel, hidden_channel, kernel_size=kernel_size, dilation=dilation, bias=bias,)
+                TDNNBlock(
+                    in_channel,
+                    hidden_channel,
+                    kernel_size=kernel_size,
+                    dilation=dilation,
+                    bias=bias,
+                )
                 for i in range(scale - 1)
             ]
         )
@@ -187,11 +207,30 @@ class SERes2NetBlock(nn.Cell):
         super().__init__()
         self.out_channels = out_channels
         self.tdnn1 = TDNNBlock(
-            in_channels, out_channels, kernel_size=1, dilation=1, bias=bias, activation=activation, groups=groups,
+            in_channels,
+            out_channels,
+            kernel_size=1,
+            dilation=1,
+            bias=bias,
+            activation=activation,
+            groups=groups,
         )
-        self.res2net_block = Res2NetBlock(out_channels, out_channels, res2net_scale, kernel_size, dilation, bias,)
+        self.res2net_block = Res2NetBlock(
+            out_channels,
+            out_channels,
+            res2net_scale,
+            kernel_size,
+            dilation,
+            bias,
+        )
         self.tdnn2 = TDNNBlock(
-            out_channels, out_channels, kernel_size=1, dilation=1, activation=activation, bias=bias, groups=groups,
+            out_channels,
+            out_channels,
+            kernel_size=1,
+            dilation=1,
+            activation=activation,
+            bias=bias,
+            groups=groups,
         )
         self.se_block = SEBlock(out_channels, se_channels, out_channels)
 
@@ -229,7 +268,9 @@ class AttentiveStatisticsPooling(nn.Cell):
         The number of attention channels.
     """
 
-    def __init__(self, channels, attention_channels=128, bias=True, global_context=False):
+    def __init__(
+        self, channels, attention_channels=128, bias=True, global_context=False
+    ):
         super().__init__()
 
         self.eps = 1e-12
@@ -260,7 +301,11 @@ class AttentiveStatisticsPooling(nn.Cell):
         def _compute_statistics(x, m, dim=2, eps=self.eps):
             mean = (m * x).sum(dim)
 
-            std = self.sqrt(((m * self.pow((x - self.expandDim(mean, dim)), 2)).sum(dim)).clip(eps, None))
+            std = self.sqrt(
+                ((m * self.pow((x - self.expandDim(mean, dim)), 2)).sum(dim)).clip(
+                    eps, None
+                )
+            )
             return mean, std
 
         attn = x
@@ -311,7 +356,6 @@ class EcapaTDNN(nn.Cell):
         global_context=False,
         groups=(1, 1, 1, 1, 1),
     ):
-
         super().__init__()
         self.input_size = input_size
         self.channels = channels
@@ -319,7 +363,15 @@ class EcapaTDNN(nn.Cell):
 
         # The initial TDNN layer
         self.blocks.append(
-            TDNNBlock(input_size, channels[0], kernel_sizes[0], dilations[0], True, activation, groups[0],)
+            TDNNBlock(
+                input_size,
+                channels[0],
+                kernel_sizes[0],
+                dilations[0],
+                True,
+                activation,
+                groups[0],
+            )
         )
 
         # SE-Res2Net layers
@@ -340,12 +392,21 @@ class EcapaTDNN(nn.Cell):
 
         # Multi-layer feature aggregation
         self.mfa = TDNNBlock(
-            channels[-1], channels[-1], kernel_sizes[-1], dilations[-1], True, activation, groups=groups[-1],
+            channels[-1],
+            channels[-1],
+            kernel_sizes[-1],
+            dilations[-1],
+            True,
+            activation,
+            groups=groups[-1],
         )
 
         # Attentive Statistical Pooling
         self.asp = AttentiveStatisticsPooling(
-            channels[-1], attention_channels=attention_channels, bias=True, global_context=global_context,
+            channels[-1],
+            attention_channels=attention_channels,
+            bias=True,
+            global_context=global_context,
         )
         self.asp_bn = MyBatchNorm1d(num_features=channels[-1] * 2)
 
@@ -404,15 +465,21 @@ class Classifier(nn.Cell):
     """
 
     def __init__(
-        self, input_size, lin_blocks=0, lin_neurons=192, out_neurons=1211,
+        self,
+        input_size,
+        lin_blocks=0,
+        lin_neurons=192,
+        out_neurons=1211,
     ):
-
         super().__init__()
         self.blocks = nn.CellList()
 
         for _ in range(lin_blocks):
             self.blocks.extend(
-                [MyBatchNorm1d(num_features=input_size), nn.Dense(in_channels=input_size, out_channels=lin_neurons),]
+                [
+                    MyBatchNorm1d(num_features=input_size),
+                    nn.Dense(in_channels=input_size, out_channels=lin_neurons),
+                ]
             )
             input_size = lin_neurons
         input_size = lin_neurons

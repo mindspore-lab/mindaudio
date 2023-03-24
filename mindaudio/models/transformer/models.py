@@ -1,8 +1,6 @@
-
 from mindspore import Tensor
 from mindspore import dtype as mstype
-from mindspore import nn
-from mindspore import ops
+from mindspore import nn, ops
 
 from mindaudio.models.transformer import constants
 from mindaudio.models.transformer.layers import FFTBlock
@@ -26,7 +24,9 @@ class Encoder(nn.Cell):
         dropout = hps.model.transformer.encoder_dropout
 
         n_position = len_max_seq + 1
-        pretrained_embs = get_sinusoid_encoding_table(n_position, d_word_vec, padding_idx=None)
+        pretrained_embs = get_sinusoid_encoding_table(
+            n_position, d_word_vec, padding_idx=None
+        )
         self.position_enc = ops.stop_gradient(Tensor(pretrained_embs)[None, ...])
 
         self.src_word_emb = nn.Embedding(
@@ -37,7 +37,8 @@ class Encoder(nn.Cell):
 
         self.layer_stack = nn.CellList(
             [
-                FFTBlock(d_model, d_inner, kernel_size, n_head, d_k, d_v, dropout) for _ in range(n_layers)
+                FFTBlock(d_model, d_inner, kernel_size, n_head, d_k, d_v, dropout)
+                for _ in range(n_layers)
             ]
         )
 
@@ -56,10 +57,13 @@ class Encoder(nn.Cell):
         non_pad_mask_bool = self.expand_dims(self.not_equal(src_seq, self.pad), 2)
         non_pad_mask = non_pad_mask_bool.astype(mstype.float32)
         if positions_encoder is not None:
-            enc_output = self.src_word_emb(src_seq.astype('int32')) + positions_encoder
+            enc_output = self.src_word_emb(src_seq.astype("int32")) + positions_encoder
         else:
             max_len = src_seq.shape[1]
-            enc_output = self.src_word_emb(src_seq.astype('int32')) + self.position_enc[:, : max_len]
+            enc_output = (
+                self.src_word_emb(src_seq.astype("int32"))
+                + self.position_enc[:, :max_len]
+            )
         for enc_layer in self.layer_stack:
             enc_output = enc_layer(
                 enc_output,
@@ -86,12 +90,15 @@ class Decoder(nn.Cell):
         self.max_seq_len = hps.model.max_seq_len
 
         n_position = len_max_seq + 1
-        pretrained_embs = get_sinusoid_encoding_table(n_position, d_model, padding_idx=None)
+        pretrained_embs = get_sinusoid_encoding_table(
+            n_position, d_model, padding_idx=None
+        )
         self.position_enc = ops.stop_gradient(Tensor(pretrained_embs)[None, ...])
 
         self.layer_stack = nn.CellList(
             [
-                FFTBlock(d_model, d_inner, kernel_size, n_head, d_k, d_v, dropout) for _ in range(n_layers)
+                FFTBlock(d_model, d_inner, kernel_size, n_head, d_k, d_v, dropout)
+                for _ in range(n_layers)
             ]
         )
         self.n_head = n_head
@@ -105,7 +112,7 @@ class Decoder(nn.Cell):
         slf_attn_mask_bool = slf_attn_mask.astype(mstype.bool_)
         slf_attn_mask_bool_tile = ops.tile(slf_attn_mask_bool, (self.n_head, 1, 1))
 
-        non_pad_mask = 1. - mask.expand_dims(2)
+        non_pad_mask = 1.0 - mask.expand_dims(2)
 
         if positions_decoder is not None:
             dec_output = enc_seq + positions_decoder
@@ -117,6 +124,7 @@ class Decoder(nn.Cell):
             dec_output = dec_layer(
                 dec_output,
                 non_pad_mask=non_pad_mask,
-                slf_attn_mask=slf_attn_mask_bool_tile)
+                slf_attn_mask=slf_attn_mask_bool_tile,
+            )
 
         return dec_output, slf_attn_mask_bool

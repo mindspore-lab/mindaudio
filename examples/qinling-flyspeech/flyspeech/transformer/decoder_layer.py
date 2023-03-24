@@ -22,7 +22,6 @@ import mindspore
 import mindspore.common.dtype as mstype
 import mindspore.nn as nn
 import mindspore.ops as ops
-
 from flyspeech.layers.dense import Dense
 from flyspeech.layers.layernorm import LayerNorm
 
@@ -49,15 +48,17 @@ class DecoderLayer(nn.Cell):
         compute_type (dtype): whether to use mix precision training.
     """
 
-    def __init__(self,
-                 size: int,
-                 self_attn: nn.Cell,
-                 src_attn: nn.Cell,
-                 feed_forward: nn.Cell,
-                 dropout_rate: float,
-                 normalize_before: bool = True,
-                 concat_after: bool = False,
-                 compute_type=mstype.float32):
+    def __init__(
+        self,
+        size: int,
+        self_attn: nn.Cell,
+        src_attn: nn.Cell,
+        feed_forward: nn.Cell,
+        dropout_rate: float,
+        normalize_before: bool = True,
+        concat_after: bool = False,
+        compute_type=mstype.float32,
+    ):
         """Construct an DecoderLayer object."""
         super().__init__()
         self.size = size
@@ -79,8 +80,11 @@ class DecoderLayer(nn.Cell):
         self.cast = ops.Cast()
 
     def construct(
-            self, tgt: mindspore.Tensor, tgt_mask: mindspore.Tensor, memory: mindspore.Tensor,
-            memory_mask: mindspore.Tensor
+        self,
+        tgt: mindspore.Tensor,
+        tgt_mask: mindspore.Tensor,
+        memory: mindspore.Tensor,
+        memory_mask: mindspore.Tensor,
     ) -> Tuple[mindspore.Tensor, mindspore.Tensor, mindspore.Tensor, mindspore.Tensor]:
         """Compute decoded features.
 
@@ -109,7 +113,12 @@ class DecoderLayer(nn.Cell):
         tgt_q = tgt
         tgt_q_mask = tgt_mask
         if self.concat_after:
-            tgt_concat = self.cat1((tgt_q, self.cast(self.self_attn(tgt_q, tgt, tgt, tgt_q_mask), tgt_q.dtype)))
+            tgt_concat = self.cat1(
+                (
+                    tgt_q,
+                    self.cast(self.self_attn(tgt_q, tgt, tgt, tgt_q_mask), tgt_q.dtype),
+                )
+            )
             x = residual + self.concat_linear1(tgt_concat)
         else:
             x = residual + self.dropout(self.self_attn(tgt_q, tgt, tgt, tgt_q_mask))
@@ -122,7 +131,9 @@ class DecoderLayer(nn.Cell):
             x = self.norm2(x)
 
         if self.concat_after:
-            x_concat = self.cat1((x, self.cast(self.src_attn(x, memory, memory, memory_mask), x.dtype)))
+            x_concat = self.cat1(
+                (x, self.cast(self.src_attn(x, memory, memory, memory_mask), x.dtype))
+            )
             x = residual + self.concat_linear2(x_concat)
         else:
             x = residual + self.dropout(self.src_attn(x, memory, memory, memory_mask))

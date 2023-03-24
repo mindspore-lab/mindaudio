@@ -11,23 +11,29 @@ class FastSpeech2Loss(nn.Cell):
         self.mse_loss = nn.MSELoss()
         self.mae_loss = nn.L1Loss()
         self.slr = ops.ScalarSummary()
-        self.names = ['total_loss', 'mel_loss', 'duration_loss', 'pitch_loss', 'energy_loss']
+        self.names = [
+            "total_loss",
+            "mel_loss",
+            "duration_loss",
+            "pitch_loss",
+            "energy_loss",
+        ]
 
     def construct(self, items):
-        mel_targets = items['mel_targets']
-        pitch_targets = items['pitch_targets']
-        energy_targets = items['energy_targets']
-        duration_targets = items['duration_targets']
-        mel_predictions = items['mel_predictions']
-        pitch_predictions = items['pitch_predictions']
-        energy_predictions = items['energy_predictions']
-        log_duration_predictions = items['log_duration_predictions']
-        src_masks = items['src_masks']
-        mel_masks = items['mel_masks']
+        mel_targets = items["mel_targets"]
+        pitch_targets = items["pitch_targets"]
+        energy_targets = items["energy_targets"]
+        duration_targets = items["duration_targets"]
+        mel_predictions = items["mel_predictions"]
+        pitch_predictions = items["pitch_predictions"]
+        energy_predictions = items["energy_predictions"]
+        log_duration_predictions = items["log_duration_predictions"]
+        src_masks = items["src_masks"]
+        mel_masks = items["mel_masks"]
 
         src_masks = ~src_masks
         mel_masks = ~mel_masks
-        log_duration_targets = ms.ops.log(duration_targets + 1.)
+        log_duration_targets = ms.ops.log(duration_targets + 1.0)
         mel_targets = mel_targets[:, : mel_masks.shape[1], :]
 
         if self.pitch_feature_level == "phoneme_level":

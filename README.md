@@ -40,7 +40,7 @@ MindAudio is an open source all-in-one toolkit for the voice field, witch based 
 >>> matrix = mindaudio.speed_perturb(signal, orig_freq=16000, speeds=[90,  100])
 ```
 
-- **Integration of common data sets，one-key data preprocessing.** 
+- **Integration of common data sets，one-key data preprocessing.**
 
   Due to the large number of data sets in the audio deep learning field, the processing process is more complex and not friendly to novices. MindAudio provides a set of efficient data processing solutions for different data, and supports users to customize according to their needs.
 
@@ -52,7 +52,7 @@ MindAudio is an open source all-in-one toolkit for the voice field, witch based 
 >>>ds_train = train_data_pipeline(ds_train, batch_size=64)
 ```
 
-- **Support for multiple task models.** 
+- **Support for multiple task models.**
 
   MindAudio offers multiple task models, such as DeepSpeech2 in ASR tasks, WavGrad in TTS, and more, along with pre-training weights, training strategies, and performance reports to help iterate audio domain tasks quickly.
 
@@ -165,7 +165,7 @@ Currently，the following tasks and models are supported on MindAudio。
 
 ## Notes
 
-### What's New 
+### What's New
 
 - 2022/09/30: version 0.1.0, 33 data APIs + 3 models
 
@@ -189,4 +189,3 @@ If you find this project useful in your research, please consider citing:
     year={2022}
 }
 ```
-

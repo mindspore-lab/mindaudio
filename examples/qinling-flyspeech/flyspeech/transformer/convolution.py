@@ -21,7 +21,6 @@ from typing import Tuple
 import mindspore
 import mindspore.nn as nn
 import mindspore.ops as ops
-
 from flyspeech.layers.conv1d import Conv1d
 from flyspeech.layers.glu import GLU
 from flyspeech.layers.layernorm import LayerNorm
@@ -40,57 +39,65 @@ class ConvolutionModule(nn.Cell):
         compute_type (bool): Whether use mix precision computation.
     """
 
-    def __init__(self,
-                 channels: int,
-                 kernel_size: int,
-                 activation: nn.Cell,
-                 norm: str = 'batch_norm',
-                 glu_dim: int = 1,
-                 bias: bool = True,
-                 compute_type=mindspore.float32):
+    def __init__(
+        self,
+        channels: int,
+        kernel_size: int,
+        activation: nn.Cell,
+        norm: str = "batch_norm",
+        glu_dim: int = 1,
+        bias: bool = True,
+        compute_type=mindspore.float32,
+    ):
         super().__init__()
-        self.pointwise_conv1 = Conv1d(channels,
-                                      2 * channels,
-                                      kernel_size=1,
-                                      stride=1,
-                                      padding=0,
-                                      has_bias=bias,
-                                      pad_mode='valid',
-                                      enable_mask_padding_feature=False).to_float(compute_type)
-        self.depthwise_conv = Conv1d(channels,
-                                     channels,
-                                     kernel_size,
-                                     stride=1,
-                                     padding=(kernel_size-1) // 2,
-                                     group=channels,
-                                     has_bias=bias,
-                                     pad_mode='pad',
-                                     enable_mask_padding_feature=False).to_float(compute_type)
+        self.pointwise_conv1 = Conv1d(
+            channels,
+            2 * channels,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+            has_bias=bias,
+            pad_mode="valid",
+            enable_mask_padding_feature=False,
+        ).to_float(compute_type)
+        self.depthwise_conv = Conv1d(
+            channels,
+            channels,
+            kernel_size,
+            stride=1,
+            padding=(kernel_size - 1) // 2,
+            group=channels,
+            has_bias=bias,
+            pad_mode="pad",
+            enable_mask_padding_feature=False,
+        ).to_float(compute_type)
 
-        assert norm in ['batch_norm', 'layer_norm']
-        if norm == 'batch_norm':
+        assert norm in ["batch_norm", "layer_norm"]
+        if norm == "batch_norm":
             self.use_layer_norm = False
             self.norm = nn.BatchNorm1d(channels)
         else:
             self.use_layer_norm = True
             self.norm = LayerNorm(channels)
-        self.pointwise_conv2 = Conv1d(channels,
-                                      channels,
-                                      kernel_size=1,
-                                      stride=1,
-                                      padding=0,
-                                      has_bias=bias,
-                                      pad_mode='valid',
-                                      enable_mask_padding_feature=False).to_float(compute_type)
+        self.pointwise_conv2 = Conv1d(
+            channels,
+            channels,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+            has_bias=bias,
+            pad_mode="valid",
+            enable_mask_padding_feature=False,
+        ).to_float(compute_type)
         self.channels = channels
         self.activation = activation
         self.glu = GLU(dim=glu_dim)
         self.reshape = ops.Reshape()
         self.cast = ops.Cast()
 
-    def construct(self,
-                  x: mindspore.Tensor,
-                  mask: mindspore.Tensor = None) -> Tuple[mindspore.Tensor, mindspore.Tensor]:
+    def construct(
+        self, x: mindspore.Tensor, mask: mindspore.Tensor = None
+    ) -> Tuple[mindspore.Tensor, mindspore.Tensor]:
         """Compute convolution module.
 
         Args:

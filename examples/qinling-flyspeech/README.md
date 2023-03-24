@@ -114,7 +114,7 @@ qinling-flyspeech借鉴了一些优秀的开源项目，包括
       ```shell
       sudo yum install bzip2
       ```
-      
+
 - **Q：训练时第一个epoch部分step耗时超过200s？**
 
   **A**：由于采用分桶设置，在第一个epoch会针对不同bucket重新编译图，所以部分step会耗时长，属于正常现象。

@@ -32,12 +32,12 @@ from mindspore.ops import operations as P
 GRADIENT_CLIP_TYPE = 1
 GRADIENT_CLIP_VALUE = 1.0
 
-_grad_scale = C.MultitypeFuncGraph('grad_scale')
+_grad_scale = C.MultitypeFuncGraph("grad_scale")
 reciprocal = P.Reciprocal()
-clip_grad = C.MultitypeFuncGraph('clip_grad')
+clip_grad = C.MultitypeFuncGraph("clip_grad")
 
 
-@clip_grad.register('Number', 'Number', 'Tensor')
+@clip_grad.register("Number", "Number", "Tensor")
 def _clip_grad(clip_type, clip_value, grad):
     """Clip gradients.
 
@@ -53,69 +53,76 @@ def _clip_grad(clip_type, clip_value, grad):
         return grad
     dt = F.dtype(grad)
     if clip_type == 0:
-        new_grad = C.clip_by_value(grad, F.cast(F.tuple_to_array((-clip_value,)), dt),
-                                   F.cast(F.tuple_to_array((clip_value,)), dt))
+        new_grad = C.clip_by_value(
+            grad,
+            F.cast(F.tuple_to_array((-clip_value,)), dt),
+            F.cast(F.tuple_to_array((clip_value,)), dt),
+        )
     else:
         new_grad = nn.ClipByNorm()(grad, F.cast(F.tuple_to_array((clip_value,)), dt))
     return new_grad
 
 
-@_grad_scale.register('Tensor', 'Tensor')
+@_grad_scale.register("Tensor", "Tensor")
 def tensor_grad_scale(scale, grad):
     return grad * F.cast(reciprocal(scale), F.dtype(grad))
 
 
-@_grad_scale.register('Tensor', 'RowTensor')
+@_grad_scale.register("Tensor", "RowTensor")
 def tensor_grad_scale_row_tensor(scale, grad):
-    return RowTensor(grad.indices, grad.values * F.cast(reciprocal(scale), F.dtype(grad.values)), grad.dense_shape)
+    return RowTensor(
+        grad.indices,
+        grad.values * F.cast(reciprocal(scale), F.dtype(grad.values)),
+        grad.dense_shape,
+    )
 
 
-_grad_overflow = C.MultitypeFuncGraph('_grad_overflow')
+_grad_overflow = C.MultitypeFuncGraph("_grad_overflow")
 grad_overflow = P.FloatStatus()
 
 
-@_grad_overflow.register('Tensor')
+@_grad_overflow.register("Tensor")
 def _tensor_grad_overflow(grad):
     return grad_overflow(grad)
 
 
-@_grad_overflow.register('RowTensor')
+@_grad_overflow.register("RowTensor")
 def _tensor_grad_overflow_row_tensor(grad):
     return grad_overflow(grad.values)
 
 
 cast = P.Cast()
-add_grads = C.MultitypeFuncGraph('add_grads')
+add_grads = C.MultitypeFuncGraph("add_grads")
 
 
-@add_grads.register('Tensor', 'Tensor')
+@add_grads.register("Tensor", "Tensor")
 def _add_grads(accu_grad, grad):
     return accu_grad + cast(grad, mstype.float32)
 
 
-update_accu_grads = C.MultitypeFuncGraph('update_accu_grads')
+update_accu_grads = C.MultitypeFuncGraph("update_accu_grads")
 
 
-@update_accu_grads.register('Tensor', 'Tensor')
+@update_accu_grads.register("Tensor", "Tensor")
 def _update_accu_grads(accu_grad, grad):
     succ = True
     return F.depend(succ, F.assign(accu_grad, cast(grad, mstype.float32)))
 
 
-accumulate_accu_grads = C.MultitypeFuncGraph('accumulate_accu_grads')
+accumulate_accu_grads = C.MultitypeFuncGraph("accumulate_accu_grads")
 
 
-@accumulate_accu_grads.register('Tensor', 'Tensor')
+@accumulate_accu_grads.register("Tensor", "Tensor")
 def _accumulate_accu_grads(accu_grad, grad):
     succ = True
     return F.depend(succ, F.assign_add(accu_grad, cast(grad, mstype.float32)))
 
 
 zeroslike = P.ZerosLike()
-reset_accu_grads = C.MultitypeFuncGraph('reset_accu_grads')
+reset_accu_grads = C.MultitypeFuncGraph("reset_accu_grads")
 
 
-@reset_accu_grads.register('Tensor')
+@reset_accu_grads.register("Tensor")
 def _reset_accu_grads(accu_grad):
     succ = True
     return F.depend(succ, F.assign(accu_grad, zeroslike(accu_grad)))
@@ -186,8 +193,12 @@ class DynamicLossScaleUpdateCell(Cell):
         self.scale_factor = Tensor(scale_factor, dtype=mstype.float32)
         self.loss_scale_value = loss_scale_value
 
-        self.cur_iter = Parameter(Tensor(1, dtype=mstype.int32), name='current_iterator_step')
-        self.last_overflow_iter = Parameter(Tensor(0, dtype=mstype.int32), name='last_overflow_iterator_step')
+        self.cur_iter = Parameter(
+            Tensor(1, dtype=mstype.int32), name="current_iterator_step"
+        )
+        self.last_overflow_iter = Parameter(
+            Tensor(0, dtype=mstype.int32), name="last_overflow_iterator_step"
+        )
         self.select = P.Select()
         self.max = P.Maximum()
         self.minimum_loss_scale = Tensor(1.0, dtype=mstype.float32)
@@ -205,15 +216,25 @@ class DynamicLossScaleUpdateCell(Cell):
         """construct a dynamic loss scale update cell."""
         overflow_cond = overflow
         loss_scale_on_overflow = self.select(
-            overflow_cond, self.max(loss_scale * self.reciprocal(self.scale_factor), self.minimum_loss_scale),
-            loss_scale)
-        should_inc = self.less_equal(self.scale_window, self.cur_iter - self.last_overflow_iter)
+            overflow_cond,
+            self.max(
+                loss_scale * self.reciprocal(self.scale_factor), self.minimum_loss_scale
+            ),
+            loss_scale,
+        )
+        should_inc = self.less_equal(
+            self.scale_window, self.cur_iter - self.last_overflow_iter
+        )
         last_iter_cond = self.logic_or(overflow_cond, should_inc)
-        last_overflow_iter = self.select(last_iter_cond, self.cur_iter, self.last_overflow_iter)
+        last_overflow_iter = self.select(
+            last_iter_cond, self.cur_iter, self.last_overflow_iter
+        )
         last_iter = F.assign(self.last_overflow_iter, last_overflow_iter)
         update_scale_cond = self.logic_and(should_inc, self.logic_not(overflow_cond))
         scale_mul_res = loss_scale_on_overflow * self.scale_factor
-        scaled_loss_scale = self.select(update_scale_cond, scale_mul_res, loss_scale_on_overflow)
+        scaled_loss_scale = self.select(
+            update_scale_cond, scale_mul_res, loss_scale_on_overflow
+        )
         F.assign(loss_scale, scaled_loss_scale)
         inc_cur_iter = self.cur_iter + 1
         inc_cur_iter = F.depend(inc_cur_iter, last_iter)
@@ -349,26 +370,39 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
     """
 
     def __init__(self, network, optimizer, scale_sense):
-        super(TrainOneStepWithLossScaleCell, self).__init__(network, optimizer, sens=None)
+        super(TrainOneStepWithLossScaleCell, self).__init__(
+            network, optimizer, sens=None
+        )
         self.hyper_map = C.HyperMap()
         self.base = Tensor(1, mstype.float32)
         self.reduce_sum = P.ReduceSum(keep_dims=False)
         self.less_equal = P.LessEqual()
         self.allreduce = P.AllReduce()
-        self.is_distributed = (self.parallel_mode != ParallelMode.STAND_ALONE)
-        self.gpu_target = (context.get_context('device_target') == 'GPU')
+        self.is_distributed = self.parallel_mode != ParallelMode.STAND_ALONE
+        self.gpu_target = context.get_context("device_target") == "GPU"
         self.loss_scaling_manager = None
         self.assignsub = P.AssignSub()
         if isinstance(scale_sense, Cell):
             self.loss_scaling_manager = scale_sense
-            self.scale_sense = Parameter(Tensor(scale_sense.get_loss_scale(), dtype=mstype.float32), name='scale_sense')
+            self.scale_sense = Parameter(
+                Tensor(scale_sense.get_loss_scale(), dtype=mstype.float32),
+                name="scale_sense",
+            )
         elif isinstance(scale_sense, Tensor):
             if scale_sense.shape == (1,) or scale_sense.shape == ():
-                self.scale_sense = Parameter(scale_sense, name='scale_sense')
+                self.scale_sense = Parameter(scale_sense, name="scale_sense")
             else:
-                raise ValueError('The shape of scale_sense must be (1,) or (), but got {}'.format(scale_sense.shape))
+                raise ValueError(
+                    "The shape of scale_sense must be (1,) or (), but got {}".format(
+                        scale_sense.shape
+                    )
+                )
         else:
-            raise TypeError('The scale_sense must be Cell or Tensor, but got {}'.format(type(scale_sense)))
+            raise TypeError(
+                "The scale_sense must be Cell or Tensor, but got {}".format(
+                    type(scale_sense)
+                )
+            )
 
     def construct(self, *inputs):
         """construct a TrainOneStepWithLossScaleCell."""
@@ -381,7 +415,9 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
         scaling_sens_filled = C.ones_like(loss) * F.cast(scaling_sens, F.dtype(loss))
         grads = self.grad(self.network, weights)(*inputs, scaling_sens_filled)
         grads = self.hyper_map(F.partial(_grad_scale, scaling_sens), grads)
-        grads = self.hyper_map(F.partial(clip_grad, GRADIENT_CLIP_TYPE, GRADIENT_CLIP_VALUE), grads)
+        grads = self.hyper_map(
+            F.partial(clip_grad, GRADIENT_CLIP_TYPE, GRADIENT_CLIP_VALUE), grads
+        )
         # apply grad reducer on grads
         grads = self.grad_reducer(grads)
 
@@ -392,7 +428,9 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
         if not overflow:
             loss = F.depend(loss, self.optimizer(grads))
         lr = self.optimizer.get_lr()
-        self.assignsub(self.optimizer.global_step, self.optimizer.global_step_increase_tensor)
+        self.assignsub(
+            self.optimizer.global_step, self.optimizer.global_step_increase_tensor
+        )
         return loss, cond, scaling_sens, overflow, lr
 
     def set_sense_scale(self, sens):
@@ -402,7 +440,9 @@ class TrainOneStepWithLossScaleCell(TrainOneStepCell):
         if self.scale_sense and isinstance(sens, Tensor):
             self.scale_sense.set_data(sens)
         else:
-            raise TypeError('The input type must be Tensor, but got {}'.format(type(sens)))
+            raise TypeError(
+                "The input type must be Tensor, but got {}".format(type(sens))
+            )
 
     def start_overflow_check(self, pre_cond, compute_input):
         """Start floating-point overflow detection. Create and clear the
@@ -503,8 +543,17 @@ class TrainAccumulationAllReduceEachWithLossScaleCell(nn.Cell):
                                   batch_size * accumulation_steps. Default: 1.
     """
 
-    def __init__(self, network, optimizer, scale_update_cell=None, accumulation_steps=1, enable_global_norm=False):
-        super(TrainAccumulationAllReduceEachWithLossScaleCell, self).__init__(auto_prefix=False)
+    def __init__(
+        self,
+        network,
+        optimizer,
+        scale_update_cell=None,
+        accumulation_steps=1,
+        enable_global_norm=False,
+    ):
+        super(TrainAccumulationAllReduceEachWithLossScaleCell, self).__init__(
+            auto_prefix=False
+        )
         self.network = network
         self.network.set_grad()
         self.weights = optimizer.parameters
@@ -514,21 +563,26 @@ class TrainAccumulationAllReduceEachWithLossScaleCell(nn.Cell):
         self.one = Tensor([1], mstype.int32)
         self.zero = Tensor([0], mstype.int32)
         self.local_step = Parameter(initializer(0, [1], mstype.int32))
-        self.accu_grads = self.weights.clone(prefix='accu_grads', init='zeros')
+        self.accu_grads = self.weights.clone(prefix="accu_grads", init="zeros")
         self.accu_overflow = Parameter(initializer(0, [1], mstype.int32))
         self.accu_loss = Parameter(initializer(0, [1], mstype.float32))
 
         self.grad = C.GradOperation(get_by_list=True, sens_param=True)
         self.reducer_flag = False
-        self.parallel_mode = context.get_auto_parallel_context('parallel_mode')
-        if self.parallel_mode in [ParallelMode.DATA_PARALLEL, ParallelMode.HYBRID_PARALLEL]:
+        self.parallel_mode = context.get_auto_parallel_context("parallel_mode")
+        if self.parallel_mode in [
+            ParallelMode.DATA_PARALLEL,
+            ParallelMode.HYBRID_PARALLEL,
+        ]:
             self.reducer_flag = True
         self.grad_reducer = F.identity
         self.degree = 1
         if self.reducer_flag:
             self.degree = get_group_size()
-            self.grad_reducer = DistributedGradReducer(optimizer.parameters, False, self.degree)
-        self.is_distributed = (self.parallel_mode != ParallelMode.STAND_ALONE)
+            self.grad_reducer = DistributedGradReducer(
+                optimizer.parameters, False, self.degree
+            )
+        self.is_distributed = self.parallel_mode != ParallelMode.STAND_ALONE
         self.allreduce = P.AllReduce()
         self.cast = P.Cast()
         self.alloc_status = P.NPUAllocFloatStatus()
@@ -545,7 +599,9 @@ class TrainAccumulationAllReduceEachWithLossScaleCell(nn.Cell):
         self.loss_scale = None
         self.loss_scaling_manager = scale_update_cell
         if scale_update_cell:
-            self.loss_scale = Parameter(Tensor(scale_update_cell.get_loss_scale(), dtype=mstype.float32))
+            self.loss_scale = Parameter(
+                Tensor(scale_update_cell.get_loss_scale(), dtype=mstype.float32)
+            )
 
     @C.add_flags(has_effect=True)
     def construct(self, *inputs):
@@ -557,7 +613,9 @@ class TrainAccumulationAllReduceEachWithLossScaleCell(nn.Cell):
 
         # update accumulation parameters
         is_accu_step = self.not_equal(self.local_step, self.accumulation_steps)
-        self.local_step = self.select(is_accu_step, self.local_step + self.one, self.one)
+        self.local_step = self.select(
+            is_accu_step, self.local_step + self.one, self.one
+        )
         self.accu_loss = self.select(is_accu_step, self.accu_loss + loss, loss)
         mean_loss = self.accu_loss / self.local_step
         is_accu_step = self.not_equal(self.local_step, self.accumulation_steps)
@@ -573,7 +631,9 @@ class TrainAccumulationAllReduceEachWithLossScaleCell(nn.Cell):
         grads = self.grad_reducer(grads)
 
         overflow = self.get_overflow_status(status, grads)
-        overflow = self.logical_or(self.not_equal(self.accu_overflow, self.zero), overflow)
+        overflow = self.logical_or(
+            self.not_equal(self.accu_overflow, self.zero), overflow
+        )
         accu_overflow = self.select(overflow, self.one, self.zero)
         self.accu_overflow = self.select(is_accu_step, accu_overflow, self.zero)
         overflow = self.reshape(overflow, (()))
@@ -590,7 +650,10 @@ class TrainAccumulationAllReduceEachWithLossScaleCell(nn.Cell):
                 if self.enable_global_norm:
                     grads = C.clip_by_global_norm(grads, 1.0, None)
                 else:
-                    grads = self.hyper_map(F.partial(clip_grad, GRADIENT_CLIP_TYPE, GRADIENT_CLIP_VALUE), grads)
+                    grads = self.hyper_map(
+                        F.partial(clip_grad, GRADIENT_CLIP_TYPE, GRADIENT_CLIP_VALUE),
+                        grads,
+                    )
 
                 succ = self.optimizer(grads)
 

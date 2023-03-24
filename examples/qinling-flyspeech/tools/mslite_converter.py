@@ -17,11 +17,18 @@
 python mslite_converter.py
 """
 import argparse
+
 import mindspore_lite as mslite
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="converter model")
-    parser.add_argument("--file_path", required=True, help="the file that needs to be converted")
+    parser.add_argument(
+        "--file_path", required=True, help="the file that needs to be converted"
+    )
     args = parser.parse_args()
-    converter = mslite.Converter(fmk_type=mslite.FmkType.MINDIR, model_file=args.file_path, output_file=args.file_path)
+    converter = mslite.Converter(
+        fmk_type=mslite.FmkType.MINDIR,
+        model_file=args.file_path,
+        output_file=args.file_path,
+    )
     converter.converter()

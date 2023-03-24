@@ -116,7 +116,8 @@ def prepare_voxceleb(
             shutil.unpack_archive(os.path.join(source, VOX_TEST_WAV), data_folder_path)
         if not os.path.exists(os.path.join(data_folder_path, "meta")):
             shutil.copytree(
-                os.path.join(source, "meta"), os.path.join(data_folder_path, "meta"),
+                os.path.join(source, "meta"),
+                os.path.join(data_folder_path, "meta"),
             )
 
     # Check if this phase is already done (if so, skip it)
@@ -146,7 +147,9 @@ def prepare_voxceleb(
 
     # For PLDA verification
     if "test" in splits:
-        prepare_csv_enrol_test(data_folder_path, save_folder_path, verification_pairs_file)
+        prepare_csv_enrol_test(
+            data_folder_path, save_folder_path, verification_pairs_file
+        )
 
     # Saving options (useful to skip this phase when already done)
     save_pkl(save_conf, save_option)
@@ -183,7 +186,9 @@ def skip(splits, save_folder, save_conf):
 
 
 # Used for verification split
-def get_utt_split_lists(data_folders, split_ratio, verification_pairs_file, split_speaker=False):
+def get_utt_split_lists(
+    data_folders, split_ratio, verification_pairs_file, split_speaker=False
+):
     """
     Splits the audio file list into train and dev.
     This function automatically removes verification test files from the
@@ -194,7 +199,9 @@ def get_utt_split_lists(data_folders, split_ratio, verification_pairs_file, spli
 
     print("Getting file list...")
     for data_folder in data_folders:
-        test_list = [line.rstrip("\n").split(" ")[1] for line in open(verification_pairs_file)]
+        test_list = [
+            line.rstrip("\n").split(" ")[1] for line in open(verification_pairs_file)
+        ]
         test_list = set(sorted(test_list))
 
         test_speakers = [snt.split("/")[0] for snt in test_list]
@@ -245,7 +252,10 @@ def get_chunks(seg_dur, audio_id, audio_duration):
     """
     num_chunks = int(audio_duration / seg_dur)  # all in milliseconds
 
-    chunk_list = [audio_id + "_" + str(i * seg_dur) + "_" + str(i * seg_dur + seg_dur) for i in range(num_chunks)]
+    chunk_list = [
+        audio_id + "_" + str(i * seg_dur) + "_" + str(i * seg_dur + seg_dur)
+        for i in range(num_chunks)
+    ]
 
     return chunk_list
 
@@ -326,7 +336,9 @@ def prepare_csv_file(seg_dur, wav_lst, csv_file, random_segment=False, amp_th=0)
 
     # Writing the csv lines
     with open(csv_file, mode="w") as csv_f:
-        csv_writer = csv.writer(csv_f, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        csv_writer = csv.writer(
+            csv_f, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
+        )
         for line in csv_output_header:
             csv_writer.writerow(line)
 
@@ -343,7 +355,6 @@ def prepare_csv_enrol_test(data_folders, save_folder, verification_pairs_file):
     csv_output_head = [["ID", "duration", "wav", "start", "stop", "spk_id"]]
 
     for each_data_folder in data_folders:
-
         test_list_file = verification_pairs_file
 
         vox_enrol_ids, vox_test_ids = [], []
@@ -393,7 +404,9 @@ def prepare_csv_enrol_test(data_folders, save_folder, verification_pairs_file):
 
         # Writing the csv lines
         with open(csv_file_path, mode="w") as csv_f:
-            csv_writer = csv.writer(csv_f, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            csv_writer = csv.writer(
+                csv_f, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
+            )
             for each_line in csv_output:
                 csv_writer.writerow(each_line)
 
@@ -432,6 +445,8 @@ def prepare_csv_enrol_test(data_folders, save_folder, verification_pairs_file):
 
         # Writing the csv lines
         with open(csv_file_path, mode="w") as csv_f:
-            csv_writer = csv.writer(csv_f, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            csv_writer = csv.writer(
+                csv_f, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL
+            )
             for each_line in csv_output:
                 csv_writer.writerow(each_line)

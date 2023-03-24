@@ -20,7 +20,13 @@ __all__ = [
 
 
 def spectral_centroid(
-    waveforms, sample_rate, n_fft=400, win_length=None, hop_length=None, pad=0, window="hann",
+    waveforms,
+    sample_rate,
+    n_fft=400,
+    win_length=None,
+    hop_length=None,
+    pad=0,
+    window="hann",
 ):
     """
     Create a spectral centroid from an audio signal.
@@ -53,7 +59,9 @@ def spectral_centroid(
     win_length = win_length if win_length else n_fft
     hop_length = hop_length if hop_length else win_length // 2
     window = WindowType(window)
-    spectralcentroid = msaudio.SpectralCentroid(sample_rate, n_fft, win_length, hop_length, pad, window)
+    spectralcentroid = msaudio.SpectralCentroid(
+        sample_rate, n_fft, win_length, hop_length, pad, window
+    )
 
     return spectralcentroid(waveforms)
 
@@ -102,12 +110,19 @@ def context_window(waveforms, left_frames=0, right_frames=0):
     elif len(input_shape) == 4:
         x = waveforms.transpose((0, 2, 3, 1))
     else:
-        raise TypeError("Input dimension must be 2, 3 or 4, but got {}".format(len(input_shape)))
+        raise TypeError(
+            "Input dimension must be 2, 3 or 4, but got {}".format(len(input_shape))
+        )
 
     if first_call:
         first_call = False
         tile = np.tile(kernel, (x.shape[1], 1, 1))
-        tile = tile.reshape((x.shape[1] * context_size, kernel_size,))
+        tile = tile.reshape(
+            (
+                x.shape[1] * context_size,
+                kernel_size,
+            )
+        )
         kernel = np.expand_dims(tile, 1)
 
     x_shape = x.shape
@@ -129,7 +144,9 @@ def context_window(waveforms, left_frames=0, right_frames=0):
     context = conv(x_tensor)
     # Retrieving the original dimensionality for multi-channel case
     if len(x_shape) == 4:
-        context = context.reshape((x_shape[0], context.shape[1], x_shape[2], context.shape[-1]))
+        context = context.reshape(
+            (x_shape[0], context.shape[1], x_shape[2], context.shape[-1])
+        )
         context = context.transpose((0, 3, 1, 2))
 
     if len(x_shape) == 2:
@@ -314,7 +331,9 @@ def mfcc(
     norm = NormMode(norm)
 
     if n_mfcc > n_mels:
-        raise ValueError("The number of MFCC coefficients must be no more than # mel bins.")
+        raise ValueError(
+            "The number of MFCC coefficients must be no more than # mel bins."
+        )
     dct = create_dct(n_mfcc=n_mfcc, n_mels=n_mels, norm=norm)
 
     melspec = melspectrogram(
@@ -341,7 +360,9 @@ def mfcc(
     elif len(melspecgram_shape) == 4:
         mfccs = np.matmul(melspec.transpose((0, 1, 3, 2)), dct).transpose((0, 1, 3, 2))
     else:
-        raise TypeError("Unsupported MelSpectrogram shape {}".format(len(melspecgram_shape)))
+        raise TypeError(
+            "Unsupported MelSpectrogram shape {}".format(len(melspecgram_shape))
+        )
 
     if deltas:
         delta1 = compute_deltas(mfccs)
@@ -471,7 +492,9 @@ def hpss(spectrogram, *, kernel_size=31, power=2.0, mask=False, margin=1.0):
 
     # margin minimum is 1.0
     if margin_harmonic < 1 or margin_perc < 1:
-        raise TypeError("Margins must be >= 1.0. " "A typical range is between 1 and 10.")
+        raise TypeError(
+            "Margins must be >= 1.0. " "A typical range is between 1 and 10."
+        )
 
     # shape for kernels
     perc_shape = [1 for _ in spectrogram.shape]
@@ -489,9 +512,13 @@ def hpss(spectrogram, *, kernel_size=31, power=2.0, mask=False, margin=1.0):
 
     split_zeros = margin_harmonic == 1 and margin_perc == 1
 
-    mask_harmonic = soft_mask(harm, perc * margin_harmonic, power=power, split_zeros=split_zeros)
+    mask_harmonic = soft_mask(
+        harm, perc * margin_harmonic, power=power, split_zeros=split_zeros
+    )
 
-    mask_perc = soft_mask(perc, harm * margin_perc, power=power, split_zeros=split_zeros)
+    mask_perc = soft_mask(
+        perc, harm * margin_perc, power=power, split_zeros=split_zeros
+    )
 
     if mask:
         return mask_harmonic, mask_perc

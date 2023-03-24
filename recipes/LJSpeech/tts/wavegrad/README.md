@@ -1,6 +1,6 @@
 # WaveGrad
 
-MindSpore implementation of [WaveGrad](https://arxiv.org/abs/2009.00713), a diffusion based vocoder model for text-to-speech systems. 
+MindSpore implementation of [WaveGrad](https://arxiv.org/abs/2009.00713), a diffusion based vocoder model for text-to-speech systems.
 
 ## Demo
 
@@ -45,7 +45,7 @@ Download [LJSpeech-1.1](http://keithito.com/LJ-Speech-Dataset/) to `./data/`.
 
 #### 0.1 Preprocess
 
-Preprocess data to get a "_wav.npy" and "_feature.npy" for each ".wav" file in your dataset folder. Set your `data_path` and 
+Preprocess data to get a "_wav.npy" and "_feature.npy" for each ".wav" file in your dataset folder. Set your `data_path` and
 `manifest_path` in `wavegrad_base.yaml`. You can now run the following command:
 
 `python recipes/LJSpeech/tts/wavegrad/preprocess.py --device_target CPU --device_id 0`
@@ -60,7 +60,7 @@ export MY_DEVICE=Ascend # options: [Ascend, GPU]
 export MY_DEVICE_NUM=8
 ```
 
-Other training and model parameters can be set in `base.yaml`. 
+Other training and model parameters can be set in `base.yaml`.
 
 Train on multiple cards: (each card will have a batch size of hparams.batch_size // MY_DEVICE_NUM)
 ```

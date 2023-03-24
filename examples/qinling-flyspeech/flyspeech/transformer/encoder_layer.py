@@ -23,7 +23,6 @@ import mindspore
 import mindspore.common.dtype as mstype
 import mindspore.nn as nn
 import mindspore.ops as ops
-
 from flyspeech.layers.dense import Dense
 from flyspeech.layers.layernorm import LayerNorm
 
@@ -49,14 +48,16 @@ class TransformerEncoderLayer(nn.Cell):
         compute_type (dtype): whether to use mix precision training.
     """
 
-    def __init__(self,
-                 size: int,
-                 self_attn: nn.Cell,
-                 feed_forward: nn.Cell,
-                 dropout_rate: float = 0.1,
-                 normalize_before: bool = True,
-                 concat_after: bool = False,
-                 compute_type=mstype.float32):
+    def __init__(
+        self,
+        size: int,
+        self_attn: nn.Cell,
+        feed_forward: nn.Cell,
+        dropout_rate: float = 0.1,
+        normalize_before: bool = True,
+        concat_after: bool = False,
+        compute_type=mstype.float32,
+    ):
         """Construct an EncoderLayer object."""
         super(TransformerEncoderLayer, self).__init__()
         self.self_attn = self_attn
@@ -73,10 +74,10 @@ class TransformerEncoderLayer(nn.Cell):
         self.cast = ops.Cast()
 
     def construct(
-            self,
-            x: mindspore.Tensor,
-            mask: mindspore.Tensor,
-            output_cache: Optional[mindspore.Tensor] = None
+        self,
+        x: mindspore.Tensor,
+        mask: mindspore.Tensor,
+        output_cache: Optional[mindspore.Tensor] = None,
     ) -> Tuple[mindspore.Tensor, mindspore.Tensor, mindspore.Tensor]:
         """Compute encoded features.
 
@@ -103,7 +104,9 @@ class TransformerEncoderLayer(nn.Cell):
             mask = mask[:, -chunk:, :]
 
         if self.concat_after:
-            x_concat = self.cat_f1((x, self.cast(self.self_attn(x_q, x, x, mask), x.dtype)))
+            x_concat = self.cat_f1(
+                (x, self.cast(self.self_attn(x_q, x, x, mask), x.dtype))
+            )
             x = residual + self.concat_linear(x_concat)
         else:
             x = residual + self.dropout(self.self_attn(x_q, x, x, mask))
@@ -151,16 +154,18 @@ class ConformerEncoderLayer(nn.Cell):
         compute_type (dtype): whether to use mix precision training.
     """
 
-    def __init__(self,
-                 size: int,
-                 self_attn: nn.Cell,
-                 feed_forward: nn.Cell,
-                 feed_forward_macaron: nn.Cell,
-                 conv_module: nn.Cell,
-                 dropout_rate: float = 0.1,
-                 normalize_before: bool = True,
-                 concat_after: bool = False,
-                 compute_type=mstype.float32):
+    def __init__(
+        self,
+        size: int,
+        self_attn: nn.Cell,
+        feed_forward: nn.Cell,
+        feed_forward_macaron: nn.Cell,
+        conv_module: nn.Cell,
+        dropout_rate: float = 0.1,
+        normalize_before: bool = True,
+        concat_after: bool = False,
+        compute_type=mstype.float32,
+    ):
         """Construct an EncoderLayer object."""
         super().__init__()
         self.self_attn = self_attn
@@ -185,12 +190,12 @@ class ConformerEncoderLayer(nn.Cell):
         self.compute_type = compute_type
 
     def construct(
-            self,
-            x: mindspore.Tensor,
-            mask: mindspore.Tensor,
-            pos_emb: mindspore.Tensor,
-            mask_pad: mindspore.Tensor,
-            output_cache: Optional[mindspore.Tensor] = None
+        self,
+        x: mindspore.Tensor,
+        mask: mindspore.Tensor,
+        pos_emb: mindspore.Tensor,
+        mask_pad: mindspore.Tensor,
+        output_cache: Optional[mindspore.Tensor] = None,
     ) -> Tuple[mindspore.Tensor, mindspore.Tensor, mindspore.Tensor]:
         """Compute encoded features.
 

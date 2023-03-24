@@ -1,4 +1,5 @@
 import os
+
 import mindspore as ms
 from mindspore.train.callback import Callback
 
@@ -12,8 +13,8 @@ class SaveCallBack(Callback):
         global_step=None,
         optimiser=None,
         checkpoint_path=None,
-        model_save_name='model',
-        optimiser_save_name='optimiser',
+        model_save_name="model",
+        optimiser_save_name="optimiser",
     ):
         super().__init__()
         self.save_step = save_step
@@ -31,7 +32,11 @@ class SaveCallBack(Callback):
         cur_step = cb_params.cur_step_num + self.global_step
         if cur_step % self.save_step != 0:
             return
-        for module, name in zip([self.model, self.optimiser], [self.model_save_name, self.optimiser_save_name]):
+        for module, name in zip(
+            [self.model, self.optimiser],
+            [self.model_save_name, self.optimiser_save_name],
+        ):
             name = os.path.join(self.save_dir, name)
-            ms.save_checkpoint(module, name + '_%d.ckpt' % cur_step, append_dict={'cur_step': cur_step})
-
+            ms.save_checkpoint(
+                module, name + "_%d.ckpt" % cur_step, append_dict={"cur_step": cur_step}
+            )

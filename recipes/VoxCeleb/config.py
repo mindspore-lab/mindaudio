@@ -16,13 +16,17 @@ class Config:
         for k, v in cfg_dict.items():
             if isinstance(v, (list, tuple)):
                 setattr(
-                    self, k, [Config(x) if isinstance(x, dict) else x for x in v],
+                    self,
+                    k,
+                    [Config(x) if isinstance(x, dict) else x for x in v],
                 )
             else:
                 setattr(self, k, Config(v) if isinstance(v, dict) else v)
 
 
-def parse_cli_to_yaml(parser, cfg, helper=None, choices=None, cfg_path="default_config.yaml"):
+def parse_cli_to_yaml(
+    parser, cfg, helper=None, choices=None, cfg_path="default_config.yaml"
+):
     """
     Parse command line arguments to the configuration
         according to the default yaml.
@@ -33,20 +37,34 @@ def parse_cli_to_yaml(parser, cfg, helper=None, choices=None, cfg_path="default_
         helper: Helper description.
         cfg_path: Path to the default yaml config.
     """
-    parser = argparse.ArgumentParser(description="[REPLACE THIS at config.py]", parents=[parser])
+    parser = argparse.ArgumentParser(
+        description="[REPLACE THIS at config.py]", parents=[parser]
+    )
     helper = {} if helper is None else helper
     choices = {} if choices is None else choices
     for item in cfg:
         if not isinstance(cfg[item], list) and not isinstance(cfg[item], dict):
-            help_description = helper[item] if item in helper else "Please reference to {}".format(cfg_path)
+            help_description = (
+                helper[item]
+                if item in helper
+                else "Please reference to {}".format(cfg_path)
+            )
             choice = choices[item] if item in choices else None
             if isinstance(cfg[item], bool):
                 parser.add_argument(
-                    "--" + item, type=ast.literal_eval, default=cfg[item], choices=choice, help=help_description,
+                    "--" + item,
+                    type=ast.literal_eval,
+                    default=cfg[item],
+                    choices=choice,
+                    help=help_description,
                 )
             else:
                 parser.add_argument(
-                    "--" + item, type=type(cfg[item]), default=cfg[item], choices=choice, help=help_description,
+                    "--" + item,
+                    type=type(cfg[item]),
+                    default=cfg[item],
+                    choices=choice,
+                    help=help_description,
                 )
     args = parser.parse_args()
     return args
@@ -101,12 +119,19 @@ def get_config():
     parser = argparse.ArgumentParser(description="default name", add_help=False)
     current_dir = os.path.dirname(os.path.abspath(__file__))
     parser.add_argument(
-        "--config_path", type=str, default=os.path.join(current_dir, "ecapatdnn.yaml"), help="Config file path",
+        "--config_path",
+        type=str,
+        default=os.path.join(current_dir, "ecapatdnn.yaml"),
+        help="Config file path",
     )
     path_args, _ = parser.parse_known_args()
     default, helper, choices = parse_yaml(path_args.config_path)
     args = parse_cli_to_yaml(
-        parser=parser, cfg=default, helper=helper, choices=choices, cfg_path=path_args.config_path,
+        parser=parser,
+        cfg=default,
+        helper=helper,
+        choices=choices,
+        cfg_path=path_args.config_path,
     )
     final_config = merge(args, default)
     return Config(final_config)

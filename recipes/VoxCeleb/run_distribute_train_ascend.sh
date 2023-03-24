@@ -25,7 +25,7 @@ export DEVICE_NUM=8
 export RANK_SIZE=8
 
 if [ ! -f $1 ]
-then 
+then
   echo "RANK_TABLE_FILE Does Not Exist!"
   exit 1
 fi
@@ -55,4 +55,3 @@ echo "start training for rank $RANK_ID, device $DEVICE_ID"
 env > env.log
 python train_speaker_embeddings.py --need_generate_data=False --run_distribute=1 2>&1
 cd ..
-

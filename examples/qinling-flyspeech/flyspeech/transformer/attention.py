@@ -24,11 +24,10 @@ import mindspore
 import mindspore.common.dtype as mstype
 import mindspore.nn as nn
 import mindspore.ops as ops
+from flyspeech.layers.dense import Dense
 from mindspore.common.initializer import XavierUniform, initializer
 from mindspore.common.parameter import Parameter
 from mindspore.common.tensor import Tensor
-
-from flyspeech.layers.dense import Dense
 
 
 class MultiHeadedAttention(nn.Cell):
@@ -40,7 +39,9 @@ class MultiHeadedAttention(nn.Cell):
         dropout_rate (float): Dropout rate.
     """
 
-    def __init__(self, n_head: int, n_feat: int, dropout_rate: float, compute_type=mstype.float32):
+    def __init__(
+        self, n_head: int, n_feat: int, dropout_rate: float, compute_type=mstype.float32
+    ):
         """Construct an MultiHeadedAttention object."""
         super().__init__()
         # We assume d_v always equals d_k
@@ -64,8 +65,9 @@ class MultiHeadedAttention(nn.Cell):
         self.add = ops.Add()
         self.get_dtype = ops.DType()
 
-    def forward_qkv(self, query: mindspore.Tensor, key: mindspore.Tensor,
-                    value: mindspore.Tensor) -> Tuple[mindspore.Tensor, mindspore.Tensor, mindspore.Tensor]:
+    def forward_qkv(
+        self, query: mindspore.Tensor, key: mindspore.Tensor, value: mindspore.Tensor
+    ) -> Tuple[mindspore.Tensor, mindspore.Tensor, mindspore.Tensor]:
         """Transform query, key and value.
 
         Args:
@@ -91,8 +93,12 @@ class MultiHeadedAttention(nn.Cell):
 
         return q, k, v
 
-    def forward_attention(self, value: mindspore.Tensor, scores: mindspore.Tensor,
-                          mask: Optional[mindspore.Tensor]) -> mindspore.Tensor:
+    def forward_attention(
+        self,
+        value: mindspore.Tensor,
+        scores: mindspore.Tensor,
+        mask: Optional[mindspore.Tensor],
+    ) -> mindspore.Tensor:
         """Compute attention context vector.
 
         Args:
@@ -124,12 +130,14 @@ class MultiHeadedAttention(nn.Cell):
         x = x.transpose(0, 2, 1, 3).view(n_batch, -1, self.h * self.d_k)
         return self.linear_out(x)  # (batch, time1, d_model)
 
-    def construct(self,
-                  query: mindspore.Tensor,
-                  key: mindspore.Tensor,
-                  value: mindspore.Tensor,
-                  mask: Optional[mindspore.Tensor],
-                  pos_emb: Optional[mindspore.Tensor] = None) -> mindspore.Tensor:  # pylint: disable=W0613
+    def construct(
+        self,
+        query: mindspore.Tensor,
+        key: mindspore.Tensor,
+        value: mindspore.Tensor,
+        mask: Optional[mindspore.Tensor],
+        pos_emb: Optional[mindspore.Tensor] = None,
+    ) -> mindspore.Tensor:  # pylint: disable=W0613
         """Compute scaled dot product attention.
 
         Args:
@@ -154,7 +162,9 @@ class MultiHeadedAttention(nn.Cell):
             mindspore.Tensor: Output tensor (#batch, time1, d_model).
         """
         q, k, v = self.forward_qkv(query, key, value)
-        scores = self.matmul(q * self.scores_mul, k.transpose(0, 1, 3, 2) * self.scores_mul)
+        scores = self.matmul(
+            q * self.scores_mul, k.transpose(0, 1, 3, 2) * self.scores_mul
+        )
 
         return self.forward_attention(v, scores, mask)
 
@@ -176,17 +186,23 @@ class RelPositionMultiHeadedAttention(MultiHeadedAttention):
         self.linear_pos = Dense(n_feat, n_feat, has_bias=False).to_float(compute_type)
         # these two learnable bias are used in matrix c and matrix d
         # as described in https://arxiv.org/abs/1901.02860 Section 3.3
-        self.pos_bias_u = Parameter(initializer(XavierUniform(), [self.h, self.d_k], mstype.float32))
-        self.pos_bias_v = Parameter(initializer(XavierUniform(), [self.h, self.d_k], mstype.float32))
+        self.pos_bias_u = Parameter(
+            initializer(XavierUniform(), [self.h, self.d_k], mstype.float32)
+        )
+        self.pos_bias_v = Parameter(
+            initializer(XavierUniform(), [self.h, self.d_k], mstype.float32)
+        )
         self.tile = ops.Tile()
         self.norm_factor = Tensor(1.0 / math.sqrt(self.d_k), mindspore.float16)
 
-    def construct(self,
-                  query: mindspore.Tensor,
-                  key: mindspore.Tensor,
-                  value: mindspore.Tensor,
-                  mask: Optional[mindspore.Tensor],
-                  pos_emb: Optional[mindspore.Tensor] = None):
+    def construct(
+        self,
+        query: mindspore.Tensor,
+        key: mindspore.Tensor,
+        value: mindspore.Tensor,
+        mask: Optional[mindspore.Tensor],
+        pos_emb: Optional[mindspore.Tensor] = None,
+    ):
         """Compute 'Scaled Dot Product Attention' with rel.
 
         positional encoding.
@@ -211,9 +227,13 @@ class RelPositionMultiHeadedAttention(MultiHeadedAttention):
         p = p.transpose(0, 2, 1, 3)  # (batch, head, time1, d_k)
 
         # (batch, head, time1, d_k)
-        q_with_bias_u = (q + self.cast(self.pos_bias_u, self.get_dtype(q))).transpose(0, 2, 1, 3)
+        q_with_bias_u = (q + self.cast(self.pos_bias_u, self.get_dtype(q))).transpose(
+            0, 2, 1, 3
+        )
         # (batch, head, time1, d_k)
-        q_with_bias_v = (q + self.cast(self.pos_bias_v, self.get_dtype(q))).transpose(0, 2, 1, 3)
+        q_with_bias_v = (q + self.cast(self.pos_bias_v, self.get_dtype(q))).transpose(
+            0, 2, 1, 3
+        )
 
         # compute attention score
         # first compute matrix a and matrix c

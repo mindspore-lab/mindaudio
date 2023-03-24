@@ -93,10 +93,10 @@ bash run.sh --stage 2 --stop_stage 2
 
 此阶段为训练阶段，分为单卡训练和多卡训练。`run.sh`中的`is_distribute`为`False`时为单卡训练，为`True`时为多卡训练。
 
-单卡训练：  
+单卡训练：
 程序会在`qinling-flyspeech`工程目录下创建`${exp}/${net_name}`文件夹，训练生成的`.ckpt`文件将被保存在`${exp}/${net_name}/${exp_name}/model`文件夹下. 日志文件保存在${exp}/${net_name}/train.log中。
 
-多卡训练：  
+多卡训练：
 在运行网络之前，准备分布式运行配置文件hccl.json文件。
 程序会在`qinling-flyspeech`工程目录下创建`${distribute_dir_name}${device_id}/${exp_name}`文件夹，训练生成的`.ckpt`文件将被保存在`${distribute_dir_name}0/${exp_name}/model`文件夹下。日志文件保存在`${distribute_dir_name}${device_id}/train.log`中。多卡训练时，需要准备rank_table文件，通过`run.sh`中的`rank_table_file`指定。rank_table文件推荐使用脚本生成，点击 [链接]( https://gitee.com/mindspore/models/tree/master/utils/hccl_tools ) 可获取脚本。更多详细信息请参考 [配置分布式环境变量](https://www.mindspore.cn/tutorials/experts/zh-CN/r1.8/parallel/train_ascend.html#%E9%85%8D%E7%BD%AE%E5%88%86%E5%B8%83%E5%BC%8F%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F) 。
 
@@ -137,10 +137,10 @@ bash run.sh --stage 6 --stop_stage 6
 1.在 ``config/*.yaml``中配置ModelArts参数：
 
 ```bash
-设置enable_modelarts=True  
-设置OBS数据集路径data_url: "obs://speech/corpus/aishell1"  
+设置enable_modelarts=True
+设置OBS数据集路径data_url: "obs://speech/corpus/aishell1"
 设置OBS训练回传路径train_url: "obs://speech/code/asr/workspace/"
-```  
+```
 
 2.上传aishell1数据集到上述OBS路径``"obs://speech/corpus/aishell1"``
 

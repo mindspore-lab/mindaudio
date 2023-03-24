@@ -50,7 +50,13 @@ def notch_filter(notch_freq, filter_width=101, notch_width=0.05):
     # Define sinc function, avoiding division by zero
     def sinc(x):
         # The zero is at the middle index
-        return np.concatenate([np.sin(x[:pad]) / x[:pad], np.ones(1), np.sin(x[pad + 1 :]) / x[pad + 1 :],])
+        return np.concatenate(
+            [
+                np.sin(x[:pad]) / x[:pad],
+                np.ones(1),
+                np.sin(x[pad + 1 :]) / x[pad + 1 :],
+            ]
+        )
 
     hlpf = sinc(3 * (notch_freq - notch_width) * inputs)
     hlpf *= np.blackman(filter_width + 1)[:-1]
@@ -94,7 +100,13 @@ def cal_filter_by_coffs(waveform, b, a):
             i2 = 0.0
             i1 = 0.0
             while j < waveform.shape[1]:
-                o0 = waveform[i][j] * b[0] + i1 * b[1] + i2 * b[2] - o1 * a[1] - o2 * a[2]
+                o0 = (
+                    waveform[i][j] * b[0]
+                    + i1 * b[1]
+                    + i2 * b[2]
+                    - o1 * a[1]
+                    - o2 * a[2]
+                )
                 i2 = i1
                 i1 = waveform[i][j]
                 o2 = o1
@@ -408,7 +420,12 @@ def mel_frequencies(n_mels=128, fmin=0.0, fmax=11025.0, htk=False):
 
 
 def mel(
-    sr, n_fft, n_mels=128, fmin=0.0, fmax=None, norm: Optional[Union[Literal["slaney"], float]] = "slaney",
+    sr,
+    n_fft,
+    n_mels=128,
+    fmin=0.0,
+    fmax=None,
+    norm: Optional[Union[Literal["slaney"], float]] = "slaney",
 ):
     """Create a Mel filter-bank.
     This produces a linear transformation matrix to project FFT bins onto

@@ -19,13 +19,11 @@
 import mindspore
 import mindspore.nn as nn
 import mindspore.ops as ops
-
 from flyspeech.layers.conv2d import Conv2d
 from flyspeech.layers.dense import Dense
 
 
 class BaseSubsampling(nn.Cell):
-
     def __init__(self):
         super().__init__()
         self.right_context = 0
@@ -45,17 +43,25 @@ class Conv2dSubsampling4(BaseSubsampling):
         compute_type (dtype): whether to use mix precision training.
     """
 
-    def __init__(self, idim: int, odim: int, pos_enc_class: nn.Cell, compute_type=mindspore.float32):
+    def __init__(
+        self,
+        idim: int,
+        odim: int,
+        pos_enc_class: nn.Cell,
+        compute_type=mindspore.float32,
+    ):
         """Construct an Conv2dSubsampling4 object."""
         super().__init__()
         self.conv = nn.SequentialCell(
-            Conv2d(1, odim, 3, 2, has_bias=True, pad_mode='valid'),
+            Conv2d(1, odim, 3, 2, has_bias=True, pad_mode="valid"),
             nn.ReLU(),
-            Conv2d(odim, odim, 3, 2, has_bias=True, pad_mode='valid'),
+            Conv2d(odim, odim, 3, 2, has_bias=True, pad_mode="valid"),
             nn.ReLU(),
         ).to_float(compute_type)
         self.compute_type = compute_type
-        self.out = Dense(odim * (((idim-1) // 2 - 1) // 2), odim).to_float(compute_type)
+        self.out = Dense(odim * (((idim - 1) // 2 - 1) // 2), odim).to_float(
+            compute_type
+        )
         self.pos_enc = pos_enc_class
         # The right context for every conv layer is computed by:
         # (kernel_size - 1) * frame_rate_of_this_layer

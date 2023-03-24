@@ -1,17 +1,17 @@
 import os
 import sys
 
-sys.path.append('.')
+sys.path.append(".")
 import mindaudio.data.filters as filters
 import mindaudio.data.io as io
 from mindaudio.data.augment import convolve1d
 
 
-class TestOperators():
+class TestOperators:
     def setup_method(self):
         self.root_path = sys.path[0]
         self.data_path = os.path.join(
-            self.root_path, 'samples', 'ASR', 'BAC009S0002W0122.wav'
+            self.root_path, "samples", "ASR", "BAC009S0002W0122.wav"
         )
 
     def test_notch_filter(self):
@@ -23,9 +23,7 @@ class TestOperators():
     def test_low_pass_filter(self):
         waveform, sample_rate = io.read(self.data_path)
         cutoff_freq = 1500
-        out_waveform = filters.low_pass_filter(
-            waveform, sample_rate, cutoff_freq
-        )
+        out_waveform = filters.low_pass_filter(waveform, sample_rate, cutoff_freq)
         print(out_waveform)
 
     def test_peaking_equalizer(self):

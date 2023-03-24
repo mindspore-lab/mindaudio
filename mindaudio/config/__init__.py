@@ -1,5 +1,6 @@
-import numpy as np
 from pprint import pformat
+
+import numpy as np
 import yaml
 
 

@@ -21,7 +21,7 @@ from mindspore.nn.cell import Cell
 
 
 class SoftmaxCrossEntropyWithLogits(Cell):
-    """"Definition of sofmax cross entroy loss."""
+    """ "Definition of sofmax cross entroy loss."""
 
     def __init__(self):
         super(SoftmaxCrossEntropyWithLogits, self).__init__()
@@ -33,7 +33,9 @@ class SoftmaxCrossEntropyWithLogits(Cell):
         mask = mask.transpose(1, 0).view(-1)
         numerator = self.neg((logits * label).sum(-1)) * mask
         numerator = numerator.sum()
-        denominator = mask.sum() + self.cast(ops.tuple_to_array((1e-5,)), mindspore.float32)
+        denominator = mask.sum() + self.cast(
+            ops.tuple_to_array((1e-5,)), mindspore.float32
+        )
         # denominator = mask.sum() + 1e-5
         loss = numerator / denominator
         return loss

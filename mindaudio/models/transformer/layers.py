@@ -1,7 +1,9 @@
 from mindspore import nn
 
-from mindaudio.models.transformer.sublayers import MultiHeadAttention
-from mindaudio.models.transformer.sublayers import PositionwiseFeedForward
+from mindaudio.models.transformer.sublayers import (
+    MultiHeadAttention,
+    PositionwiseFeedForward,
+)
 
 
 class FFTBlock(nn.Cell):
@@ -18,7 +20,9 @@ class FFTBlock(nn.Cell):
         super().__init__()
 
         self.slf_attn = MultiHeadAttention(n_head, d_model, d_k, d_v, dropout=dropout)
-        self.pos_ffn = PositionwiseFeedForward(d_model, d_inner, kernel_size, dropout=dropout)
+        self.pos_ffn = PositionwiseFeedForward(
+            d_model, d_inner, kernel_size, dropout=dropout
+        )
 
     def construct(self, enc_input, non_pad_mask=None, slf_attn_mask=None):
         enc_output = self.slf_attn(enc_input, enc_input, enc_input, mask=slf_attn_mask)

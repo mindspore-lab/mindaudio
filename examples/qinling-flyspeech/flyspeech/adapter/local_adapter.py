@@ -16,4 +16,4 @@
 
 
 def get_job_id():
-    return 'Local Job'
+    return "Local Job"

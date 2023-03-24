@@ -1,11 +1,11 @@
-import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
+import numpy as np
 
-from mindaudio.models.transformer.models import Encoder, Decoder
-from mindaudio.models.fastspeech2.variance_adapter import VarianceAdaptor
-from mindaudio.models.fastspeech2.utils import get_mask_from_lengths
 from mindaudio.models.fastspeech2.loss import FastSpeech2Loss
+from mindaudio.models.fastspeech2.utils import get_mask_from_lengths
+from mindaudio.models.fastspeech2.variance_adapter import VarianceAdaptor
+from mindaudio.models.transformer.models import Decoder, Encoder
 
 
 class FastSpeech2(nn.Cell):
@@ -35,11 +35,17 @@ class FastSpeech2(nn.Cell):
         d_control=1.0,
     ):
         src_masks = get_mask_from_lengths(src_lens, max_src_len)
-        mel_masks = get_mask_from_lengths(mel_lens, max_mel_len) if mel_lens is not None else None
+        mel_masks = (
+            get_mask_from_lengths(mel_lens, max_mel_len)
+            if mel_lens is not None
+            else None
+        )
         output = self.encoder(texts, src_masks, positions_encoder)
 
         if self.speaker_emb is not None:
-            output = output + self.speaker_emb(speakers).unsqueeze(1).expand(-1, max_src_len, -1)
+            output = output + self.speaker_emb(speakers).unsqueeze(1).expand(
+                -1, max_src_len, -1
+            )
 
         yh = self.variance_adaptor(
             x=output,
@@ -53,14 +59,18 @@ class FastSpeech2(nn.Cell):
             e_control=e_control,
             d_control=d_control,
         )
-        output, mel_masks = self.decoder(yh['output'], yh['mel_masks'], positions_decoder)
+        output, mel_masks = self.decoder(
+            yh["output"], yh["mel_masks"], positions_decoder
+        )
         output = self.mel_linear(output)
-        yh.update({
-            'mel_predictions': output,
-            'mel_masks': mel_masks,
-            'src_masks': src_masks,
-            'src_lens': src_lens
-        })
+        yh.update(
+            {
+                "mel_predictions": output,
+                "mel_masks": mel_masks,
+                "src_masks": src_masks,
+                "src_lens": src_lens,
+            }
+        )
         return yh
 
     def construct(self, *args, **kwargs):
@@ -100,10 +110,12 @@ class FastSpeech2WithLoss(FastSpeech2):
             e_targets=e_targets,
             d_targets=d_targets,
         )
-        yh.update({
-            'mel_targets': mels,
-            'pitch_targets': p_targets,
-            'energy_targets': e_targets,
-            'duration_targets': d_targets,
-        })
+        yh.update(
+            {
+                "mel_targets": mels,
+                "pitch_targets": p_targets,
+                "energy_targets": e_targets,
+                "duration_targets": d_targets,
+            }
+        )
         return self.loss_fn(yh)

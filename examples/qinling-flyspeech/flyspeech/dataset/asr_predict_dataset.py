@@ -16,13 +16,13 @@
 
 import mindspore.dataset.engine as de
 import numpy as np
-
-from mindaudio.data.io import read
 from flyspeech.adapter.log import get_logger
 from flyspeech.dataset.bucket_dataset import get_padding_length, parse_file
 from flyspeech.dataset.feature import compute_fbank_feats
 from flyspeech.utils.common import get_feat_extract_output_lengths, pad_sequence
 from flyspeech.utils.mask import make_pad_mask
+
+from mindaudio.data.io import read
 
 logger = get_logger()
 
@@ -39,13 +39,15 @@ class AsrPredictDataset:
         frame_factor (int): frame factor.
     """
 
-    def __init__(self,
-                 data_file,
-                 max_length=10240,
-                 min_length=0,
-                 token_max_length=200,
-                 token_min_length=1,
-                 frame_factor=100):
+    def __init__(
+        self,
+        data_file,
+        max_length=10240,
+        min_length=0,
+        token_max_length=200,
+        token_min_length=1,
+        frame_factor=100,
+    ):
         self.token_max_length = token_max_length
 
         # load all samples
@@ -60,18 +62,32 @@ class AsrPredictDataset:
             token_length = len(tokens)
 
             if length > max_length or length < min_length:
-                logger.warning('Utts %s has %d frames, out of frame limit %d ~ %d, remove it.', data[i][0], length,
-                               min_length, max_length)
+                logger.warning(
+                    "Utts %s has %d frames, out of frame limit %d ~ %d, remove it.",
+                    data[i][0],
+                    length,
+                    min_length,
+                    max_length,
+                )
                 continue
             elif token_length > token_max_length or token_length < token_min_length:
-                logger.warning('Utts %s has %d tokens, out of token limit %d ~ %d, remove it.', data[i][0],
-                               token_length, token_min_length, token_max_length)
+                logger.warning(
+                    "Utts %s has %d tokens, out of token limit %d ~ %d, remove it.",
+                    data[i][0],
+                    token_length,
+                    token_min_length,
+                    token_max_length,
+                )
                 continue
             else:
                 num_sample += 1
                 self.batches.append((uttid, wav_path, length, tokens))
 
-        logger.info('Total utts: %d, remove too long/short utts: %d.', num_sample, len(data) - num_sample)
+        logger.info(
+            "Total utts: %d, remove too long/short utts: %d.",
+            num_sample,
+            len(data) - num_sample,
+        )
 
     def __getitem__(self, index):
         return (
@@ -88,7 +104,7 @@ class AsrPredictDataset:
 def load_language_dict(dict_file):
     """Load dict for ASR."""
     char_dict = {}
-    with open(dict_file, 'r') as fin:
+    with open(dict_file, "r") as fin:
         for line in fin:
             arr = line.strip().split()
             assert len(arr) == 2
@@ -113,23 +129,23 @@ def create_e2e_predict_dataset(data_file, extractor_conf, dataset_conf, num_work
     """
     dataset = AsrPredictDataset(
         data_file,
-        dataset_conf['max_length'],
-        dataset_conf['min_length'],
-        dataset_conf['token_max_length'],
-        dataset_conf['token_min_length'],
+        dataset_conf["max_length"],
+        dataset_conf["min_length"],
+        dataset_conf["token_max_length"],
+        dataset_conf["token_min_length"],
         16000,
     )
 
     ds = de.GeneratorDataset(
         dataset,
-        ['uutid', 'wav_path', 'length', 'tokens'],
+        ["uutid", "wav_path", "length", "tokens"],
         max_rowsize=12,
         shuffle=False,
     )
 
-    kernel_size = [int(i) for i in extractor_conf['kernel_size_list'].split(',')]
-    stride = [int(i) for i in extractor_conf['stride_list'].split(',')]
-    frame_bucket_limit = [int(i) for i in dataset_conf['frame_bucket_limit'].split(',')]
+    kernel_size = [int(i) for i in extractor_conf["kernel_size_list"].split(",")]
+    stride = [int(i) for i in extractor_conf["stride_list"].split(",")]
+    frame_bucket_limit = [int(i) for i in dataset_conf["frame_bucket_limit"].split(",")]
 
     def data_preprocess_e2e(uutid, wav_path, tokens):
         # load wav data
@@ -149,8 +165,12 @@ def create_e2e_predict_dataset(data_file, extractor_conf, dataset_conf, num_work
         )
 
         # generate wav2vec mask and encoder mask
-        downsampled_bucket_length = get_feat_extract_output_lengths(padding_length, kernel_size, stride)
-        xs_len_ds = np.array(get_feat_extract_output_lengths(xs_lengths, kernel_size, stride))
+        downsampled_bucket_length = get_feat_extract_output_lengths(
+            padding_length, kernel_size, stride
+        )
+        xs_len_ds = np.array(
+            get_feat_extract_output_lengths(xs_lengths, kernel_size, stride)
+        )
         padding_mask = make_pad_mask([xs_len_ds], max_len=downsampled_bucket_length)
         padding_mask = np.expand_dims(~padding_mask, 1)
         xs_masks = padding_mask.astype(np.float32)
@@ -160,9 +180,9 @@ def create_e2e_predict_dataset(data_file, extractor_conf, dataset_conf, num_work
 
     ds = ds.map(
         operations=data_preprocess_e2e,
-        input_columns=['uutid', 'wav_path', 'tokens'],
-        output_columns=['uutid', 'xs_pad', 'xs_masks', 'tokens', 'xs_lengths'],
-        column_order=['uutid', 'xs_pad', 'xs_masks', 'tokens', 'xs_lengths'],
+        input_columns=["uutid", "wav_path", "tokens"],
+        output_columns=["uutid", "xs_pad", "xs_masks", "tokens", "xs_lengths"],
+        column_order=["uutid", "xs_pad", "xs_masks", "tokens", "xs_lengths"],
         num_parallel_workers=num_workers,
     )
     return ds
@@ -182,21 +202,21 @@ def create_asr_predict_dataset(data_file, dataset_conf, collate_conf, num_worker
     """
     dataset = AsrPredictDataset(
         data_file,
-        dataset_conf['max_length'],
-        dataset_conf['min_length'],
-        dataset_conf['token_max_length'],
-        dataset_conf['token_min_length'],
+        dataset_conf["max_length"],
+        dataset_conf["min_length"],
+        dataset_conf["token_max_length"],
+        dataset_conf["token_min_length"],
         100,
     )
 
     ds = de.GeneratorDataset(
         dataset,
-        ['uutid', 'wav_path', 'length', 'tokens'],
+        ["uutid", "wav_path", "length", "tokens"],
         max_rowsize=12,
         shuffle=False,
     )
 
-    frame_bucket_limit = [int(i) for i in dataset_conf['frame_bucket_limit'].split(',')]
+    frame_bucket_limit = [int(i) for i in dataset_conf["frame_bucket_limit"].split(",")]
 
     def data_preprocess_asr(uutid, wav_path, length, tokens):
         # load wav data
@@ -206,9 +226,9 @@ def create_asr_predict_dataset(data_file, dataset_conf, collate_conf, num_worker
         xs = compute_fbank_feats(
             waveform,
             sample_rate,
-            mel_bin=int(collate_conf.feature_extraction_conf['mel_bins']),
-            frame_len=int(collate_conf.feature_extraction_conf['frame_length']),
-            frame_shift=int(collate_conf.feature_extraction_conf['frame_shift']),
+            mel_bin=int(collate_conf.feature_extraction_conf["mel_bins"]),
+            frame_len=int(collate_conf.feature_extraction_conf["frame_length"]),
+            frame_shift=int(collate_conf.feature_extraction_conf["frame_shift"]),
         )
 
         # batch size equals to 1
@@ -228,9 +248,9 @@ def create_asr_predict_dataset(data_file, dataset_conf, collate_conf, num_worker
 
     ds = ds.map(
         operations=data_preprocess_asr,
-        input_columns=['uutid', 'wav_path', 'length', 'tokens'],
-        output_columns=['uutid', 'xs_pad', 'xs_masks', 'tokens', 'xs_lengths'],
-        column_order=['uutid', 'xs_pad', 'xs_masks', 'tokens', 'xs_lengths'],
+        input_columns=["uutid", "wav_path", "length", "tokens"],
+        output_columns=["uutid", "xs_pad", "xs_masks", "tokens", "xs_lengths"],
+        column_order=["uutid", "xs_pad", "xs_masks", "tokens", "xs_lengths"],
         num_parallel_workers=num_workers,
     )
 

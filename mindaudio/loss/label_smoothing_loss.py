@@ -54,13 +54,19 @@ class LabelSmoothingLoss(nn.Cell):
             normalize loss by batch size if False
     """
 
-    def __init__(self, size: int, padding_idx: int, smoothing: float, normalize_length: bool = False):
+    def __init__(
+        self,
+        size: int,
+        padding_idx: int,
+        smoothing: float,
+        normalize_length: bool = False,
+    ):
         """Construct an LabelSmoothingLoss object."""
         super(LabelSmoothingLoss, self).__init__()
         self.criterion = KLDivLoss()
         self.padding_idx = padding_idx
         self.on_value = Tensor([1.0 - smoothing], dtype=mstype.float32)
-        self.off_value = Tensor([smoothing / (size-1)], dtype=mstype.float32)
+        self.off_value = Tensor([smoothing / (size - 1)], dtype=mstype.float32)
         self.size = size  # vocab size
         self.normalize_length = normalize_length
         self.log_softmax = nn.LogSoftmax(1)
@@ -69,8 +75,12 @@ class LabelSmoothingLoss(nn.Cell):
         self.mul = ops.Mul()
         self.onehot = ops.OneHot(axis=-1)
 
-    def construct(self, x: mindspore.Tensor, target: mindspore.Tensor,
-                  target_masks: mindspore.Tensor) -> mindspore.Tensor:
+    def construct(
+        self,
+        x: mindspore.Tensor,
+        target: mindspore.Tensor,
+        target_masks: mindspore.Tensor,
+    ) -> mindspore.Tensor:
         """Compute loss between x and target.
 
         The model outputs and data labels tensors are flatten to
@@ -91,10 +101,14 @@ class LabelSmoothingLoss(nn.Cell):
         x = x.view(-1, self.size)
         target = target.view(-1)
         target_masks = target_masks.view(-1)
-        target_zeropad = self.cast(self.mul(target, target_masks), mstype.int32)  # avoid -1 index
+        target_zeropad = self.cast(
+            self.mul(target, target_masks), mstype.int32
+        )  # avoid -1 index
         total = target_masks.sum()
         denom = total if self.normalize_length else batch_size
-        true_dist = self.onehot(target_zeropad, self.size, self.on_value, self.off_value)
+        true_dist = self.onehot(
+            target_zeropad, self.size, self.on_value, self.off_value
+        )
 
         kl = self.criterion(self.log_softmax(x), true_dist)
         # mask the loss of padded part

@@ -20,15 +20,20 @@ import mindspore
 import mindspore.common.dtype as mstype
 import mindspore.ops.operations as ops
 import numpy as np
-from mindspore import nn  # pylint: disable=C0412
-
 from flyspeech.layers.dense import Dense
+from mindspore import nn  # pylint: disable=C0412
 
 
 class CTC(nn.Cell):
     """CTC module."""
 
-    def __init__(self, odim: int, encoder_output_size: int, dropout_rate: float = 0.0, compute_type=mstype.float32):
+    def __init__(
+        self,
+        odim: int,
+        encoder_output_size: int,
+        dropout_rate: float = 0.0,
+        compute_type=mstype.float32,
+    ):
         """Construct CTC module.
 
         Args:
@@ -41,13 +46,18 @@ class CTC(nn.Cell):
         super().__init__()
         eprojs = encoder_output_size
         self.ctc_lo = Dense(eprojs, odim).to_float(compute_type)
-        self.ctc_loss = ops.CTCLossV2(blank=0, reduction='none', zero_infinity=True)
+        self.ctc_loss = ops.CTCLossV2(blank=0, reduction="none", zero_infinity=True)
         self.log_softmax = nn.LogSoftmax(axis=2)
         self.dropout = nn.Dropout(1.0 - dropout_rate)
         self.cast = ops.Cast()
 
-    def construct(self, hs_pad: mindspore.Tensor, hlens: mindspore.Tensor, ys_pad: mindspore.Tensor,
-                  ys_lengths: mindspore.Tensor) -> mindspore.Tensor:
+    def construct(
+        self,
+        hs_pad: mindspore.Tensor,
+        hlens: mindspore.Tensor,
+        ys_pad: mindspore.Tensor,
+        ys_lengths: mindspore.Tensor,
+    ) -> mindspore.Tensor:
         """Calculate CTC loss.
 
         Args:
