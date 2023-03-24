@@ -7,4 +7,5 @@ extend-exclude =
 extend-ignore = E203
 per-file-ignores =
     */__init__.py:F401,F403
+    mindaudio/data/__init__.py:F403,F405
     examples/*,tests/*:E402
