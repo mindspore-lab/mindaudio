@@ -107,13 +107,17 @@ class DatasetGeneratorBatch:
         if isinstance(data_paths, str):
             data_paths = [data_paths]
         for data_path in data_paths:
-            dataset_index = pickle.load(open(os.path.join(data_path, "ind_sample.p"), "rb"))
+            dataset_index = pickle.load(
+                open(os.path.join(data_path, "ind_sample.p"), "rb")
+            )
             local_batchlist = []
             for utterance, (file_ind, offset, length) in dataset_index.items():
                 file_path = os.path.join(data_path, f"{file_ind}.npy")
                 self.index_sample[utterance] = (file_path, offset, length)
                 local_batchlist.append(utterance)
-            label_index = pickle.load(open(os.path.join(data_path, "ind_label.p"), "rb"))
+            label_index = pickle.load(
+                open(os.path.join(data_path, "ind_label.p"), "rb")
+            )
             for utterance, (file_ind, offset, length) in label_index.items():
                 file_path = os.path.join(data_path, f"{file_ind}_label.npy")
                 self.index_label[utterance] = (file_path, offset, length)

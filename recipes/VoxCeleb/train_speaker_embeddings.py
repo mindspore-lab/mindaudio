@@ -14,23 +14,28 @@ import mindspore.dataset as ds
 import mindspore.nn as nn
 import numpy as np
 import wget
+from config import config as hparams
+from loss_scale import TrainOneStepWithLossScaleCellv2 as TrainOneStepWithLossScaleCell
 from mindspore import Tensor, context, load_checkpoint, load_param_into_net
 from mindspore.communication.management import get_group_size, get_rank, init
 from mindspore.context import ParallelMode
 from mindspore.nn import FixedLossScaleUpdateCell
-from mindspore.train.callback import CheckpointConfig, ModelCheckpoint, RunContext, _InternalCallbackParam
-
-import mindaudio.data.io as io
-from config import config as hparams
-from loss_scale import TrainOneStepWithLossScaleCellv2 as TrainOneStepWithLossScaleCell
-from mindaudio.data.features import fbank
-from mindaudio.data.processing import stereo_to_mono
-from mindaudio.models.ecapatdnn import Classifier, EcapaTDNN
+from mindspore.train.callback import (
+    CheckpointConfig,
+    ModelCheckpoint,
+    RunContext,
+    _InternalCallbackParam,
+)
 from reader import DatasetGeneratorBatch as DatasetGenerator
 from sampler import DistributedSampler
 from spec_augment import EnvCorrupt, InputNormalization, TimeDomainSpecAugment
 from util import AdditiveAngularMargin
 from voxceleb_prepare import prepare_voxceleb
+
+import mindaudio.data.io as io
+from mindaudio.data.features import fbank
+from mindaudio.data.processing import stereo_to_mono
+from mindaudio.models.ecapatdnn import Classifier, EcapaTDNN
 
 spk_id_encoded_dict = {}
 spk_id_encoded = -1
@@ -73,7 +78,9 @@ def dataio_prep():
         )
 
         train_data = train_data.map(
-            lambda duration, wav, start, stop: audio_pipeline(duration, wav, start, stop),
+            lambda duration, wav, start, stop: audio_pipeline(
+                duration, wav, start, stop
+            ),
             input_columns=["duration", "wav", "start", "stop"],
             output_columns=["sig"],
             column_order=["ID", "sig", "spk_id"],
@@ -93,7 +100,12 @@ def dataio_prep():
 
 
 def preprocess_raw_new(
-    fidx, fea_utt_lst, label_utt_lst, samples_dict_global, labels_dict_global, output_path,
+    fidx,
+    fea_utt_lst,
+    label_utt_lst,
+    samples_dict_global,
+    labels_dict_global,
+    output_path,
 ):
     """merge single files into one
 
@@ -182,7 +194,9 @@ def data_trans_dp(datasetPath, dataSavePath):
     samples_per_file = 4000
     total_process_num = math.ceil(len(fea_utt_lst) / samples_per_file)
     print(
-        "samples_per_file, total_process_num:", samples_per_file, total_process_num,
+        "samples_per_file, total_process_num:",
+        samples_per_file,
+        total_process_num,
     )
     samples_dict = Manager().dict()
     labels_dict = Manager().dict()
@@ -218,10 +232,12 @@ def data_trans_dp(datasetPath, dataSavePath):
             p.join()
     print(datetime.now().strftime("%m-%d-%H:%M:%S"))
     pickle.dump(
-        dict(samples_dict), open(os.path.join(dataSavePath, "ind_sample.p"), "wb"),
+        dict(samples_dict),
+        open(os.path.join(dataSavePath, "ind_sample.p"), "wb"),
     )
     pickle.dump(
-        dict(labels_dict), open(os.path.join(dataSavePath, "ind_label.p"), "wb"),
+        dict(labels_dict),
+        open(os.path.join(dataSavePath, "ind_label.p"), "wb"),
     )
 
 
@@ -239,8 +255,15 @@ def create_dataset(cfg, data_home, shuffle=False):
     dataset_generator = DatasetGenerator(data_home)
     distributed_sampler = None
     if cfg.run_distribute:
-        distributed_sampler = DistributedSampler(len(dataset_generator), cfg.group_size, cfg.rank, shuffle=True)
-    vox2_ds = ds.GeneratorDataset(dataset_generator, ["data", "label"], shuffle=shuffle, sampler=distributed_sampler,)
+        distributed_sampler = DistributedSampler(
+            len(dataset_generator), cfg.group_size, cfg.rank, shuffle=True
+        )
+    vox2_ds = ds.GeneratorDataset(
+        dataset_generator,
+        ["data", "label"],
+        shuffle=shuffle,
+        sampler=distributed_sampler,
+    )
     cnt = int(len(dataset_generator) / cfg.group_size)
     return vox2_ds, cnt
 
@@ -261,7 +284,13 @@ class BuildTrainNetwork(nn.Cell):
     """Build train network."""
 
     def __init__(
-        self, my_network, classifier, lossfunc, my_criterion, train_batch_size, class_num_,
+        self,
+        my_network,
+        classifier,
+        lossfunc,
+        my_criterion,
+        train_batch_size,
+        class_num_,
     ):
         super(BuildTrainNetwork, self).__init__()
         self.network = my_network
@@ -269,7 +298,10 @@ class BuildTrainNetwork(nn.Cell):
         self.criterion = my_criterion
         self.lossfunc = lossfunc
         # Initialize self.output
-        self.output = ms.Parameter(Tensor(np.ones((train_batch_size, class_num_)), ms.float32), requires_grad=False,)
+        self.output = ms.Parameter(
+            Tensor(np.ones((train_batch_size, class_num_)), ms.float32),
+            requires_grad=False,
+        )
         self.onehot = ms.nn.OneHot(depth=class_num_, axis=-1, dtype=ms.float32)
 
     def construct(self, input_data, label):
@@ -290,7 +322,13 @@ def update_average(loss_, avg_loss, step):
 
 
 def train_net(
-    rank, model, epoch_max, data_train, ckpt_cb, steps_per_epoch, train_batch_size,
+    rank,
+    model,
+    epoch_max,
+    data_train,
+    ckpt_cb,
+    steps_per_epoch,
+    train_batch_size,
 ):
     """define the training method"""
     # Create dict to save internal callback object's parameters
@@ -332,7 +370,9 @@ def train_net(
                 total_avg = train_loss.asnumpy() / float(idx + 1)
                 if idx > 0:
                     cur_loss = train_loss_cur.asnumpy() / float(print_dur)
-                    acc = train_correct_cur.asnumpy() / float(train_batch_size * print_dur)
+                    acc = train_correct_cur.asnumpy() / float(
+                        train_batch_size * print_dur
+                    )
                 print(
                     f"{datetime.now()}, epoch:{epoch + 1}/{epoch_max}, \
                     iter-{idx}/{steps_per_epoch},"
@@ -387,20 +427,27 @@ def train():
     if hparams.run_distribute:
         device_id = int(os.getenv("DEVICE_ID", "0"))
         context.set_context(
-            mode=context.GRAPH_MODE, device_target="Ascend", device_id=device_id,
+            mode=context.GRAPH_MODE,
+            device_target="Ascend",
+            device_id=device_id,
         )
         init()
         hparams.rank = get_rank()
         hparams.group_size = get_group_size()
         context.reset_auto_parallel_context()
         context.set_auto_parallel_context(
-            parallel_mode=ParallelMode.DATA_PARALLEL, gradients_mean=True, device_num=8, parameter_broadcast=True,
+            parallel_mode=ParallelMode.DATA_PARALLEL,
+            gradients_mean=True,
+            device_num=8,
+            parameter_broadcast=True,
         )
     else:
         hparams.rank = 0
         hparams.group_size = 1
         context.set_context(
-            mode=context.GRAPH_MODE, device_target="Ascend", device_id=hparams.device_id,
+            mode=context.GRAPH_MODE,
+            device_target="Ascend",
+            device_id=hparams.device_id,
         )
     data_dir = hparams.train_data_path
     in_channels = hparams.in_channels
@@ -417,7 +464,9 @@ def train():
     # Configure operation information
 
     mymodel = EcapaTDNN(
-        in_channels, channels=(channels, channels, channels, channels, channels * 3), lin_neurons=emb_size,
+        in_channels,
+        channels=(channels, channels, channels, channels, channels * 3),
+        lin_neurons=emb_size,
     )
     # Construct model
     ds_train, steps_per_epoch_train = create_dataset(hparams, data_dir)
@@ -431,14 +480,24 @@ def train():
     lr_list = []
     lr_list_total = steps_per_epoch_train * num_epochs
     for i in range(lr_list_total):
-        lr_list.append(learning_rate_clr_triangle_function(clc_step_size, max_lrate, base_lrate, i))
+        lr_list.append(
+            learning_rate_clr_triangle_function(clc_step_size, max_lrate, base_lrate, i)
+        )
 
     loss = nn.loss.SoftmaxCrossEntropyWithLogits(sparse=False, reduction="mean")
 
-    scale_mag = FixedLossScaleUpdateCell(loss_scale_value=2 ** 14)
-    model_constructed = BuildTrainNetwork(mymodel, my_classifier, aam, loss, minibatch_size, class_num)
-    opt = nn.Adam(model_constructed.trainable_params(), learning_rate=lr_list, weight_decay=weight_decay,)
-    model_constructed = TrainOneStepWithLossScaleCell(model_constructed, opt, scale_sense=scale_mag)
+    scale_mag = FixedLossScaleUpdateCell(loss_scale_value=2**14)
+    model_constructed = BuildTrainNetwork(
+        mymodel, my_classifier, aam, loss, minibatch_size, class_num
+    )
+    opt = nn.Adam(
+        model_constructed.trainable_params(),
+        learning_rate=lr_list,
+        weight_decay=weight_decay,
+    )
+    model_constructed = TrainOneStepWithLossScaleCell(
+        model_constructed, opt, scale_sense=scale_mag
+    )
 
     if hparams.pre_trained:
         pre_trained_model = os.path.join(ckpt_save_dir, hparams.checkpoint_path)
@@ -448,16 +507,33 @@ def train():
     # CheckPoint CallBack definition
     save_steps = int(steps_per_epoch_train / 10)
     checkpoint_max = hparams.keep_checkpoint_max
-    config_ck = CheckpointConfig(save_checkpoint_steps=save_steps, keep_checkpoint_max=checkpoint_max)
-    ckpoint_cb = ModelCheckpoint(prefix="ecapatdnn_vox12", directory=ckpt_save_dir, config=config_ck)
+    config_ck = CheckpointConfig(
+        save_checkpoint_steps=save_steps, keep_checkpoint_max=checkpoint_max
+    )
+    ckpoint_cb = ModelCheckpoint(
+        prefix="ecapatdnn_vox12", directory=ckpt_save_dir, config=config_ck
+    )
 
     train_net(
-        hparams.rank, model_constructed, num_epochs, ds_train, ckpoint_cb, steps_per_epoch_train, minibatch_size,
+        hparams.rank,
+        model_constructed,
+        num_epochs,
+        ds_train,
+        ckpoint_cb,
+        steps_per_epoch_train,
+        minibatch_size,
     )
 
 
 def generate_npy(
-    iterator, spec_aug, save_dir, label_fp_list_global, fea_fp_list_global, batch_counts, index, file_lock
+    iterator,
+    spec_aug,
+    save_dir,
+    label_fp_list_global,
+    fea_fp_list_global,
+    batch_counts,
+    index,
+    file_lock,
 ):
     count = 0
     label_fp_list = []
@@ -489,7 +565,13 @@ def generate_npy(
         n_augment = len(wavs_aug_tot)
 
         feats = fbank(
-            wavs.asnumpy(), deltas=False, n_mels=80, left_frames=0, right_frames=0, n_fft=400, hop_length=160,
+            wavs.asnumpy(),
+            deltas=False,
+            n_mels=80,
+            left_frames=0,
+            right_frames=0,
+            n_fft=400,
+            hop_length=160,
         ).transpose(0, 2, 1)
 
         normal_func = InputNormalization(norm_type="sentence", std_norm=False)
@@ -528,7 +610,9 @@ def generate_train_data():
         os.makedirs(os.path.join(hparams.save_folder), exist_ok=False)
 
     # Download verification list (to exlude verification sentences from train)
-    veri_file_path = os.path.join(hparams.save_folder, os.path.basename(hparams.verification_file))
+    veri_file_path = os.path.join(
+        hparams.save_folder, os.path.basename(hparams.verification_file)
+    )
     wget.download(hparams.verification_file, veri_file_path)
 
     # Dataset prep (parsing VoxCeleb and annotation into csv files)
@@ -548,7 +632,8 @@ def generate_train_data():
 
     # Dataset IO prep: creating Dataset objects and proper encodings for phones
     label_data = ms.dataset.CSVDataset(
-        dataset_files=[hparams.train_annotation], num_parallel_workers=hparams.dataloader_options.num_workers,
+        dataset_files=[hparams.train_annotation],
+        num_parallel_workers=hparams.dataloader_options.num_workers,
     )
     label_iterator = label_data.create_dict_iterator(num_epochs=1)
     for batch in label_iterator:
@@ -605,7 +690,16 @@ def generate_train_data():
         batch_counts = dataset_size / hparams.dataloader_options.batch_size
         process = Process(
             target=generate_npy,
-            args=(iterator, spec_aug, save_dir, label_fp_list, fea_fp_list, batch_counts, index, file_lock),
+            args=(
+                iterator,
+                spec_aug,
+                save_dir,
+                label_fp_list,
+                fea_fp_list,
+                batch_counts,
+                index,
+                file_lock,
+            ),
         )
         process.start()
         processlist.append(process)

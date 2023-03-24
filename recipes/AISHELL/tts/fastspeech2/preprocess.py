@@ -1,37 +1,46 @@
 # Given the path to ljspeech/wavs,
 # this script converts wav files to .npy features used for training.
 
-import sys, os
+import os
+import sys
+from multiprocessing import Pool, cpu_count
+
+import mindspore as ms
 import numpy as np
 import pyworld as pw
-from multiprocessing import cpu_count, Pool
+from mindspore.dataset.audio import MelScale, Spectrogram
 from tqdm import tqdm
-from mindspore.dataset.audio import Spectrogram, MelScale
-import mindspore as ms
-from mindaudio.data.io import read
-import mindaudio
 
-sys.path.append('.')
+import mindaudio
+from mindaudio.data.io import read
+
+sys.path.append(".")
+import argparse
+
+from dataset import all_dirs, all_postfix, feature_columns
 from phonemes import get_alignment
-from recipes.text import text_to_sequence
+
 from recipes.AISHELL import AISHELL
 from recipes.AISHELL.tts import create_aishell_tts_dataset
-from dataset import (
-    feature_columns,
-    all_dirs,
-    all_postfix,
-)
+from recipes.text import text_to_sequence
 
-import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument('--device_target', '-d', type=str, default="CPU", choices=("GPU", "CPU", 'Ascend'))
-parser.add_argument('--device_id', '-i', type=int, default=0)
-parser.add_argument('--config', '-c', type=str, default='recipes/AISHELL/tts/fastspeech2/fastspeech2.yaml')
+parser.add_argument(
+    "--device_target", "-d", type=str, default="CPU", choices=("GPU", "CPU", "Ascend")
+)
+parser.add_argument("--device_id", "-i", type=int, default=0)
+parser.add_argument(
+    "--config",
+    "-c",
+    type=str,
+    default="recipes/AISHELL/tts/fastspeech2/fastspeech2.yaml",
+)
 args = parser.parse_args()
 hps = mindaudio.load_config(args.config)
 
+
 def read_wav(filename):
-    filename = str(filename).replace('b\'', '').replace('\'', '')
+    filename = str(filename).replace("b'", "").replace("'", "")
     audio, _ = read(filename)
     signed_int16_max = 2**15
     if audio.dtype == np.int16:
@@ -39,38 +48,43 @@ def read_wav(filename):
     audio = (audio / np.max(np.abs(audio))).astype(np.float32)
     return audio, audio, filename
 
+
 stft_fn = Spectrogram(
     n_fft=hps.n_fft,
     win_length=hps.hop_samples * 4,
     hop_length=hps.hop_samples,
-    power=1.,
+    power=1.0,
     center=True,
 )
 
 mel_fn = MelScale(
     n_mels=hps.n_mels,
     sample_rate=hps.sample_rate,
-    f_min=20., 
+    f_min=20.0,
     f_max=hps.sample_rate / 2.0,
     n_stft=hps.n_fft // 2 + 1,
 )
+
 
 def _normalize(S):
     S = 20 * np.log10(np.clip(S, 1e-5, None)) - 20
     S = np.clip((S + 100) / 100, 0.0, 1.0)
     return S.astype(np.float32)
 
+
 # process text: file -> phoneme
 def get_fs2_features(audio, text):
-    text = str(text).replace('b\'', '').replace('\'', '')
-    base = text[text.rfind('/')+1: ].replace('.txt', '')
-    speaker = base[6: 6+4]
-    tg_path = os.path.join(hps.data_path, 'TextGrid', f'{base}.TextGrid')
-    phoneme, duration, start, end = get_alignment(tg_path, hps.sample_rate, hps.hop_samples)
-    with open(text, 'r') as f:
-        raw_text = f.readline().strip('\n')
+    text = str(text).replace("b'", "").replace("'", "")
+    base = text[text.rfind("/") + 1 :].replace(".txt", "")
+    speaker = base[6 : 6 + 4]
+    tg_path = os.path.join(hps.data_path, "TextGrid", f"{base}.TextGrid")
+    phoneme, duration, start, end = get_alignment(
+        tg_path, hps.sample_rate, hps.hop_samples
+    )
+    with open(text, "r") as f:
+        raw_text = f.readline().strip("\n")
     phoneme = "{" + " ".join(phoneme) + "}"
-    base = "|".join([base, 'aishell', phoneme, raw_text])
+    base = "|".join([base, "aishell", phoneme, raw_text])
     phoneme = np.array(text_to_sequence(phoneme, ["english_cleaners"]))
     wav, _, filename = read_wav(audio)
     wav = wav[int(hps.sample_rate * start) : int(hps.sample_rate * end)]
@@ -80,26 +94,25 @@ def get_fs2_features(audio, text):
         hps.sample_rate,
         frame_period=hps.hop_samples / hps.sample_rate * 1000,
     )
-    pitch = pw.stonemask(wav.astype(np.float64), pitch, t, hps.sample_rate)[: sum(duration)]
+    pitch = pw.stonemask(wav.astype(np.float64), pitch, t, hps.sample_rate)[
+        : sum(duration)
+    ]
 
     S = stft_fn(wav)
     energy = np.linalg.norm(S, axis=0)[: sum(duration)]
     mel = _normalize(mel_fn(S)[:, : sum(duration)])
     return phoneme, wav, mel, energy, pitch, duration, base
 
+
 def create_prep_dataset(data_path, manifest_path, split):
-    ds = AISHELL(
-        data_path=data_path,
-        manifest_path=manifest_path,
-        split=split
-    )
+    ds = AISHELL(data_path=data_path, manifest_path=manifest_path, split=split)
     ds = create_aishell_tts_dataset(ds, rank=0, group_size=1)
 
     # process audio: file -> wav -> feature
     ds = ds.map(
-        input_columns=['audio', 'text'],
-        output_columns=feature_columns + ['base'],
-        column_order=feature_columns + ['base'],
+        input_columns=["audio", "text"],
+        output_columns=feature_columns + ["base"],
+        column_order=feature_columns + ["base"],
         operations=get_fs2_features,
         num_parallel_workers=cpu_count(),
     )
@@ -122,31 +135,36 @@ def preprocess_aishell(data_path, manifest_path, split):
     energy_min = np.inf
     energy_max = -1
     for x in tqdm(it, total=ds.get_dataset_size()):
-        base = str(x['base']).split('|', 1)[0]
-        with open(os.path.join(data_path, all_dirs['phoneme'], base + '_phoneme.txt'), 'w') as writer:
-            writer.write(str(x['base']) + '\n')
+        base = str(x["base"]).split("|", 1)[0]
+        with open(
+            os.path.join(data_path, all_dirs["phoneme"], base + "_phoneme.txt"), "w"
+        ) as writer:
+            writer.write(str(x["base"]) + "\n")
         for k in feature_columns:
-            np.save(os.path.join(data_path, all_dirs[k], base + all_postfix[k]), x[k].asnumpy())
-        pitch, energy = x['pitch'].asnumpy(), x['energy'].asnumpy()
+            np.save(
+                os.path.join(data_path, all_dirs[k], base + all_postfix[k]),
+                x[k].asnumpy(),
+            )
+        pitch, energy = x["pitch"].asnumpy(), x["energy"].asnumpy()
         pitch_min, pitch_max = min(pitch.min(), pitch_min), max(pitch.max(), pitch_max)
-        energy_min, energy_max = min(energy.min(), energy_min), max(energy.max(), energy_max)
-    np.save('stats.npy', np.array([pitch_min, pitch_max, energy_min, energy_max]))
+        energy_min, energy_max = min(energy.min(), energy_min), max(
+            energy.max(), energy_max
+        )
+    np.save("stats.npy", np.array([pitch_min, pitch_max, energy_min, energy_max]))
 
 
-if __name__ == '__main__':
-    ms.context.set_context(mode=ms.context.PYNATIVE_MODE, device_target=args.device_target, device_id=args.device_id)
-    preprocess_aishell(
-        data_path=hps.data_path,
-        manifest_path=hps.manifest_path,
-        split='test'
+if __name__ == "__main__":
+    ms.context.set_context(
+        mode=ms.context.PYNATIVE_MODE,
+        device_target=args.device_target,
+        device_id=args.device_id,
     )
     preprocess_aishell(
-        data_path=hps.data_path,
-        manifest_path=hps.manifest_path,
-        split='dev'
+        data_path=hps.data_path, manifest_path=hps.manifest_path, split="test"
     )
     preprocess_aishell(
-        data_path=hps.data_path,
-        manifest_path=hps.manifest_path,
-        split='train'
+        data_path=hps.data_path, manifest_path=hps.manifest_path, split="dev"
+    )
+    preprocess_aishell(
+        data_path=hps.data_path, manifest_path=hps.manifest_path, split="train"
     )

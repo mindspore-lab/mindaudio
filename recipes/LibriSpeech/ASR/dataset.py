@@ -3,9 +3,10 @@ import math
 import os
 from multiprocessing import cpu_count
 
-import mindaudio
 import mindspore.dataset.engine as de
 import numpy as np
+
+import mindaudio
 from mindaudio.utils.distributed import DistributedSampler
 
 TRAIN_INPUT_PAD_LENGTH = 1250
@@ -35,10 +36,7 @@ class LoadAudioAndTranscript:
         win_length = n_fft
         hop_length = int(self.sample_rate * self.window_stride)
         spec = mindaudio.stft(
-            waveforms=audio,
-            n_fft=n_fft,
-            hop_length=hop_length,
-            win_length=win_length
+            waveforms=audio, n_fft=n_fft, hop_length=hop_length, win_length=win_length
         )
         mag, _ = mindaudio.magphase(spec, power=1.0, iscomplex=True)
         mag = np.log1p(mag)
@@ -57,15 +55,15 @@ class LoadAudioAndTranscript:
 
 class ASRDataset(LoadAudioAndTranscript):
     """
-        create ASRDataset
+    create ASRDataset
 
-        Args:
-            audio_conf: Config containing the sample rate, window and the window length/stride in seconds
-            manifest_filepath (str): manifest_file path.
-            labels (list): List containing all the possible characters to map to
-            normalize: Apply standard mean and deviation Normalization to audio tensor
-            batch_size (int): Dataset batch size (default=32)
-        """
+    Args:
+        audio_conf: Config containing the sample rate, window and the window length/stride in seconds
+        manifest_filepath (str): manifest_file path.
+        labels (list): List containing all the possible characters to map to
+        normalize: Apply standard mean and deviation Normalization to audio tensor
+        batch_size (int): Dataset batch size (default=32)
+    """
 
     def __init__(
         self,
@@ -79,8 +77,8 @@ class ASRDataset(LoadAudioAndTranscript):
         with open(manifest_filepath) as f:
             json_file = json.load(f)
 
-        self.root_path = json_file.get('root_path')
-        wav_txts = json_file.get('samples')
+        self.root_path = json_file.get("root_path")
+        wav_txts = json_file.get("samples")
         ids = [list(x.values()) for x in wav_txts]
 
         self.is_training = is_training
@@ -101,7 +99,9 @@ class ASRDataset(LoadAudioAndTranscript):
         batch_spect, batch_script, target_indices = [], [], []
         input_length = np.zeros(batch_size, np.float32)
         for data in batch_idx:
-            audio_path, transcript_path = os.path.join(self.root_path, data[0]), os.path.join(self.root_path, data[1])
+            audio_path, transcript_path = os.path.join(
+                self.root_path, data[0]
+            ), os.path.join(self.root_path, data[1])
             spect = self.parse_audio(audio_path)
             transcript = self.parse_transcript(transcript_path)
             batch_spect.append(spect)
@@ -205,6 +205,10 @@ def create_dataset(
 
     sampler = DistributedSampler(dataset, rank, group_size, shuffle=True)
 
-    ds = de.GeneratorDataset(dataset, ["inputs", "input_length", "target_indices", "label_values"], sampler=sampler)
+    ds = de.GeneratorDataset(
+        dataset,
+        ["inputs", "input_length", "target_indices", "label_values"],
+        sampler=sampler,
+    )
     ds = ds.repeat(1)
     return ds

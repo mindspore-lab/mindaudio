@@ -16,23 +16,29 @@
 """Apply beam search on attention decoder."""
 
 from collections import defaultdict
-import numpy as np
 
-from flyspeech.utils.common import log_add, remove_duplicates_and_blank, pad_sequence, add_sos_eos
-from infer.infer_ascend_python.utils import subsequent_mask, make_pad_mask, topk_fun
+import numpy as np
+from flyspeech.utils.common import (
+    add_sos_eos,
+    log_add,
+    pad_sequence,
+    remove_duplicates_and_blank,
+)
+from infer.infer_ascend_python.utils import make_pad_mask, subsequent_mask, topk_fun
 
 
 def recognize(
-        model_encoder,
-        model_predict,
-        xs_pad,
-        xs_masks,
-        start_token,
-        base_index,
-        scores,
-        end_flag,
-        beam_size,
-        eos):
+    model_encoder,
+    model_predict,
+    xs_pad,
+    xs_masks,
+    start_token,
+    base_index,
+    scores,
+    end_flag,
+    beam_size,
+    eos,
+):
     """Apply beam search on attention decoder
     Args:
         xs_pad (numpy.ndarray): (batch, max_len, feat_dim)
@@ -75,12 +81,20 @@ def recognize(
     hyps_sub_masks = [[[False]]]
     for i in range(1, maxlen + 1):
         hyps_sub_masks.append(
-            np.pad(subsequent_mask(i), ((0, maxlen - i), (0, maxlen - i)), 'constant', constant_values=(False, False)))
+            np.pad(
+                subsequent_mask(i),
+                ((0, maxlen - i), (0, maxlen - i)),
+                "constant",
+                constant_values=(False, False),
+            )
+        )
 
     # (B*N, 1)
     hyps = np.tile(np.expand_dims(start_token, 1), (running_size, 1))
     pad_length = maxlen - start_token.shape[-1]
-    input_ids = np.pad(hyps, ((0, 0), (0, pad_length)), 'constant', constant_values=(0, 0))
+    input_ids = np.pad(
+        hyps, ((0, 0), (0, pad_length)), "constant", constant_values=(0, 0)
+    )
     # (B*N, 1)
     scores = np.expand_dims(np.tile(scores, (batch_size,)), 1)
     # (B*N, 1)
@@ -97,7 +111,9 @@ def recognize(
             break
         # 2.1 Forward decoder step
         hyps_mask = np.expand_dims(hyps_sub_masks[i], 0)
-        hyps_mask = np.tile(hyps_mask, (running_size, 1, 1)).astype(np.float32)  # (B*N, i, i)
+        hyps_mask = np.tile(hyps_mask, (running_size, 1, 1)).astype(
+            np.float32
+        )  # (B*N, i, i)
         inputs = model_predict.get_inputs()
         outputs = model_predict.get_outputs()
         inputs[0].set_data_from_numpy(encoder_out_np)
@@ -115,12 +131,12 @@ def recognize(
         best_k_pred = outputs[4]
         input_ids[:, valid_length] = best_k_pred.get_data_to_numpy()
         # 2.6 Update end flag
-        end_flag = ((input_ids[:, valid_length] == eos).astype(np.float32).reshape(-1, 1))
+        end_flag = (input_ids[:, valid_length] == eos).astype(np.float32).reshape(-1, 1)
     # 3. Select best of best
     scores = scores.reshape(batch_size, beam_size)  # (B, N)
     # TODO: length normalization
     best_scores, best_index = topk_fun(scores, 1)  # (B, 1)
-    best_hyps_index = best_index + base_index*beam_size
+    best_hyps_index = best_index + base_index * beam_size
 
     best_hyps = input_ids[best_hyps_index.squeeze(0)]
     best_hyps = best_hyps[:, 1:]
@@ -176,13 +192,13 @@ def ctc_prefix_beam_search(model, xs_pad, xs_masks, beam_size):
     top_k_logp_list = top_k_logp_list.get_data_to_numpy().tolist()
     top_k_index_list = top_k_index_list.get_data_to_numpy().tolist()
     # cur_hyps: (prefix, (blank_ending_score, none_blank_ending_score))
-    cur_hyps = [(tuple(), (0.0, -float('inf')))]
+    cur_hyps = [(tuple(), (0.0, -float("inf")))]
     # 3. CTC prefix beam search step by step
     for t in range(0, maxlen):
         if encoder_mask[t] == 0:
             continue
         # key: prefix, value (pb, pnb), default value(-inf, -inf)
-        next_hyps = defaultdict(lambda: (-float('inf'), -float('inf')))
+        next_hyps = defaultdict(lambda: (-float("inf"), -float("inf")))
         # 2.1 First beam prune: select topk best
         top_k_logp = top_k_logp_list[t]
         top_k_index = top_k_index_list[t]
@@ -211,7 +227,9 @@ def ctc_prefix_beam_search(model, xs_pad, xs_masks, beam_size):
                     n_pnb = log_add([n_pnb, pb + ps, pnb + ps])
                     next_hyps[n_prefix] = (n_pb, n_pnb)
         # 3.2 Second beam prune
-        next_hyps = sorted(next_hyps.items(), key=lambda x: log_add(list(x[1])), reverse=True)
+        next_hyps = sorted(
+            next_hyps.items(), key=lambda x: log_add(list(x[1])), reverse=True
+        )
         cur_hyps = next_hyps[:beam_size]
     hyps = [(y[0], log_add([y[1][0], y[1][1]])) for y in cur_hyps]
 
@@ -219,15 +237,15 @@ def ctc_prefix_beam_search(model, xs_pad, xs_masks, beam_size):
 
 
 def attention_rescoring(
-        model_ctc,
-        model_rescore,
-        xs_pad,
-        xs_masks,
-        sos,
-        eos,
-        beam_size,
-        ctc_weight,
-        max_tgt_len=30
+    model_ctc,
+    model_rescore,
+    xs_pad,
+    xs_masks,
+    sos,
+    eos,
+    beam_size,
+    ctc_weight,
+    max_tgt_len=30,
 ):
     """Apply attention rescoring decoding
     Args:
@@ -240,7 +258,8 @@ def attention_rescoring(
     # 1.1 ctc prefix beamsearch
     # len(hyps) = beam_size, encoder_out.shape = (1, maxlen, encoder_dim)
     hyps, encoder_out, encoder_mask = ctc_prefix_beam_search(
-        model_ctc, xs_pad, xs_masks, beam_size)
+        model_ctc, xs_pad, xs_masks, beam_size
+    )
     assert len(hyps) == beam_size
     hyps_lens = np.array([len(hyp[0]) for hyp in hyps])
 
@@ -257,12 +276,16 @@ def attention_rescoring(
     )
 
     hyps_in_pad = hyps_in_pad.astype(np.int32)
-    hyps_mask = np.expand_dims(~make_pad_mask(hyps_lens + 1, max_len=max_tgt_len + 1), 1)
+    hyps_mask = np.expand_dims(
+        ~make_pad_mask(hyps_lens + 1, max_len=max_tgt_len + 1), 1
+    )
     m = np.expand_dims(subsequent_mask(max_tgt_len + 1), 0)
     hyps_sub_masks = (hyps_mask & m).astype(np.float32)
     encoder_out = encoder_out.get_data_to_numpy()
     encoder_out = encoder_out.repeat(beam_size, axis=0)
-    encoder_mask = np.array([[encoder_mask]]).repeat(beam_size, axis=0).astype(np.float32)
+    encoder_mask = (
+        np.array([[encoder_mask]]).repeat(beam_size, axis=0).astype(np.float32)
+    )
     inputs = model_rescore.get_inputs()
     outputs = model_rescore.get_outputs()
     inputs[0].set_data_from_numpy(encoder_out)
@@ -273,7 +296,7 @@ def attention_rescoring(
     decoder_out = outputs[0]
     decoder_out = decoder_out.get_data_to_numpy()
     # only use decoder score for rescoring
-    best_score = -float('inf')
+    best_score = -float("inf")
     best_index = 0
     for i, hyp in enumerate(hyps):
         if len(hyp[0]) > max_tgt_len + 1:

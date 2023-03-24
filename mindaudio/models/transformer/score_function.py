@@ -1,18 +1,18 @@
 import mindspore.numpy as msnp
-from mindspore import nn
-from mindspore import ops
+from mindspore import nn, ops
 
 
 class ScaledDotProductAttention(nn.Cell):
     """
     Scaled Dot-Product Attention.
     """
+
     def __init__(self, temperature, attn_dropout=0.0):
         super().__init__()
         self.temperature = temperature
 
         self.softmax = nn.Softmax(axis=2)
-        self.dropout = nn.Dropout(keep_prob=1-attn_dropout)
+        self.dropout = nn.Dropout(keep_prob=1 - attn_dropout)
 
         self.bmm = ops.BatchMatMul()
         self.transpose = ops.Transpose()

@@ -48,30 +48,30 @@ def safe_readline(f):
 def load_samples(data_file, worker_id, frame_factor, workers_num):
     """Load all training samples from data file."""
     data = []
-    with codecs.open(data_file, 'r', encoding='utf-8') as f:
+    with codecs.open(data_file, "r", encoding="utf-8") as f:
         size = os.fstat(f.fileno()).st_size
         chunk_size = size // workers_num
         offset = worker_id * chunk_size
         end = offset + chunk_size
         f.seek(offset)
-        logger.info('offset %d', offset)
+        logger.info("offset %d", offset)
         # TODO: whether need safe readline
         if offset > 0:
             safe_readline(f)  # drop first incomplete line
         line = f.readline()
         miss_file_cnt = 0
         while line:
-            arr = line.strip().split('\t')
+            arr = line.strip().split("\t")
             # len(arr) == 7 for ASR and wav2vec 2.0 training
             # len(arr) == 8 for Hubert training
             if len(arr) != 7 and len(arr) != 8:
                 line = f.readline()
                 continue
-            uttid = arr[0].split(':')[1]
-            tokenid = arr[5].split(':')[1]
-            output_dim = int(arr[6].split(':')[1].split(',')[1])
-            wav_path = ':'.join(arr[1].split(':')[1:])
-            duration = int(float(arr[2].split(':')[1]) * frame_factor)
+            uttid = arr[0].split(":")[1]
+            tokenid = arr[5].split(":")[1]
+            output_dim = int(arr[6].split(":")[1].split(",")[1])
+            wav_path = ":".join(arr[1].split(":")[1:])
+            duration = int(float(arr[2].split(":")[1]) * frame_factor)
             if not os.path.exists(wav_path):
                 miss_file_cnt += 1
                 line = f.readline()
@@ -79,12 +79,12 @@ def load_samples(data_file, worker_id, frame_factor, workers_num):
             if len(arr) == 7:
                 data.append((uttid, wav_path, duration, tokenid, output_dim))
             if len(arr) == 8:
-                kmeans_id = arr[7].split(':')[1]
+                kmeans_id = arr[7].split(":")[1]
                 data.append((uttid, wav_path, duration, tokenid, output_dim, kmeans_id))
             if f.tell() > end:
                 break
             line = f.readline()
-        logger.info('Missing file num: %d', miss_file_cnt)
+        logger.info("Missing file num: %d", miss_file_cnt)
         return data
 
 
@@ -118,16 +118,21 @@ class BucketDatasetBase:
         group_size (int): number of total world size, for multi-GPUs distributed training.
     """
 
-    def __init__(self,
-                 data_file,
-                 frame_bucket_limit='200,300',
-                 batch_bucket_limit='220,200',
-                 batch_factor=0.2,
-                 frame_factor=100,
-                 group_size=1):
+    def __init__(
+        self,
+        data_file,
+        frame_bucket_limit="200,300",
+        batch_bucket_limit="220,200",
+        batch_factor=0.2,
+        frame_factor=100,
+        group_size=1,
+    ):
         self.group_size = group_size
-        self.frame_bucket_limit = [int(i) for i in frame_bucket_limit.split(',')]
-        self.batch_bucket_limit = [int(int(i) * batch_factor * group_size) for i in batch_bucket_limit.split(',')]
+        self.frame_bucket_limit = [int(i) for i in frame_bucket_limit.split(",")]
+        self.batch_bucket_limit = [
+            int(int(i) * batch_factor * group_size)
+            for i in batch_bucket_limit.split(",")
+        ]
         assert len(self.frame_bucket_limit) == len(self.batch_bucket_limit)
         self.bucket_select_dict = self.bucket_init(self.frame_bucket_limit)
 
@@ -173,23 +178,27 @@ class BucketASRDataset(BucketDatasetBase):
         group_size (int): number of total world size, for multi-GPUs distributed training.
     """
 
-    def __init__(self,
-                 data_file,
-                 max_length=10240,
-                 min_length=0,
-                 token_max_length=200,
-                 token_min_length=1,
-                 frame_bucket_limit='200,300',
-                 batch_bucket_limit='220,200',
-                 batch_factor=0.2,
-                 frame_factor=100,
-                 group_size=1):
-        super().__init__(data_file,
-                         frame_bucket_limit=frame_bucket_limit,
-                         batch_bucket_limit=batch_bucket_limit,
-                         batch_factor=batch_factor,
-                         frame_factor=frame_factor,
-                         group_size=group_size)
+    def __init__(
+        self,
+        data_file,
+        max_length=10240,
+        min_length=0,
+        token_max_length=200,
+        token_min_length=1,
+        frame_bucket_limit="200,300",
+        batch_bucket_limit="220,200",
+        batch_factor=0.2,
+        frame_factor=100,
+        group_size=1,
+    ):
+        super().__init__(
+            data_file,
+            frame_bucket_limit=frame_bucket_limit,
+            batch_bucket_limit=batch_bucket_limit,
+            batch_factor=batch_factor,
+            frame_factor=frame_factor,
+            group_size=group_size,
+        )
         self.token_max_length = token_max_length
         # load all samples
         num_sample = 0
@@ -211,7 +220,9 @@ class BucketASRDataset(BucketDatasetBase):
             else:
                 num_sample += 1
                 bucket_idx = self.bucket_select_dict[length]
-                caches[bucket_idx][0].append((self.data[i][0], self.data[i][1], self.data[i][3]))
+                caches[bucket_idx][0].append(
+                    (self.data[i][0], self.data[i][1], self.data[i][3])
+                )
                 caches[bucket_idx][1] += 1
 
                 if caches[bucket_idx][1] >= self.batch_bucket_limit[bucket_idx]:
@@ -224,10 +235,16 @@ class BucketASRDataset(BucketDatasetBase):
             if length != 0:
                 repeat_time = math.ceil(self.batch_bucket_limit[key] / length)
                 data_expand = value[0] * repeat_time
-                self.batches.append((data_expand[:self.batch_bucket_limit[key]], value[2]))
+                self.batches.append(
+                    (data_expand[: self.batch_bucket_limit[key]], value[2])
+                )
         del caches
 
-        logger.info('Total utts: %d, remove too long/short utts: %d.', num_sample, tot_num_sample - num_sample)
+        logger.info(
+            "Total utts: %d, remove too long/short utts: %d.",
+            num_sample,
+            tot_num_sample - num_sample,
+        )
         self.sos = self.output_dim - 1
         self.eos = self.output_dim - 1
 

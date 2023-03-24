@@ -87,6 +87,3 @@ model_path: "/home/abc000/data/ckpt/ecapatdnn_vox12.ckpt"               # path o
 train_norm_path: "/home/abc000/data/feat_norm/"                           # fbank data for norm
 cohort_size: 20000                                                        # max number of utts to do norm
 npy_file_path: '/home/abc000/data/npys/'                                  # dir to save intermediate result
-
-
-

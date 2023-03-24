@@ -19,7 +19,13 @@ import math
 import mindspore
 import mindspore.nn as nn
 import mindspore.ops as ops
-from mindspore.common.initializer import HeNormal, HeUniform, Uniform, _calculate_correct_fan, initializer
+from mindspore.common.initializer import (
+    HeNormal,
+    HeUniform,
+    Uniform,
+    _calculate_correct_fan,
+    initializer,
+)
 from mindspore.nn.cell import Cell
 
 
@@ -42,42 +48,54 @@ class Conv1d(Cell):
         enable_mask_padding_feature (bool): Whether to zero the masked part of input.
     """
 
-    def __init__(self,
-                 in_channel,
-                 out_channel,
-                 kernel_size,
-                 stride=1,
-                 padding=0,
-                 group=1,
-                 has_bias=False,
-                 pad_mode='valid',
-                 negative_slope=math.sqrt(5),
-                 mode='fan_in',
-                 nonlinerity='leaky_relu',
-                 init='heuniform',
-                 enable_mask_padding_feature=True):
+    def __init__(
+        self,
+        in_channel,
+        out_channel,
+        kernel_size,
+        stride=1,
+        padding=0,
+        group=1,
+        has_bias=False,
+        pad_mode="valid",
+        negative_slope=math.sqrt(5),
+        mode="fan_in",
+        nonlinerity="leaky_relu",
+        init="heuniform",
+        enable_mask_padding_feature=True,
+    ):
         super(Conv1d, self).__init__()
-        if init == 'heuniform':
+        if init == "heuniform":
             kaiming_uniform_0 = initializer(
-                HeUniform(negative_slope=negative_slope, mode=mode, nonlinearity=nonlinerity),
-                (out_channel, in_channel // group, kernel_size))
+                HeUniform(
+                    negative_slope=negative_slope, mode=mode, nonlinearity=nonlinerity
+                ),
+                (out_channel, in_channel // group, kernel_size),
+            )
         else:
             kaiming_uniform_0 = initializer(
-                HeNormal(negative_slope=negative_slope, mode=mode, nonlinearity=nonlinerity),
-                (out_channel, in_channel // group, kernel_size))
-        fan_in = _calculate_correct_fan((out_channel, in_channel // group, kernel_size), mode=mode)
+                HeNormal(
+                    negative_slope=negative_slope, mode=mode, nonlinearity=nonlinerity
+                ),
+                (out_channel, in_channel // group, kernel_size),
+            )
+        fan_in = _calculate_correct_fan(
+            (out_channel, in_channel // group, kernel_size), mode=mode
+        )
         scale = 1 / math.sqrt(fan_in)
         bias_init_0 = initializer(Uniform(scale), [out_channel], mindspore.float32)
-        self.conv1d = nn.Conv1d(in_channel,
-                                out_channel,
-                                kernel_size,
-                                stride=stride,
-                                has_bias=has_bias,
-                                pad_mode=pad_mode,
-                                padding=padding,
-                                group=group,
-                                weight_init=kaiming_uniform_0,
-                                bias_init=bias_init_0)
+        self.conv1d = nn.Conv1d(
+            in_channel,
+            out_channel,
+            kernel_size,
+            stride=stride,
+            has_bias=has_bias,
+            pad_mode=pad_mode,
+            padding=padding,
+            group=group,
+            weight_init=kaiming_uniform_0,
+            bias_init=bias_init_0,
+        )
         self.floor_div = ops.FloorDiv()
         self.tile = ops.Tile()
         self.stride = stride
@@ -95,9 +113,13 @@ class Conv1d(Cell):
         bs, _, total_length = out.shape
         valid_length = self.floor_div((x_len - self.kernel_size), self.stride) + 1
         total_length_range = ops.tuple_to_array(ops.make_range(total_length))
-        total_length_range = self.tile(self.expand_dims(total_length_range, 0), (bs, 1))  # bs, total_
+        total_length_range = self.tile(
+            self.expand_dims(total_length_range, 0), (bs, 1)
+        )  # bs, total_
         valid_length_range = self.expand_dims(valid_length, -1)  # bs, 1
-        valid_mask = (total_length_range < valid_length_range).astype(mindspore.float32)  #bs, seq
+        valid_mask = (total_length_range < valid_length_range).astype(
+            mindspore.float32
+        )  # bs, seq
         out = out * valid_mask.expand_dims(1)
 
         return out, valid_length

@@ -1,5 +1,6 @@
 """Metric function."""
 
+
 def wer(ref, hyp):
     r"""
     Word error rate (WER) calculation for one utterance.
@@ -54,4 +55,3 @@ def wer(ref, hyp):
                 deletion = dp[i - 1][j] + 1
                 dp[i][j] = min(substitution, insertion, deletion)
     return dp[-1][-1] / len(ref)
-

@@ -15,7 +15,9 @@
 """Compute FBank features."""
 
 import math
+
 import numpy as np
+
 from mindaudio.data.io import read
 
 
@@ -57,14 +59,20 @@ def inverse_mel_scale(mel_freq):
 
 
 def mel_scale(freq):
-    return 1127.0 * np.log(1.0 + freq/700.0)
+    return 1127.0 * np.log(1.0 + freq / 700.0)
 
 
 def mel_scale_scalar(freq: float) -> float:
-    return 1127.0 * math.log(1.0 + freq/700.0)
+    return 1127.0 * math.log(1.0 + freq / 700.0)
 
 
-def get_mel_banks(num_bins: int, window_length_padded: int, sample_freq: float, low_freq: float, high_freq: float):
+def get_mel_banks(
+    num_bins: int,
+    window_length_padded: int,
+    sample_freq: float,
+    low_freq: float,
+    high_freq: float,
+):
     """Get mel banks for extracting features.
 
     Args:
@@ -84,24 +92,24 @@ def get_mel_banks(num_bins: int, window_length_padded: int, sample_freq: float, 
 
     # divide by num_bins+1 in next line because of end-effects where the bins
     # spread out to the sides.
-    mel_freq_delta = (mel_high_freq-mel_low_freq) / (num_bins+1)
+    mel_freq_delta = (mel_high_freq - mel_low_freq) / (num_bins + 1)
 
     bins = np.arange(num_bins).reshape(-1, 1)
-    left_mel = mel_low_freq + bins*mel_freq_delta  # size(num_bins, 1)
-    center_mel = mel_low_freq + (bins+1.0) * mel_freq_delta  # size(num_bins, 1)
-    right_mel = mel_low_freq + (bins+2.0) * mel_freq_delta  # size(num_bins, 1)
+    left_mel = mel_low_freq + bins * mel_freq_delta  # size(num_bins, 1)
+    center_mel = mel_low_freq + (bins + 1.0) * mel_freq_delta  # size(num_bins, 1)
+    right_mel = mel_low_freq + (bins + 2.0) * mel_freq_delta  # size(num_bins, 1)
 
     center_freqs = inverse_mel_scale(center_mel)  # size (num_bins)
     # size(1, num_fft_bins)
     # mel = mel_scale(fft_bin_width * np.arange(num_fft_bins)).unsqueeze(0)
     mel = np.expand_dims(mel_scale(fft_bin_width * np.arange(num_fft_bins)), 0)
     # size (num_bins, num_fft_bins)
-    up_slope = (mel-left_mel) / (center_mel-left_mel)
-    down_slope = (right_mel-mel) / (right_mel-center_mel)
+    up_slope = (mel - left_mel) / (center_mel - left_mel)
+    down_slope = (right_mel - mel) / (right_mel - center_mel)
     # left_mel < center_mel < right_mel so we can min the two slopes and clamp negative values
     feat = np.where(up_slope > down_slope, down_slope, up_slope)
     feat = np.where(feat < 0, 0, feat)
-    feat = np.pad(feat, ((0, 0), (0, 1)), 'constant')
+    feat = np.pad(feat, ((0, 0), (0, 1)), "constant")
 
     return feat, center_freqs
 
@@ -117,10 +125,10 @@ def enframe(signal, frame_len, frame_shift):
 
     num_samples = signal.size
     win = np.power(np.hanning(frame_len), 0.85)
-    num_frames = np.floor((num_samples-frame_len) / frame_shift) + 1
+    num_frames = np.floor((num_samples - frame_len) / frame_shift) + 1
     frames = np.zeros((int(num_frames), frame_len))
     for i in range(int(num_frames)):
-        frames[i, :] = signal[i * frame_shift:i*frame_shift + frame_len]
+        frames[i, :] = signal[i * frame_shift : i * frame_shift + frame_len]
         frames[i, :] = frames[i, :] * win
     return frames
 
@@ -128,7 +136,7 @@ def enframe(signal, frame_len, frame_shift):
 def get_spectrum(frames, fft_len):
     """Get spectrum using fft."""
     c_fft = np.fft.rfft(frames, n=fft_len)
-    spectrum = np.abs(c_fft)**2
+    spectrum = np.abs(c_fft) ** 2
     return spectrum
 
 

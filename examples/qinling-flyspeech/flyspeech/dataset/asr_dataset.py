@@ -21,14 +21,15 @@ import random
 
 import mindspore.dataset.engine as de
 import numpy as np
-from mindaudio.data.io import read
-from mindaudio.data.processing import resample
 from flyspeech.adapter.log import get_logger
 from flyspeech.dataset.bucket_dataset import BucketASRDataset
 from flyspeech.dataset.feature import compute_fbank_feats
 from flyspeech.dataset.sampler import DistributedSampler
 from flyspeech.utils.common import IGNORE_ID, add_sos_eos, pad_sequence
 from flyspeech.utils.mask import add_optional_chunk_mask, make_pad_mask, subsequent_mask
+
+from mindaudio.data.io import read
+from mindaudio.data.processing import resample
 
 logger = get_logger()
 
@@ -76,19 +77,21 @@ class CollateFunc:
         num_decoding_left_chunks (int):  number of left chunk use for inference, for streaming ASR.
     """
 
-    def __init__(self,
-                 rank,
-                 group_size,
-                 feature_extraction_conf=None,
-                 feature_dither=0.0,
-                 use_speed_perturb=False,
-                 use_spec_aug=False,
-                 spec_aug_conf=None,
-                 use_dynamic_chunk=False,
-                 use_dynamic_left_chunk=False,
-                 decoding_chunk_size=0,
-                 static_chunk_size=0,
-                 num_decoding_left_chunks=-1):
+    def __init__(
+        self,
+        rank,
+        group_size,
+        feature_extraction_conf=None,
+        feature_dither=0.0,
+        use_speed_perturb=False,
+        use_spec_aug=False,
+        spec_aug_conf=None,
+        use_dynamic_chunk=False,
+        use_dynamic_left_chunk=False,
+        decoding_chunk_size=0,
+        static_chunk_size=0,
+        num_decoding_left_chunks=-1,
+    ):
         self.feature_extraction_conf = feature_extraction_conf
         self.feature_dither = feature_dither
         self.use_speed_perturb = use_speed_perturb
@@ -118,9 +121,9 @@ class CollateFunc:
         feats = []
         lengths = []
 
-        mel_bin = int(feature_extraction_conf['mel_bins'])
-        frame_len = int(feature_extraction_conf['frame_length'])
-        frame_shift = int(feature_extraction_conf['frame_shift'])
+        mel_bin = int(feature_extraction_conf["mel_bins"])
+        frame_len = int(feature_extraction_conf["frame_length"])
+        frame_shift = int(feature_extraction_conf["frame_shift"])
         param = []
         for _, x in enumerate(batch):
             param.append((x, use_speed_perturb, frame_len, frame_shift, mel_bin))
@@ -155,12 +158,12 @@ class CollateFunc:
         Returns:
             Iterable[{feat}]
         """
-        num_t_mask = spec_aug_conf.get('num_t_mask', 0.0)
-        num_f_mask = spec_aug_conf.get('num_f_mask', 0.0)
+        num_t_mask = spec_aug_conf.get("num_t_mask", 0.0)
+        num_f_mask = spec_aug_conf.get("num_f_mask", 0.0)
         # prop_mask_t = spec_aug_conf.get('prop_mask_t', 0.0)
         # prop_mask_f = spec_aug_conf.get('prop_mask_f', 0.0)
-        max_t = spec_aug_conf.get('max_t', 0.0)
-        max_f = spec_aug_conf.get('max_f', 0.0)
+        max_t = spec_aug_conf.get("max_t", 0.0)
+        max_f = spec_aug_conf.get("max_f", 0.0)
 
         for x in xs:
             max_frames = x.shape[0]
@@ -200,7 +203,7 @@ class CollateFunc:
                     ys_masks, ys_lengths, xs_chunk_masks]
         """
         _, xs, ys = self.extract_feature(
-            batch[self.rank::self.group_size],
+            batch[self.rank :: self.group_size],
             self.use_speed_perturb,
             self.feature_extraction_conf,
         )
@@ -273,7 +276,9 @@ class CollateFunc:
         # make ys_masks, (B, 1, T), text == 1, padding == 0
         # the length of each y should be increase by 1, since it is paded with
         # a <sos> or <eos>
-        ys_masks = np.expand_dims(~make_pad_mask(ys_lengths + 1, max_len=max_tgt_len + 1), 1)
+        ys_masks = np.expand_dims(
+            ~make_pad_mask(ys_lengths + 1, max_len=max_tgt_len + 1), 1
+        )
         m = np.expand_dims(subsequent_mask(max_tgt_len + 1), 0)
         ys_sub_masks = (ys_masks & m).astype(np.float32)
         ys_masks = ys_masks.astype(np.float32)
@@ -289,11 +294,24 @@ class CollateFunc:
             num_decoding_left_chunks=self.num_decoding_left_chunks,
         )
 
-        return xs_pad, ys_pad, ys_in_pad, ys_out_pad, r_ys_in_pad, r_ys_out_pad, \
-            xs_masks, ys_sub_masks, ys_masks, ys_lengths, xs_chunk_masks
+        return (
+            xs_pad,
+            ys_pad,
+            ys_in_pad,
+            ys_out_pad,
+            r_ys_in_pad,
+            r_ys_out_pad,
+            xs_masks,
+            ys_sub_masks,
+            ys_masks,
+            ys_lengths,
+            xs_chunk_masks,
+        )
 
 
-def create_dataset(data_file, collate_conf, dataset_conf, rank=0, group_size=1, number_workers=8):
+def create_dataset(
+    data_file, collate_conf, dataset_conf, rank=0, group_size=1, number_workers=8
+):
     """Init a iterable dataset.
 
     Args:
@@ -310,13 +328,13 @@ def create_dataset(data_file, collate_conf, dataset_conf, rank=0, group_size=1, 
     collate_func = CollateFunc(rank=rank, group_size=group_size, **collate_conf)
     dataset = BucketASRDataset(
         data_file,
-        max_length=dataset_conf['max_length'],
-        min_length=dataset_conf['min_length'],
-        token_max_length=dataset_conf['token_max_length'],
-        token_min_length=dataset_conf['token_min_length'],
-        frame_bucket_limit=dataset_conf['frame_bucket_limit'],
-        batch_bucket_limit=dataset_conf['batch_bucket_limit'],
-        batch_factor=dataset_conf['batch_factor'],
+        max_length=dataset_conf["max_length"],
+        min_length=dataset_conf["min_length"],
+        token_max_length=dataset_conf["token_max_length"],
+        token_min_length=dataset_conf["token_min_length"],
+        frame_bucket_limit=dataset_conf["frame_bucket_limit"],
+        batch_bucket_limit=dataset_conf["batch_bucket_limit"],
+        batch_factor=dataset_conf["batch_factor"],
         frame_factor=100,
         group_size=group_size,
     )
@@ -325,7 +343,7 @@ def create_dataset(data_file, collate_conf, dataset_conf, rank=0, group_size=1, 
 
     ds = de.GeneratorDataset(
         dataset,
-        ['data', 'sos', 'eos', 'max_src_len', 'token_max_length'],
+        ["data", "sos", "eos", "max_src_len", "token_max_length"],
         sampler=sampler,
         num_parallel_workers=1,
         max_rowsize=24,
@@ -333,23 +351,40 @@ def create_dataset(data_file, collate_conf, dataset_conf, rank=0, group_size=1, 
     output_dim = dataset.output_dim
 
     # pylint: disable=W0108
-    map_func = lambda data, sos, eos, max_src_len, token_max_length: collate_func(data, sos, eos, max_src_len,
-                                                                                  token_max_length)
-    ds = ds.map(operations=map_func,
-                input_columns=['data', 'sos', 'eos', 'max_src_len', 'token_max_length'],
-                output_columns=[
-                    'xs_pad', 'ys_pad', 'ys_in_pad', 'ys_out_pad', 'r_ys_in_pad', 'r_ys_out_pad',
-                    'xs_masks', 'ys_masks', 'ys_sub_masks',
-                    'ys_lengths',
-                    'xs_chunk_masks'
-                    ],
-                column_order=[
-                    'xs_pad', 'ys_pad', 'ys_in_pad', 'ys_out_pad', 'r_ys_in_pad', 'r_ys_out_pad',
-                    'xs_masks', 'ys_masks', 'ys_sub_masks',
-                    'ys_lengths',
-                    'xs_chunk_masks'
-                    ],
-                num_parallel_workers=number_workers,
-                python_multiprocessing=False)
+    map_func = lambda data, sos, eos, max_src_len, token_max_length: collate_func(
+        data, sos, eos, max_src_len, token_max_length
+    )
+    ds = ds.map(
+        operations=map_func,
+        input_columns=["data", "sos", "eos", "max_src_len", "token_max_length"],
+        output_columns=[
+            "xs_pad",
+            "ys_pad",
+            "ys_in_pad",
+            "ys_out_pad",
+            "r_ys_in_pad",
+            "r_ys_out_pad",
+            "xs_masks",
+            "ys_masks",
+            "ys_sub_masks",
+            "ys_lengths",
+            "xs_chunk_masks",
+        ],
+        column_order=[
+            "xs_pad",
+            "ys_pad",
+            "ys_in_pad",
+            "ys_out_pad",
+            "r_ys_in_pad",
+            "r_ys_out_pad",
+            "xs_masks",
+            "ys_masks",
+            "ys_sub_masks",
+            "ys_lengths",
+            "xs_chunk_masks",
+        ],
+        num_parallel_workers=number_workers,
+        python_multiprocessing=False,
+    )
 
     return output_dim, ds

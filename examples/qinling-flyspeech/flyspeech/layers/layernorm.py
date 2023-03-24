@@ -38,15 +38,21 @@ class LayerNorm(Cell):
     def __init__(self, normalized_shape, epsilon=1e-5, param_init_type=mstype.float32):
         super(LayerNorm, self).__init__()
         if param_init_type not in [mstype.float32, mstype.float16]:
-            raise TypeError("The type of parameter 'param_init_type' should in [float32, float16], "
-                            'but got the type : {}.'.format(type(param_init_type)))
+            raise TypeError(
+                "The type of parameter 'param_init_type' should in [float32, float16], "
+                "but got the type : {}.".format(type(param_init_type))
+            )
 
-        self.gamma = Parameter(initializer('ones', normalized_shape, param_init_type),
-                               name='gamma',
-                               parallel_optimizer=False)
-        self.beta = Parameter(initializer('zeros', normalized_shape, param_init_type),
-                              name='beta',
-                              parallel_optimizer=False)
+        self.gamma = Parameter(
+            initializer("ones", normalized_shape, param_init_type),
+            name="gamma",
+            parallel_optimizer=False,
+        )
+        self.beta = Parameter(
+            initializer("zeros", normalized_shape, param_init_type),
+            name="beta",
+            parallel_optimizer=False,
+        )
         self.mean = P.ReduceMean(keep_dims=True)
         self.square = P.Square()
         self.sqrt = P.Sqrt()

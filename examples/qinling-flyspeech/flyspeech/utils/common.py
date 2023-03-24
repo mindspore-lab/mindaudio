@@ -17,16 +17,19 @@
 """Unility functions for Transformer."""
 
 from typing import List, Tuple
+
 import numpy as np
 
 IGNORE_ID = -1
 
 
-def pad_sequence(sequences: List[np.ndarray],
-                 batch_first=True,
-                 padding_value: int = 0,
-                 padding_max_len: int = None,
-                 atype=np.int32) -> np.ndarray:
+def pad_sequence(
+    sequences: List[np.ndarray],
+    batch_first=True,
+    padding_value: int = 0,
+    padding_max_len: int = None,
+    atype=np.int32,
+) -> np.ndarray:
     """[summary]
 
     Args:
@@ -65,7 +68,9 @@ def pad_sequence(sequences: List[np.ndarray],
     return out_sequences
 
 
-def add_sos_eos(ys: List[np.ndarray], sos: int = 0, eos: int = 0) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+def add_sos_eos(
+    ys: List[np.ndarray], sos: int = 0, eos: int = 0
+) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """Add <sos> and <eos> labels. For generating the decoder input and output.
 
     Args:
@@ -100,11 +105,11 @@ def add_sos_eos(ys: List[np.ndarray], sos: int = 0, eos: int = 0) -> Tuple[List[
 
 
 def get_subsample(config):
-    input_layer = config['encoder_conf']['input_layer']
-    assert input_layer in ['conv2d', 'conv2d6', 'conv2d8']
-    if input_layer == 'conv2d':
+    input_layer = config["encoder_conf"]["input_layer"]
+    assert input_layer in ["conv2d", "conv2d6", "conv2d8"]
+    if input_layer == "conv2d":
         return 4
-    if input_layer == 'conv2d6':
+    if input_layer == "conv2d6":
         return 6
     return 8
 
@@ -123,8 +128,8 @@ def remove_duplicates_and_blank(hyp: List[int]) -> List[int]:
 
 def log_add(args: List[int]) -> float:
     """Stable log add."""
-    if all(a == -float('inf') for a in args):
-        return -float('inf')
+    if all(a == -float("inf") for a in args):
+        return -float("inf")
     a_max = max(args)
     lsp = np.log(sum(np.exp(a - a_max) for a in args))
     return a_max + lsp
@@ -133,18 +138,16 @@ def log_add(args: List[int]) -> float:
 def set_weight_decay(params, weight_decay=1e-2):
     """Set weight decay coefficient, zero for bias and layernorm, default 1e-2
     for rest."""
-    decay_filter = lambda x: 'layernorm' not in x.name.lower() and 'bias' not in x.name.lower()
+    decay_filter = (
+        lambda x: "layernorm" not in x.name.lower() and "bias" not in x.name.lower()
+    )
     decay_params = list(filter(decay_filter, params))
     other_params = list(filter(lambda x: not decay_filter(x), params))
-    group_params = [{
-        'params': decay_params,
-        'weight_decay': weight_decay
-    }, {
-        'params': other_params,
-        'weight_decay': 0.0
-    }, {
-        'order_params': params
-    }]
+    group_params = [
+        {"params": decay_params, "weight_decay": weight_decay},
+        {"params": other_params, "weight_decay": 0.0},
+        {"order_params": params},
+    ]
     return group_params
 
 

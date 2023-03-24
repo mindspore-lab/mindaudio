@@ -8,19 +8,19 @@ import pickle
 import mindspore as ms
 import numpy as np
 import wget
-from mindspore import Tensor, context, load_checkpoint, load_param_into_net
-from scipy.spatial.distance import cosine
-from sklearn.metrics.pairwise import cosine_similarity
-
-import mindaudio.data.io as io
 from config import config as hparams
 from metrics import get_EER_from_scores
+from mindspore import Tensor, context, load_checkpoint, load_param_into_net
+from reader import DatasetGenerator
+from scipy.spatial.distance import cosine
+from sklearn.metrics.pairwise import cosine_similarity
+from spec_augment import InputNormalization
+from voxceleb_prepare import prepare_voxceleb
+
+import mindaudio.data.io as io
 from mindaudio.data.features import fbank
 from mindaudio.data.processing import stereo_to_mono
 from mindaudio.models.ecapatdnn import EcapaTDNN
-from reader import DatasetGenerator
-from spec_augment import InputNormalization
-from voxceleb_prepare import prepare_voxceleb
 
 # bad utterances
 excluded_set = {
@@ -254,7 +254,13 @@ def compute_feat_loop(data_loader, save_dir):
             ts = ct.timestamp()
 
             feats = fbank(
-                wavs.asnumpy(), deltas=False, n_mels=80, left_frames=0, right_frames=0, n_fft=400, hop_length=160,
+                wavs.asnumpy(),
+                deltas=False,
+                n_mels=80,
+                left_frames=0,
+                right_frames=0,
+                n_fft=400,
+                hop_length=160,
             ).transpose(0, 2, 1)
             normal_func = InputNormalization(norm_type="sentence", std_norm=False)
             feats = normal_func.construct(feats)
@@ -271,7 +277,9 @@ def dataio_prep():
     "Creates the dataloaders and their data processing pipelines."
 
     # Train data (used for normalization)
-    train_data = ms.dataset.CSVDataset(dataset_files=hparams.train_data, num_samples=hparams.n_train_snts)
+    train_data = ms.dataset.CSVDataset(
+        dataset_files=hparams.train_data, num_samples=hparams.n_train_snts
+    )
 
     # Enrol data
     enrol_data = ms.dataset.CSVDataset(dataset_files=hparams.enrol_data)
@@ -285,7 +293,9 @@ def dataio_prep():
         stop = int(stop)
         num_frames = stop - start
         sig, fs = io.read(
-            str(wav), duration=float(num_frames) / hparams.sample_rate, offset=float(start) / hparams.sample_rate,
+            str(wav),
+            duration=float(num_frames) / hparams.sample_rate,
+            offset=float(start) / hparams.sample_rate,
         )
         if len(sig.shape) > 1:
             sig = stereo_to_mono(sig)
@@ -586,14 +596,18 @@ def evaluate2(spk2emb, utt2emb, norm_dict, params, trials):
                 score_e_c = cosine_similarity(enrol.reshape(1, -1), train_cohort)
                 score_e_c = np.squeeze(score_e_c)
                 if hasattr(params, "cohort_size"):
-                    score_e_c = np.partition(score_e_c, kth=-params.cohort_size)[-params.cohort_size :]
+                    score_e_c = np.partition(score_e_c, kth=-params.cohort_size)[
+                        -params.cohort_size :
+                    ]
                 mean_e_c = np.mean(score_e_c)
                 std_e_c = np.std(score_e_c)
                 # Getting norm stats for test impostors
                 score_t_c = cosine_similarity(test.reshape(1, -1), train_cohort)
                 score_t_c = np.squeeze(score_t_c)
                 if hasattr(params, "cohort_size"):
-                    score_t_c = np.partition(score_t_c, kth=-params.cohort_size)[-params.cohort_size :]
+                    score_t_c = np.partition(score_t_c, kth=-params.cohort_size)[
+                        -params.cohort_size :
+                    ]
                 mean_t_c = np.mean(score_t_c)
                 std_t_c = np.std(score_t_c)
             # Compute the score for the given sentence
@@ -682,7 +696,9 @@ def generate_eval_data():
     if not os.path.exists(hparams.eval_save_folder):
         os.makedirs(hparams.eval_save_folder)
     # Download verification list (to exlude verification sentences from train)
-    veri_file_path = os.path.join(hparams.eval_save_folder, os.path.basename(hparams.verification_file))
+    veri_file_path = os.path.join(
+        hparams.eval_save_folder, os.path.basename(hparams.verification_file)
+    )
     wget.download(hparams.verification_file, veri_file_path)
 
     # Prepare data from dev of Voxceleb1
@@ -715,7 +731,9 @@ def generate_eval_data():
     for idx in range(len(eval_dataset)):
         if idx in excluded_set:
             excluded_utt_set.add(eval_dataset[idx][1])
-    with open(veri_file_path, "r") as fp, open(os.path.join(hparams.verification_file_bleeched), "w") as fpOut:
+    with open(veri_file_path, "r") as fp, open(
+        os.path.join(hparams.verification_file_bleeched), "w"
+    ) as fpOut:
         for line in fp:
             tokens = line.strip().split(" ")
             if tokens[1][:-4] in excluded_utt_set:
@@ -730,7 +748,9 @@ def eval_impl():
     channels = hparams.channels
     emb_size = hparams.emb_size
     model = EcapaTDNN(
-        in_channels, channels=(channels, channels, channels, channels, channels * 3), lin_neurons=emb_size,
+        in_channels,
+        channels=(channels, channels, channels, channels, channels * 3),
+        lin_neurons=emb_size,
     )
 
     eval_data_path = hparams.eval_data_path
@@ -746,7 +766,12 @@ def eval_impl():
     if not os.path.exists(os.path.join(hparams.npy_file_path)):
         os.makedirs(hparams.npy_file_path, exist_ok=False)
 
-    enroll_dict = compute_embeddings(model, dataset_enroll, dur=len(dataset_enroll), exc_set=excluded_set,)
+    enroll_dict = compute_embeddings(
+        model,
+        dataset_enroll,
+        dur=len(dataset_enroll),
+        exc_set=excluded_set,
+    )
     eer = evaluate(enroll_dict, enroll_dict, veri_file_path)
     print("eer baseline:", eer)
 
@@ -774,7 +799,9 @@ def eval_impl():
             if os.path.isfile(fpath):
                 print(f"find cache file:{fpath}, continue")
                 continue
-            train_dict = compute_embeddings(model, dataset_train, startidx=start, dur=50000)
+            train_dict = compute_embeddings(
+                model, dataset_train, startidx=start, dur=50000
+            )
             pickle.dump(train_dict, open(fpath, "wb"))
 
         dict_lst = []
@@ -782,13 +809,23 @@ def eval_impl():
             dict_lst.append(
                 pickle.load(
                     open(
-                        os.path.join(hparams.npy_file_path, f"train_dict_{idx * 50000}_{(idx + 1) * 50000}.npy",), "rb",
+                        os.path.join(
+                            hparams.npy_file_path,
+                            f"train_dict_{idx * 50000}_{(idx + 1) * 50000}.npy",
+                        ),
+                        "rb",
                     )
                 )
             )
         dict_lst.append(
             pickle.load(
-                open(os.path.join(hparams.npy_file_path, f"train_dict_250000_{len(dataset_train)}.npy",), "rb",)
+                open(
+                    os.path.join(
+                        hparams.npy_file_path,
+                        f"train_dict_250000_{len(dataset_train)}.npy",
+                    ),
+                    "rb",
+                )
             )
         )
         train_dict = dict()
@@ -798,7 +835,13 @@ def eval_impl():
         train_dict_mean, glob_mean, cnt = emb_mean(glob_mean, cnt, train_dict)
         items = list(train_dict_mean.values())
         train_arr = np.asarray(items)
-        pos_score, neg_score = evaluate2(enroll_dict_mean, enroll_dict_mean, train_arr, hparams, veri_file_path,)
+        pos_score, neg_score = evaluate2(
+            enroll_dict_mean,
+            enroll_dict_mean,
+            train_arr,
+            hparams,
+            veri_file_path,
+        )
 
         eer = EER(np.array(pos_score), np.array(neg_score))
         print("EER with norm:", eer)

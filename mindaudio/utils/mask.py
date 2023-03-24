@@ -1,10 +1,10 @@
 """mask function"""
 
 from typing import List
-import numpy as np
 
 import mindspore
 import mindspore.ops as ops
+import numpy as np
 
 TILE_FUNC = ops.Tile()
 CAT_FUNC = ops.Concat(axis=1)
@@ -112,10 +112,8 @@ def mask_finished_scores(score: mindspore.Tensor, end_flag: mindspore.Tensor):
     beam_size = score.shape[-1]
     zero_mask = ZEROSLIKE_FUNC(end_flag)
     if beam_size > 1:
-        unfinished = CAT_FUNC(
-            (zero_mask, TILE_FUNC(end_flag, (1, beam_size - 1))))
-        finished = CAT_FUNC((end_flag, TILE_FUNC(zero_mask,
-                                                 (1, beam_size - 1))))
+        unfinished = CAT_FUNC((zero_mask, TILE_FUNC(end_flag, (1, beam_size - 1))))
+        finished = CAT_FUNC((end_flag, TILE_FUNC(zero_mask, (1, beam_size - 1))))
     else:
         unfinished = zero_mask
         finished = end_flag
@@ -125,8 +123,9 @@ def mask_finished_scores(score: mindspore.Tensor, end_flag: mindspore.Tensor):
     return score
 
 
-def mask_finished_preds(pred: mindspore.Tensor, end_flag: mindspore.Tensor,
-                        eos: int) -> mindspore.Tensor:
+def mask_finished_preds(
+    pred: mindspore.Tensor, end_flag: mindspore.Tensor, eos: int
+) -> mindspore.Tensor:
     """
     If a sequence is finished, all of its branch should be <eos>
 
@@ -146,10 +145,10 @@ def mask_finished_preds(pred: mindspore.Tensor, end_flag: mindspore.Tensor,
 
 
 def compute_mask_indices2(
-        shape,
-        padding_mask,
-        mask_prob,
-        mask_length,
+    shape,
+    padding_mask,
+    mask_prob,
+    mask_length,
 ) -> np.ndarray:
     """compute mask indices2"""
     b, t = shape
@@ -162,14 +161,12 @@ def compute_mask_indices2(
         span = ti // n_mask
         for j in range(n_mask):
             start = j * span + np.random.randint(span - mask_length)
-            mask[i][start:start + mask_length] = True
+            mask[i][start : start + mask_length] = True
         mask_valid[i][:real_wav_len] = True
     return mask, mask_valid
 
 
-def subsequent_chunk_mask(size: int,
-                          chunk_size: int,
-                          num_left_chunks: int = -1):
+def subsequent_chunk_mask(size: int, chunk_size: int, num_left_chunks: int = -1):
     """Create mask for subsequent steps (size, size) with chunk size,
        this is for streaming encoder
 
@@ -201,10 +198,16 @@ def subsequent_chunk_mask(size: int,
     return ret
 
 
-def add_optional_chunk_mask(xs_len, masks, use_dynamic_chunk,
-                            use_dynamic_left_chunk, decoding_chunk_size,
-                            static_chunk_size, num_decoding_left_chunks):
-    """ Apply optional mask for encoder.
+def add_optional_chunk_mask(
+    xs_len,
+    masks,
+    use_dynamic_chunk,
+    use_dynamic_left_chunk,
+    decoding_chunk_size,
+    static_chunk_size,
+    num_decoding_left_chunks,
+):
+    """Apply optional mask for encoder.
 
     Args:
         xs_len (int): padded input, 1/4 ori data length
@@ -249,15 +252,18 @@ def add_optional_chunk_mask(xs_len, masks, use_dynamic_chunk,
                 if use_dynamic_left_chunk:
                     max_left_chunks = (max_len - 1) // chunk_size
                     num_left_chunks = np.random.randint(
-                        0, max_left_chunks, (1,)).tolist()[0]
-        chunk_masks = subsequent_chunk_mask(xs_len, chunk_size,
-                                            num_left_chunks)  # (L, L)
+                        0, max_left_chunks, (1,)
+                    ).tolist()[0]
+        chunk_masks = subsequent_chunk_mask(
+            xs_len, chunk_size, num_left_chunks
+        )  # (L, L)
         chunk_masks = np.expand_dims(chunk_masks, 0)  # (1, L, L)
         chunk_masks = masks & chunk_masks  # (B, L, L)
     elif static_chunk_size > 0:
         num_left_chunks = num_decoding_left_chunks
-        chunk_masks = subsequent_chunk_mask(xs_len, static_chunk_size,
-                                            num_left_chunks)  # (L, L)
+        chunk_masks = subsequent_chunk_mask(
+            xs_len, static_chunk_size, num_left_chunks
+        )  # (L, L)
         chunk_masks = np.expand_dims(chunk_masks, 0)  # (1, L, L)
         chunk_masks = masks & chunk_masks  # (B, L, L)
     else:

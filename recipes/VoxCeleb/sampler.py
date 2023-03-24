@@ -27,7 +27,9 @@ class DistributedSampler:
     def __iter__(self):
         # deterministically shuffle based on epoch
         if self.shuffle:
-            indices = np.random.RandomState(seed=self.epoch).permutation(self.dataset_size)
+            indices = np.random.RandomState(seed=self.epoch).permutation(
+                self.dataset_size
+            )
             # np.array type. number from 0 to len(dataset_size)-1
             indices = indices.tolist()
             self.epoch += 1

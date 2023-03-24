@@ -138,7 +138,9 @@ def mask_finished_scores(score: mindspore.Tensor, end_flag: mindspore.Tensor):
     return score
 
 
-def mask_finished_preds(pred: mindspore.Tensor, end_flag: mindspore.Tensor, eos: int) -> mindspore.Tensor:
+def mask_finished_preds(
+    pred: mindspore.Tensor, end_flag: mindspore.Tensor, eos: int
+) -> mindspore.Tensor:
     """If a sequence is finished, all of its branch should be <eos>
 
     Args:
@@ -152,7 +154,7 @@ def mask_finished_preds(pred: mindspore.Tensor, end_flag: mindspore.Tensor, eos:
     """
     beam_size = pred.shape[-1]
     finished = CAST_FUNC(TILE_FUNC(end_flag, (1, beam_size)), mindspore.int32)
-    pred = pred * (1-finished) + eos*finished
+    pred = pred * (1 - finished) + eos * finished
     return pred
 
 
@@ -166,8 +168,8 @@ def compute_mask_indices(shape, mask_prob, mask_length) -> np.ndarray:
         span = ti // n_mask
         for j in range(n_mask):
             # non-overlaped masking
-            start = j*span + np.random.randint(span - mask_length)
-            mask[i][start:start + mask_length] = True
+            start = j * span + np.random.randint(span - mask_length)
+            mask[i][start : start + mask_length] = True
     return mask
 
 
@@ -183,8 +185,8 @@ def compute_mask_indices2(shape, padding_mask, mask_prob, mask_length) -> np.nda
         span = ti // n_mask
         for j in range(n_mask):
             # non-overlaped masking
-            start = j*span + np.random.randint(span - mask_length)
-            mask[i][start:start + mask_length] = True
+            start = j * span + np.random.randint(span - mask_length)
+            mask[i][start : start + mask_length] = True
         mask_valid[i][:real_wav_len] = True
     return mask, mask_valid
 
@@ -215,14 +217,21 @@ def subsequent_chunk_mask(size: int, chunk_size: int, num_left_chunks: int = -1)
         if num_left_chunks < 0:
             start = 0
         else:
-            start = max((i//chunk_size - num_left_chunks) * chunk_size, 0)
-        ending = min((i//chunk_size + 1) * chunk_size, size)
+            start = max((i // chunk_size - num_left_chunks) * chunk_size, 0)
+        ending = min((i // chunk_size + 1) * chunk_size, size)
         ret[i, start:ending] = True
     return ret
 
 
-def add_optional_chunk_mask(xs_len, masks, use_dynamic_chunk, use_dynamic_left_chunk, decoding_chunk_size,
-                            static_chunk_size, num_decoding_left_chunks):
+def add_optional_chunk_mask(
+    xs_len,
+    masks,
+    use_dynamic_chunk,
+    use_dynamic_left_chunk,
+    decoding_chunk_size,
+    static_chunk_size,
+    num_decoding_left_chunks,
+):
     """Apply optional mask for encoder.
 
     Args:
@@ -264,16 +273,22 @@ def add_optional_chunk_mask(xs_len, masks, use_dynamic_chunk, use_dynamic_left_c
             if chunk_size > max_len // 2:
                 chunk_size = max_len
             else:
-                chunk_size = chunk_size%25 + 1
+                chunk_size = chunk_size % 25 + 1
                 if use_dynamic_left_chunk:
-                    max_left_chunks = (max_len-1) // chunk_size
-                    num_left_chunks = np.random.randint(0, max_left_chunks, (1,)).tolist()[0]
-        chunk_masks = subsequent_chunk_mask(xs_len, chunk_size, num_left_chunks)  # (L, L)
+                    max_left_chunks = (max_len - 1) // chunk_size
+                    num_left_chunks = np.random.randint(
+                        0, max_left_chunks, (1,)
+                    ).tolist()[0]
+        chunk_masks = subsequent_chunk_mask(
+            xs_len, chunk_size, num_left_chunks
+        )  # (L, L)
         chunk_masks = np.expand_dims(chunk_masks, 0)  # (1, L, L)
         chunk_masks = masks & chunk_masks  # (B, L, L)
     elif static_chunk_size > 0:
         num_left_chunks = num_decoding_left_chunks
-        chunk_masks = subsequent_chunk_mask(xs_len, static_chunk_size, num_left_chunks)  # (L, L)
+        chunk_masks = subsequent_chunk_mask(
+            xs_len, static_chunk_size, num_left_chunks
+        )  # (L, L)
         chunk_masks = np.expand_dims(chunk_masks, 0)  # (1, L, L)
         chunk_masks = masks & chunk_masks  # (B, L, L)
     else:

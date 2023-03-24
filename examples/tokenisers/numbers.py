@@ -1,84 +1,78 @@
 """ from https://github.com/keithito/tacotron """
 
 import re
+
 import inflect
 
-
-
 _inflect = inflect.engine()
-_comma_number_re = re.compile(r'([0-9][0-9\,]+[0-9])')
-_decimal_number_re = re.compile(r'([0-9]+\.[0-9]+)')
-_pounds_re = re.compile(r'£([0-9\,]*[0-9]+)')
-_dollars_re = re.compile(r'\$([0-9\.\,]*[0-9]+)')
-_ordinal_re = re.compile(r'[0-9]+(st|nd|rd|th)')
-_number_re = re.compile(r'[0-9]+')
+_comma_number_re = re.compile(r"([0-9][0-9\,]+[0-9])")
+_decimal_number_re = re.compile(r"([0-9]+\.[0-9]+)")
+_pounds_re = re.compile(r"£([0-9\,]*[0-9]+)")
+_dollars_re = re.compile(r"\$([0-9\.\,]*[0-9]+)")
+_ordinal_re = re.compile(r"[0-9]+(st|nd|rd|th)")
+_number_re = re.compile(r"[0-9]+")
 
 
 def _remove_commas(m):
-    ''' remove commas'''
-    return m.group(1).replace(',', '')
+    """remove commas"""
+    return m.group(1).replace(",", "")
 
 
 def _expand_decimal_point(m):
-    ''' expand decimal point '''
-    return m.group(1).replace('.', ' point ')
+    """expand decimal point"""
+    return m.group(1).replace(".", " point ")
 
 
 def _expand_dollars(m):
-    '''expand dollars '''
+    """expand dollars"""
     match = m.group(1)
-    parts = match.split('.')
+    parts = match.split(".")
     if len(parts) > 2:
-        return match + ' dollars'  # Unexpected format
+        return match + " dollars"  # Unexpected format
     dollars = int(parts[0]) if parts[0] else 0
     cents = int(parts[1]) if len(parts) > 1 and parts[1] else 0
     if dollars and cents:
-        dollar_unit = 'dollar' if dollars == 1 else 'dollars'
-        cent_unit = 'cent' if cents == 1 else 'cents'
-        ret_dollar = '%s %s, %s %s' % (dollars, dollar_unit, cents, cent_unit)
+        dollar_unit = "dollar" if dollars == 1 else "dollars"
+        cent_unit = "cent" if cents == 1 else "cents"
+        ret_dollar = "%s %s, %s %s" % (dollars, dollar_unit, cents, cent_unit)
     elif dollars:
-        dollar_unit = 'dollar' if dollars == 1 else 'dollars'
-        ret_dollar = '%s %s' % (dollars, dollar_unit)
+        dollar_unit = "dollar" if dollars == 1 else "dollars"
+        ret_dollar = "%s %s" % (dollars, dollar_unit)
     elif cents:
-        cent_unit = 'cent' if cents == 1 else 'cents'
-        ret_dollar = '%s %s' % (cents, cent_unit)
+        cent_unit = "cent" if cents == 1 else "cents"
+        ret_dollar = "%s %s" % (cents, cent_unit)
     else:
-        ret_dollar = 'zero dollars'
+        ret_dollar = "zero dollars"
     return ret_dollar
 
 
-
 def _expand_ordinal(m):
-    ''' expand ordinal '''
+    """expand ordinal"""
     return _inflect.number_to_words(m.group(0))
 
 
 def _expand_number(m):
-    ''' expand number '''
+    """expand number"""
     num = int(m.group(0))
     if 1000 < num < 3000:
         if num == 2000:
-            ret_number = 'two thousand'
+            ret_number = "two thousand"
         elif 2000 < num < 2010:
-            ret_number = 'two thousand ' + _inflect.number_to_words(num % 100)
+            ret_number = "two thousand " + _inflect.number_to_words(num % 100)
         elif num % 100 == 0:
-            ret_number = _inflect.number_to_words(num // 100) + ' hundred'
+            ret_number = _inflect.number_to_words(num // 100) + " hundred"
         else:
             ret_number = _inflect.number_to_words(
-                num,
-                andword='',
-                zero='oh',
-                group=2).replace(
-                    ', ',
-                    ' ')
+                num, andword="", zero="oh", group=2
+            ).replace(", ", " ")
         return ret_number
-    return _inflect.number_to_words(num, andword='')
+    return _inflect.number_to_words(num, andword="")
 
 
 def normalize_numbers(text):
-    ''' normalize numbers '''
+    """normalize numbers"""
     text = re.sub(_comma_number_re, _remove_commas, text)
-    text = re.sub(_pounds_re, r'\1 pounds', text)
+    text = re.sub(_pounds_re, r"\1 pounds", text)
     text = re.sub(_dollars_re, _expand_dollars, text)
     text = re.sub(_decimal_number_re, _expand_decimal_point, text)
     text = re.sub(_ordinal_re, _expand_ordinal, text)

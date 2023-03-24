@@ -1,11 +1,15 @@
 """learning rate scheduler"""
 
-import numpy as np
-
 import mindspore
 import mindspore.ops as ops
+import numpy as np
 from mindspore.common.tensor import Tensor
-from mindspore.nn.learning_rate_schedule import LearningRateSchedule, PolynomialDecayLR, WarmUpLR, CosineDecayLR
+from mindspore.nn.learning_rate_schedule import (
+    CosineDecayLR,
+    LearningRateSchedule,
+    PolynomialDecayLR,
+    WarmUpLR,
+)
 
 
 class ASRWarmupLR(LearningRateSchedule):
@@ -24,11 +28,12 @@ class ASRWarmupLR(LearningRateSchedule):
     Note that the maximum lr equals to optimizer.lr in this scheduler.
 
     """
+
     def __init__(
-            self,
-            learninig_rate: float = 0.001,
-            warmup_steps: int = 25000,
-            start_steps: int = 0,
+        self,
+        learninig_rate: float = 0.001,
+        warmup_steps: int = 25000,
+        start_steps: int = 0,
     ):
         super(ASRWarmupLR, self).__init__()
         self.learninig_rate = learninig_rate
@@ -41,7 +46,8 @@ class ASRWarmupLR(LearningRateSchedule):
         """construct asrwarmup scheduler"""
         step_num = global_step + self.start_steps
         warmup_percent = self.warmup_steps**0.5 * self.min(
-            step_num**-0.5, step_num * self.warmup_steps**-1.5)
+            step_num**-0.5, step_num * self.warmup_steps**-1.5
+        )
         current_lr = self.learninig_rate * warmup_percent
 
         return current_lr
@@ -51,15 +57,18 @@ class ASRLearningRate(LearningRateSchedule):
     """
     Warmup-decay learning rate for Bert network.
     """
-    def __init__(self, learning_rate, end_learning_rate, warmup_steps,
-                 decay_steps, power):
+
+    def __init__(
+        self, learning_rate, end_learning_rate, warmup_steps, decay_steps, power
+    ):
         super(ASRLearningRate, self).__init__()
         self.warmup_flag = False
         if warmup_steps > 0:
             self.warmup_flag = True
             self.warmup_lr = WarmUpLR(learning_rate, warmup_steps)
-        self.decay_lr = PolynomialDecayLR(learning_rate, end_learning_rate,
-                                          decay_steps, power)
+        self.decay_lr = PolynomialDecayLR(
+            learning_rate, end_learning_rate, decay_steps, power
+        )
         self.warmup_steps = Tensor(np.array([warmup_steps]).astype(np.float32))
 
         self.greater = ops.Greater()
@@ -71,8 +80,9 @@ class ASRLearningRate(LearningRateSchedule):
         """construct ASRLearningRate scheduler"""
         decay_lr = self.decay_lr(global_step)
         if self.warmup_flag:
-            is_warmup = self.cast(self.greater(self.warmup_steps, global_step),
-                                  mindspore.float32)
+            is_warmup = self.cast(
+                self.greater(self.warmup_steps, global_step), mindspore.float32
+            )
             warmup_lr = self.warmup_lr(global_step)
             lr = (self.one - is_warmup) * decay_lr + is_warmup * warmup_lr
         else:
@@ -85,15 +95,14 @@ class CosineLearningRate(LearningRateSchedule):
     """
     Warmup-decay learning rate for Bert network.
     """
-    def __init__(self, learning_rate, end_learning_rate, warmup_steps,
-                 decay_steps):
+
+    def __init__(self, learning_rate, end_learning_rate, warmup_steps, decay_steps):
         super(CosineLearningRate, self).__init__()
         self.warmup_flag = False
         if warmup_steps > 0:
             self.warmup_flag = True
             self.warmup_lr = WarmUpLR(learning_rate, warmup_steps)
-        self.decay_lr = CosineDecayLR(end_learning_rate, learning_rate,
-                                      decay_steps)
+        self.decay_lr = CosineDecayLR(end_learning_rate, learning_rate, decay_steps)
         self.warmup_steps = Tensor(np.array([warmup_steps]).astype(np.float32))
 
         self.greater = ops.Greater()
@@ -105,8 +114,9 @@ class CosineLearningRate(LearningRateSchedule):
         """construct a CosineLearningRate scheduler"""
         decay_lr = self.decay_lr(global_step)
         if self.warmup_flag:
-            is_warmup = self.cast(self.greater(self.warmup_steps, global_step),
-                                  mindspore.float32)
+            is_warmup = self.cast(
+                self.greater(self.warmup_steps, global_step), mindspore.float32
+            )
             warmup_lr = self.warmup_lr(global_step)
             lr = (self.one - is_warmup) * decay_lr + is_warmup * warmup_lr
         else:

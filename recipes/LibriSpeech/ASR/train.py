@@ -4,9 +4,8 @@ import os
 
 import mindspore.common.dtype as mstype
 import mindspore.ops as ops
-from mindaudio.loss.ctc_loss import NetWithCTCLoss
-from mindaudio.models.deepspeech2 import DeepSpeechModel
-from mindaudio.scheduler.lr_generator import get_lr
+from dataset import create_dataset
+from hparams.hparams import parse_args
 from mindspore import ParameterTuple, Tensor, context, nn
 from mindspore.communication.management import get_group_size, get_rank, init
 from mindspore.context import ParallelMode
@@ -21,8 +20,9 @@ from mindspore.train.callback import (
 )
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
 
-from dataset import create_dataset
-from hparams.hparams import parse_args
+from mindaudio.loss.ctc_loss import NetWithCTCLoss
+from mindaudio.models.deepspeech2 import DeepSpeechModel
+from mindaudio.scheduler.lr_generator import get_lr
 
 
 def train(args):

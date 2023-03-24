@@ -1,5 +1,6 @@
-import numpy as np
 import mindspore as ms
+import numpy as np
+
 
 def get_mask_from_lengths(lengths, max_len=None):
     if max_len is None:
@@ -22,9 +23,7 @@ def pad(input_ele, mel_max_length=None):
     out_list = list()
     for i, batch in enumerate(input_ele):
         if len(batch.shape) == 1:
-            one_batch_padded = ms.ops.pad(
-                batch, ((0, max_len - batch.shape[axis]),)
-            )
+            one_batch_padded = ms.ops.pad(batch, ((0, max_len - batch.shape[axis]),))
             out_list.append(one_batch_padded)
         elif len(batch.shape) == 2:
             one_batch_padded = ms.ops.pad(

@@ -1,6 +1,6 @@
-import numpy as np
 import mindspore as ms
 import mindspore.nn as nn
+import numpy as np
 
 from mindaudio.models.fastspeech2.utils import get_mask_from_lengths, pad
 
@@ -42,17 +42,29 @@ class VariancePredictor(nn.Cell):
         self.dropout = hps.model.variance_predictor.dropout
 
         self.conv1 = nn.SequentialCell(
-            nn.Conv1d(self.input_size, self.filter_size, self.kernel, has_bias=True, pad_mode='same'),
-            nn.ReLU()
+            nn.Conv1d(
+                self.input_size,
+                self.filter_size,
+                self.kernel,
+                has_bias=True,
+                pad_mode="same",
+            ),
+            nn.ReLU(),
         )
         self.norm1 = nn.LayerNorm((self.filter_size,))
-        self.dropout1 = nn.Dropout(keep_prob=1.-self.dropout)
+        self.dropout1 = nn.Dropout(keep_prob=1.0 - self.dropout)
         self.conv2 = nn.SequentialCell(
-            nn.Conv1d(self.filter_size, self.filter_size, self.kernel, has_bias=True, pad_mode='same'),
-            nn.ReLU()
+            nn.Conv1d(
+                self.filter_size,
+                self.filter_size,
+                self.kernel,
+                has_bias=True,
+                pad_mode="same",
+            ),
+            nn.ReLU(),
         )
         self.norm2 = nn.LayerNorm((self.filter_size,))
-        self.dropout2 = nn.Dropout(keep_prob=1.-self.dropout)
+        self.dropout2 = nn.Dropout(keep_prob=1.0 - self.dropout)
         self.linear_layer = nn.Dense(self.conv_output_size, 1)
 
     def construct(self, x, mask=None):
@@ -69,7 +81,7 @@ class VariancePredictor(nn.Cell):
         x = x.squeeze(-1)
 
         if mask is not None:
-            x *= (1 - mask)
+            x *= 1 - mask
 
         return x
 
@@ -97,31 +109,39 @@ class VarianceAdaptor(nn.Cell):
 
         if pitch_quantization == "log":
             self.pitch_bins = ms.Parameter(
-                np.exp(np.linspace(np.log(pitch_min + 1e-5), np.log(pitch_max + 1e-5), n_bins - 1)),
-                name='pitch_bins_log',
+                np.exp(
+                    np.linspace(
+                        np.log(pitch_min + 1e-5), np.log(pitch_max + 1e-5), n_bins - 1
+                    )
+                ),
+                name="pitch_bins_log",
                 requires_grad=False,
             )
         else:
             self.pitch_bins = ms.Parameter(
                 np.linspace(pitch_min, pitch_max, n_bins - 1),
-                name='pitch_bins',
+                name="pitch_bins",
                 requires_grad=False,
             )
         if energy_quantization == "log":
             self.energy_bins = ms.Parameter(
                 np.exp(np.linspace(np.log(energy_min), np.log(energy_max), n_bins - 1)),
-                name='energy_bins_log',
+                name="energy_bins_log",
                 requires_grad=False,
             )
         else:
             self.energy_bins = ms.Parameter(
                 np.linspace(energy_min, energy_max, n_bins - 1),
-                name='energy_bins',
+                name="energy_bins",
                 requires_grad=False,
             )
 
-        self.pitch_embedding = nn.Embedding(n_bins, hps.model.transformer.encoder_hidden)
-        self.energy_embedding = nn.Embedding(n_bins, hps.model.transformer.encoder_hidden)
+        self.pitch_embedding = nn.Embedding(
+            n_bins, hps.model.transformer.encoder_hidden
+        )
+        self.energy_embedding = nn.Embedding(
+            n_bins, hps.model.transformer.encoder_hidden
+        )
 
     def get_pitch_embedding(self, x, target, mask, control):
         prediction = self.pitch_predictor(x, mask) * control
@@ -171,11 +191,8 @@ class VarianceAdaptor(nn.Cell):
             x, mel_len = self.length_regulator(x, duration_target, max_len)
             duration_rounded = duration_target
         else:
-            T = (ms.ops.round(ms.ops.exp(log_duration_prediction) - 1) * d_control)
-            duration_rounded = ms.ops.clip_by_value(
-                T,
-                ms.Tensor(0), None
-            )
+            T = ms.ops.round(ms.ops.exp(log_duration_prediction) - 1) * d_control
+            duration_rounded = ms.ops.clip_by_value(T, ms.Tensor(0), None)
             x, mel_len = self.length_regulator(x, duration_rounded, max_len)
             mel_mask = get_mask_from_lengths(mel_len)
 
@@ -191,11 +208,11 @@ class VarianceAdaptor(nn.Cell):
             x = x + energy_embedding
 
         return {
-            'output': x,
-            'pitch_predictions': pitch_prediction,
-            'energy_predictions': energy_prediction,
-            'log_duration_predictions': log_duration_prediction,
-            'duration_rounded': duration_rounded,
-            'mel_len': mel_len,
-            'mel_masks': mel_mask,
+            "output": x,
+            "pitch_predictions": pitch_prediction,
+            "energy_predictions": energy_prediction,
+            "log_duration_predictions": log_duration_prediction,
+            "duration_rounded": duration_rounded,
+            "mel_len": mel_len,
+            "mel_masks": mel_mask,
         }

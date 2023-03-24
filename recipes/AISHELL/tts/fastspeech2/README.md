@@ -38,7 +38,7 @@ Put the `TextGrid` to be under your path given in `data_path` in `fastspeech2.ya
 
 #### 0.2 Preprocess
 
-Preprocess data to get a "_wav.npy" and "_feature.npy" for each ".wav" file in your dataset folder. Set your `data_path` and 
+Preprocess data to get a "_wav.npy" and "_feature.npy" for each ".wav" file in your dataset folder. Set your `data_path` and
 `manifest_path` in `fastspeech2.yaml`. You can now run the following command:
 
 ```python
@@ -54,7 +54,7 @@ Set up device information:
 export MY_DEVICE=Ascend # options: [Ascend, GPU]
 ```
 
-Other training and model parameters can be set in `recipes/LJSpeech/tts/fastspeech2/fastspeech2.yaml`. 
+Other training and model parameters can be set in `recipes/LJSpeech/tts/fastspeech2/fastspeech2.yaml`.
 
 Train on 1 card:
 ```shell

@@ -175,4 +175,3 @@ python eval.py -c "./hparams/Deepspeech2.yaml"
     year={2022}
 }
 ```
-

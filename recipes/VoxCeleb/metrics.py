@@ -1,6 +1,5 @@
 def compute_fa_miss(scores, labels, pos_label=1, return_thresholds=True):
-    """Returns P_fa, P_miss, [thresholds]
-    """
+    """Returns P_fa, P_miss, [thresholds]"""
     from sklearn.metrics import roc_curve
 
     fpr, tpr, thresholds = roc_curve(labels, scores, pos_label=pos_label)
@@ -13,10 +12,9 @@ def compute_fa_miss(scores, labels, pos_label=1, return_thresholds=True):
 
 
 def get_EER(P_fa, P_miss, thresholds=None):
-    """Compute EER given false alarm and miss probabilities
-    """
-    from scipy.optimize import brentq
+    """Compute EER given false alarm and miss probabilities"""
     from scipy.interpolate import interp1d
+    from scipy.optimize import brentq
 
     eer = brentq(lambda x: x - interp1d(P_fa, P_miss)(x), 0.0, 1.0)
     eer = float(eer)
@@ -28,8 +26,9 @@ def get_EER(P_fa, P_miss, thresholds=None):
 
 
 def get_EER_from_scores(scores, labels, pos_label=1):
-    """Compute EER given scores and labels
-    """
-    P_fa, P_miss, thresholds = compute_fa_miss(scores, labels, pos_label, return_thresholds=True)
+    """Compute EER given scores and labels"""
+    P_fa, P_miss, thresholds = compute_fa_miss(
+        scores, labels, pos_label, return_thresholds=True
+    )
     eer, thresh_eer = get_EER(P_fa, P_miss, thresholds)
     return eer, thresh_eer

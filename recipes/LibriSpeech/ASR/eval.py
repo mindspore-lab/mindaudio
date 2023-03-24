@@ -9,13 +9,13 @@ import pickle
 import mindspore.common.dtype as mstype
 import mindspore.ops as ops
 import numpy as np
-from mindaudio.models.decoders.greedydecoder import MSGreedyDecoder
-from mindaudio.models.deepspeech2 import DeepSpeechModel
+from dataset import create_dataset
+from hparams.hparams import parse_args
 from mindspore import context, nn
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
 
-from dataset import create_dataset
-from hparams.hparams import parse_args
+from mindaudio.models.decoders.greedydecoder import MSGreedyDecoder
+from mindaudio.models.deepspeech2 import DeepSpeechModel
 
 
 class PredictWithSoftmax(nn.Cell):

@@ -1,6 +1,6 @@
-import numpy as np
 import mindspore
-from mindspore import nn, ops, Tensor
+import numpy as np
+from mindspore import Tensor, nn, ops
 
 
 def pad_right_to(array, target_shape, mode="CONSTANT"):
@@ -30,12 +30,14 @@ def pad_right_to(array, target_shape, mode="CONSTANT"):
     valid_values = []  # this contains the relative lengths for each dimension.
     for i in range(len(target_shape)):
         assert (
-                target_shape[i] >= array.shape[i]
+            target_shape[i] >= array.shape[i]
         ), "Target shape must be >= original shape for every dim"
         pads.append((0, target_shape[i] - array.shape[i]))
         valid_values.append(array.shape[i] / target_shape[i])
     array = np.array(array, dtype=np.float32)
-    array = nn.Pad(paddings=tuple(pads), mode=mode)(Tensor(array, dtype=mindspore.float32))
+    array = nn.Pad(paddings=tuple(pads), mode=mode)(
+        Tensor(array, dtype=mindspore.float32)
+    )
     array = array.asnumpy()
     return array, valid_values
 
@@ -68,9 +70,7 @@ def batch_pad_right(arrays, mode="CONSTANT"):
         # if there is only one array in the batch we simply unsqueeze it.
         return ops.ExpandDims()(arrays[0], 0), np.array([1.0])
 
-    if not (any(
-        [arrays[i].ndim == arrays[0].ndim for i in range(1, len(arrays))]
-    )):
+    if not (any([arrays[i].ndim == arrays[0].ndim for i in range(1, len(arrays))])):
         raise IndexError("All arrays must have same number of dimensions")
 
     # multichannel

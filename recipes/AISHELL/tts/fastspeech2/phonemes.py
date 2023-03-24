@@ -1,5 +1,5 @@
-import tgt
 import numpy as np
+import tgt
 
 
 def get_alignment(tg_path, sampling_rate, hop_length):

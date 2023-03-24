@@ -2,9 +2,10 @@ import numpy as np
 
 
 class DistributedSampler:
-    '''
+    """
     For mindspore.dataset.GeneratorDataset
-    '''
+    """
+
     def __init__(self, dataset, rank, group_size, shuffle=True, seed=0):
         self.rank = rank
         self.group_size = group_size
@@ -19,7 +20,7 @@ class DistributedSampler:
             indices = np.random.permutation(self.dataset_len)
         else:
             indices = np.arange(self.dataset_len)
-        indices = indices[self.rank::self.group_size]
+        indices = indices[self.rank :: self.group_size]
         return iter(indices)
 
     def __len__(self):

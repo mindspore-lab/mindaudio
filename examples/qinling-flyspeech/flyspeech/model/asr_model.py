@@ -20,15 +20,14 @@ import mindspore
 import mindspore.common.dtype as mstype
 import mindspore.nn as nn
 import mindspore.ops as ops
-from mindspore.communication.management import get_group_size
-
 from flyspeech.layers.ctc import CTC
 from flyspeech.layers.label_smoothing_loss import LabelSmoothingLoss
 from flyspeech.transformer.cmvn import GlobalCMVN
-from flyspeech.transformer.decoder import TransformerDecoder, BiTransformerDecoder
+from flyspeech.transformer.decoder import BiTransformerDecoder, TransformerDecoder
 from flyspeech.transformer.encoder import ConformerEncoder, TransformerEncoder
 from flyspeech.utils.cmvn import load_cmvn
 from flyspeech.utils.common import IGNORE_ID
+from mindspore.communication.management import get_group_size
 
 
 class ASRModelWithAcc(nn.Cell):
@@ -46,16 +45,18 @@ class ASRModelWithAcc(nn.Cell):
         length_normalized_loss (bool): Whether to do length normalization for loss.
     """
 
-    def __init__(self,
-                 vocab_size: int,
-                 encoder: ConformerEncoder,
-                 decoder: TransformerDecoder,
-                 ctc: CTC,
-                 ctc_weight: float = 0.5,
-                 ignore_id: int = IGNORE_ID,
-                 reverse_weight: float = 0.0,
-                 lsm_weight: float = 0.0,
-                 length_normalized_loss: bool = False):
+    def __init__(
+        self,
+        vocab_size: int,
+        encoder: ConformerEncoder,
+        decoder: TransformerDecoder,
+        ctc: CTC,
+        ctc_weight: float = 0.5,
+        ignore_id: int = IGNORE_ID,
+        reverse_weight: float = 0.0,
+        lsm_weight: float = 0.0,
+        length_normalized_loss: bool = False,
+    ):
         assert 0.0 <= ctc_weight <= 1.0, ctc_weight
 
         super().__init__()
@@ -88,10 +89,20 @@ class ASRModelWithAcc(nn.Cell):
         self.gather = ops.Gather()
         self.cat = ops.Concat(axis=1)
 
-    def construct(self, xs_pad: mindspore.Tensor, ys_pad: mindspore.Tensor, ys_in_pad: mindspore.Tensor,
-                  ys_out_pad: mindspore.Tensor, r_ys_in_pad: mindspore.Tensor,
-                  r_ys_out_pad: mindspore.Tensor, xs_masks: mindspore.Tensor, ys_sub_masks: mindspore.Tensor,
-                  ys_masks: mindspore.Tensor, ys_lengths: mindspore.Tensor, xs_chunk_masks: mindspore.Tensor):
+    def construct(
+        self,
+        xs_pad: mindspore.Tensor,
+        ys_pad: mindspore.Tensor,
+        ys_in_pad: mindspore.Tensor,
+        ys_out_pad: mindspore.Tensor,
+        r_ys_in_pad: mindspore.Tensor,
+        r_ys_out_pad: mindspore.Tensor,
+        xs_masks: mindspore.Tensor,
+        ys_sub_masks: mindspore.Tensor,
+        ys_masks: mindspore.Tensor,
+        ys_lengths: mindspore.Tensor,
+        xs_chunk_masks: mindspore.Tensor,
+    ):
         """Encoder + Decoder + Calc loss.
 
         Args:
@@ -149,28 +160,40 @@ class ASRModelWithAcc(nn.Cell):
         else:
             loss = self.ctc_weight * loss_ctc + (1 - self.ctc_weight) * loss_att
 
-        self.scalar_summary('loss', loss)
+        self.scalar_summary("loss", loss)
         if loss_att is not None:
-            self.scalar_summary('loss_att', loss_att)
-            self.scalar_summary('acc_att', acc_att)
+            self.scalar_summary("loss_att", loss_att)
+            self.scalar_summary("acc_att", acc_att)
         if loss_ctc is not None:
-            self.scalar_summary('loss_ctc', loss_ctc)
+            self.scalar_summary("loss_ctc", loss_ctc)
 
         return loss, acc_att
 
-    def _calc_att_loss(self, encoder_out: mindspore.Tensor, encoder_mask: mindspore.Tensor, ys_in_pad: mindspore.Tensor,
-                       ys_out_pad: mindspore.Tensor, r_ys_in_pad: mindspore.Tensor, r_ys_out_pad: mindspore.Tensor,
-                       ys_masks: mindspore.Tensor, ys_sub_masks: mindspore.Tensor):
+    def _calc_att_loss(
+        self,
+        encoder_out: mindspore.Tensor,
+        encoder_mask: mindspore.Tensor,
+        ys_in_pad: mindspore.Tensor,
+        ys_out_pad: mindspore.Tensor,
+        r_ys_in_pad: mindspore.Tensor,
+        r_ys_out_pad: mindspore.Tensor,
+        ys_masks: mindspore.Tensor,
+        ys_sub_masks: mindspore.Tensor,
+    ):
         """Calculate attention loss."""
         # 1. Forward decoder
-        decoder_out, r_decoder_out = self.decoder(encoder_out, encoder_mask, ys_in_pad, ys_sub_masks, r_ys_in_pad)
+        decoder_out, r_decoder_out = self.decoder(
+            encoder_out, encoder_mask, ys_in_pad, ys_sub_masks, r_ys_in_pad
+        )
         decoder_out = self.cast(decoder_out, mstype.float32)
         r_decoder_out = self.cast(r_decoder_out, mstype.float32)
         # 2. Compute attention loss
         loss_att = self.criterion_att(decoder_out, ys_out_pad, ys_masks)
         if self.reverse_weight > 0.0:
             r_loss_att = self.criterion_att(r_decoder_out, r_ys_out_pad, ys_masks)
-            loss_att = loss_att * (1 - self.reverse_weight) + r_loss_att * self.reverse_weight
+            loss_att = (
+                loss_att * (1 - self.reverse_weight) + r_loss_att * self.reverse_weight
+            )
 
         # 3. Compute attention accuracy
         acc_att = self._th_accuracy(
@@ -181,7 +204,12 @@ class ASRModelWithAcc(nn.Cell):
 
         return loss_att, acc_att
 
-    def _th_accuracy(self, pad_outputs: mindspore.Tensor, pad_targets: mindspore.Tensor, ys_masks: mindspore.Tensor):
+    def _th_accuracy(
+        self,
+        pad_outputs: mindspore.Tensor,
+        pad_targets: mindspore.Tensor,
+        ys_masks: mindspore.Tensor,
+    ):
         """Calculate accuracy.
 
         Args:
@@ -214,31 +242,45 @@ class ASRModel(nn.Cell):
         length_normalized_loss (bool): Whether to do length normalization for loss.
     """
 
-    def __init__(self,
-                 vocab_size: int,
-                 encoder: ConformerEncoder,
-                 decoder: TransformerDecoder,
-                 ctc: CTC,
-                 ctc_weight: float = 0.5,
-                 ignore_id: int = IGNORE_ID,
-                 reverse_weight: float = 0.0,
-                 lsm_weight: float = 0.0,
-                 length_normalized_loss: bool = False):
+    def __init__(
+        self,
+        vocab_size: int,
+        encoder: ConformerEncoder,
+        decoder: TransformerDecoder,
+        ctc: CTC,
+        ctc_weight: float = 0.5,
+        ignore_id: int = IGNORE_ID,
+        reverse_weight: float = 0.0,
+        lsm_weight: float = 0.0,
+        length_normalized_loss: bool = False,
+    ):
         super().__init__()
-        self.acc_net = ASRModelWithAcc(vocab_size=vocab_size,
-                                       encoder=encoder,
-                                       decoder=decoder,
-                                       ctc=ctc,
-                                       ctc_weight=ctc_weight,
-                                       ignore_id=ignore_id,
-                                       reverse_weight=reverse_weight,
-                                       lsm_weight=lsm_weight,
-                                       length_normalized_loss=length_normalized_loss)
+        self.acc_net = ASRModelWithAcc(
+            vocab_size=vocab_size,
+            encoder=encoder,
+            decoder=decoder,
+            ctc=ctc,
+            ctc_weight=ctc_weight,
+            ignore_id=ignore_id,
+            reverse_weight=reverse_weight,
+            lsm_weight=lsm_weight,
+            length_normalized_loss=length_normalized_loss,
+        )
 
-    def construct(self, xs_pad: mindspore.Tensor, ys_pad: mindspore.Tensor, ys_in_pad: mindspore.Tensor,
-                  ys_out_pad: mindspore.Tensor, r_ys_in_pad: mindspore.Tensor, r_ys_out_pad: mindspore.Tensor,
-                  xs_masks: mindspore.Tensor, ys_sub_masks: mindspore.Tensor,
-                  ys_masks: mindspore.Tensor, ys_lengths: mindspore.Tensor, xs_chunk_masks: mindspore.Tensor):
+    def construct(
+        self,
+        xs_pad: mindspore.Tensor,
+        ys_pad: mindspore.Tensor,
+        ys_in_pad: mindspore.Tensor,
+        ys_out_pad: mindspore.Tensor,
+        r_ys_in_pad: mindspore.Tensor,
+        r_ys_out_pad: mindspore.Tensor,
+        xs_masks: mindspore.Tensor,
+        ys_sub_masks: mindspore.Tensor,
+        ys_masks: mindspore.Tensor,
+        ys_lengths: mindspore.Tensor,
+        xs_chunk_masks: mindspore.Tensor,
+    ):
         """Do forward process.
 
         Args:
@@ -257,36 +299,48 @@ class ASRModel(nn.Cell):
         Returns:
             tuple: tensor of loss, tensor of attention accuracy
         """
-        loss, _ = self.acc_net(xs_pad, ys_pad, ys_in_pad, ys_out_pad, r_ys_in_pad, r_ys_out_pad,
-                               xs_masks, ys_sub_masks, ys_masks, ys_lengths,
-                               xs_chunk_masks)
+        loss, _ = self.acc_net(
+            xs_pad,
+            ys_pad,
+            ys_in_pad,
+            ys_out_pad,
+            r_ys_in_pad,
+            r_ys_out_pad,
+            xs_masks,
+            ys_sub_masks,
+            ys_masks,
+            ys_lengths,
+            xs_chunk_masks,
+        )
         return loss
 
 
 def init_asr_model(config, input_dim, vocab_size):
     """Init a ASR model."""
-    mean, istd = load_cmvn(config['cmvn_file'], config['is_json_cmvn'])
-    global_cmvn = GlobalCMVN(mindspore.Tensor(mean, mstype.float32), mindspore.Tensor(istd, mstype.float32))
-    if config['mixed_precision']:
+    mean, istd = load_cmvn(config["cmvn_file"], config["is_json_cmvn"])
+    global_cmvn = GlobalCMVN(
+        mindspore.Tensor(mean, mstype.float32), mindspore.Tensor(istd, mstype.float32)
+    )
+    if config["mixed_precision"]:
         compute_type = mstype.float16
     else:
         compute_type = mstype.float32
 
-    encoder_type = config['encoder']
-    decoder_type = config['decoder']
-    ctc_weight = config['model_conf']['ctc_weight']
+    encoder_type = config["encoder"]
+    decoder_type = config["decoder"]
+    ctc_weight = config["model_conf"]["ctc_weight"]
 
-    if encoder_type == 'conformer':
+    if encoder_type == "conformer":
         encoder = ConformerEncoder(
             input_dim,
-            **config['encoder_conf'],
+            **config["encoder_conf"],
             global_cmvn=global_cmvn,
             compute_type=compute_type,
         )
-    elif encoder_type == 'transformer':
+    elif encoder_type == "transformer":
         encoder = TransformerEncoder(
             input_dim,
-            **config['encoder_conf'],
+            **config["encoder_conf"],
             global_cmvn=global_cmvn,
             compute_type=compute_type,
         )
@@ -296,21 +350,21 @@ def init_asr_model(config, input_dim, vocab_size):
 
     if ctc_weight == 1.0:
         decoder = None
-    elif decoder_type == 'transformer':
+    elif decoder_type == "transformer":
         decoder = TransformerDecoder(
             vocab_size,
             encoder.output_size(),
             compute_type=compute_type,
-            **config['decoder_conf'],
+            **config["decoder_conf"],
         )
-    elif decoder_type == 'bitransformer':
-        assert 0.0 < config['model_conf']['reverse_weight'] < 1.0
-        assert config['decoder_conf']['r_num_blocks'] > 0
+    elif decoder_type == "bitransformer":
+        assert 0.0 < config["model_conf"]["reverse_weight"] < 1.0
+        assert config["decoder_conf"]["r_num_blocks"] > 0
         decoder = BiTransformerDecoder(
             vocab_size,
             encoder.output_size(),
             compute_type=compute_type,
-            **config['decoder_conf'],
+            **config["decoder_conf"],
         )
     else:
         raise NotImplementedError
@@ -325,7 +379,7 @@ def init_asr_model(config, input_dim, vocab_size):
         encoder=encoder,
         decoder=decoder,
         ctc=ctc,
-        **config['model_conf'],
+        **config["model_conf"],
     )
 
     return model

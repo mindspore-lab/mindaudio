@@ -1,12 +1,7 @@
 import mindspore as ms
 import mindspore.dataset.audio as msaudio
 import numpy as np
-from mindspore.dataset.audio.utils import (
-    BorderType,
-    MelType,
-    NormType,
-    WindowType,
-)
+from mindspore.dataset.audio.utils import BorderType, MelType, NormType, WindowType
 from numpy import fft
 from scipy.signal import get_window
 
@@ -24,7 +19,7 @@ __all__ = [
 ]
 
 # Define max block sizes(256 KB)
-MAX_MEM_BLOCK = 2 ** 8 * 2 ** 10
+MAX_MEM_BLOCK = 2**8 * 2**10
 
 
 def amplitude_to_dB(wavform, stype="power", ref=1.0, amin=1e-10, top_db=80.0):
@@ -97,18 +92,18 @@ def amplitude_to_dB(wavform, stype="power", ref=1.0, amin=1e-10, top_db=80.0):
 
 def dB_to_amplitude(wavform, ref, power):
     """
-        Turn a dB-scaled spectrogram to the power/amplitude scale.
+    Turn a dB-scaled spectrogram to the power/amplitude scale.
 
-        Args:
-            wavform (np.ndarray): A dB-scaled spectrogram.
-            ref (float, callable): Reference which the output will be scaled by. Can be set to be np.max.
-            power (float): If power equals 1, will compute DB to power. If 0.5, will compute DB to amplitude.
+    Args:
+        wavform (np.ndarray): A dB-scaled spectrogram.
+        ref (float, callable): Reference which the output will be scaled by. Can be set to be np.max.
+        power (float): If power equals 1, will compute DB to power. If 0.5, will compute DB to amplitude.
 
-        Examples:
-            >>> import numpy as np
-            >>> import mindaudio.data.spectrum as spectrum
-            >>> specgram = np.array([[2.716064453125e-03, 6.34765625e-03], [9.246826171875e-03, 1.0894775390625e-02]])
-            >>> out = spectrum.dB_to_amplitude(specgram, 0.5, 0.5)
+    Examples:
+        >>> import numpy as np
+        >>> import mindaudio.data.spectrum as spectrum
+        >>> specgram = np.array([[2.716064453125e-03, 6.34765625e-03], [9.246826171875e-03, 1.0894775390625e-02]])
+        >>> out = spectrum.dB_to_amplitude(specgram, 0.5, 0.5)
     """
     if callable(ref):
         ref_value = ref(wavform)
@@ -430,7 +425,7 @@ def istft(
     y = np.zeros(shape, dtype=np.float_)
 
     n_columns = (
-        2 ** 8 * 2 ** 10 // (np.prod(stft_matrix.shape[:-1]) * stft_matrix.itemsize)
+        2**8 * 2**10 // (np.prod(stft_matrix.shape[:-1]) * stft_matrix.itemsize)
     )
     n_columns = max(n_columns, 1)
 
@@ -488,7 +483,7 @@ def _window_sumsquare(window, n_frames, win_length, n_fft, hop_length):
 
     # Compute the squared window at the desired length
     win_sq = get_window(window, win_length)
-    win_sq = win_sq ** 2
+    win_sq = win_sq**2
     win_sq = _pad_center(win_sq, n_fft)
 
     n = len(x)
@@ -563,34 +558,34 @@ def spectrogram(
     onesided=True,
 ):
     """
-        Create a spectrogram from an audio signal.
+    Create a spectrogram from an audio signal.
 
-        Args:
-            waveforms (np.ndarray): A waveform to compute spectrogram, shape should be
-                                    `[time]` or `[batch, time]` or `[batch, time, channels]`
-            n_fft (int or None): Size of FFT, creates n_fft // 2 + 1 bins (default=400).
-            win_length (int): Window size (default=None, will use n_fft).
-            hop_length (int): Length of hop between STFT windows (default=None, will use win_length // 2).
-            pad (int): Two sided padding of signal (default=0).
-            window (str, Callable): Window function that is applied/multiplied to each frame/window,
-                which can be 'bartlett', 'blackman', 'hamming', 'hann' or 'kaiser' (default='hann').
-                Currently kaiser window is not supported on macOS.
-            power (float): Exponent for the magnitude spectrogram, which must be greater
-                than or equal to 0, e.g., 1 for energy, 2 for power, etc. (default=2.0).
-            normalized (bool): Whether to normalize by magnitude after stft (default=False).
-            center (bool): Whether to pad waveform on both sides (default=True).
-            pad_mode (str): Controls the padding method used when center is True,
-                which can be 'constant', 'edge', 'reflect', 'symmetric' (default='reflect').
-            onesided (bool): Controls whether to return half of results to avoid redundancy (default=True).
+    Args:
+        waveforms (np.ndarray): A waveform to compute spectrogram, shape should be
+                                `[time]` or `[batch, time]` or `[batch, time, channels]`
+        n_fft (int or None): Size of FFT, creates n_fft // 2 + 1 bins (default=400).
+        win_length (int): Window size (default=None, will use n_fft).
+        hop_length (int): Length of hop between STFT windows (default=None, will use win_length // 2).
+        pad (int): Two sided padding of signal (default=0).
+        window (str, Callable): Window function that is applied/multiplied to each frame/window,
+            which can be 'bartlett', 'blackman', 'hamming', 'hann' or 'kaiser' (default='hann').
+            Currently kaiser window is not supported on macOS.
+        power (float): Exponent for the magnitude spectrogram, which must be greater
+            than or equal to 0, e.g., 1 for energy, 2 for power, etc. (default=2.0).
+        normalized (bool): Whether to normalize by magnitude after stft (default=False).
+        center (bool): Whether to pad waveform on both sides (default=True).
+        pad_mode (str): Controls the padding method used when center is True,
+            which can be 'constant', 'edge', 'reflect', 'symmetric' (default='reflect').
+        onesided (bool): Controls whether to return half of results to avoid redundancy (default=True).
 
-        Returns:
-            np.ndarray, a spectrogram from an audio signal.
+    Returns:
+        np.ndarray, a spectrogram from an audio signal.
 
-        Exaples：
-            >>> waveform, _ = io.read('./samples/ASR/BAC009S0002W0122.wav')
-            >>> spec = spectrum.spectrogram(waveform)
+    Exaples：
+        >>> waveform, _ = io.read('./samples/ASR/BAC009S0002W0122.wav')
+        >>> spec = spectrum.spectrogram(waveform)
 
-        """
+    """
 
     win_length = win_length if win_length else n_fft
     hop_length = hop_length if hop_length else win_length // 2
@@ -751,27 +746,27 @@ def melscale(
     mel_type=MelType.HTK,
 ):
     """
-        Convert normal STFT to STFT at the Mel scale
+    Convert normal STFT to STFT at the Mel scale
 
-        Args:
-            n_mels (int) – Number of mel filterbanks (default=128).
-            sample_rate (int) – Sample rate of audio signal (default=16000).
-            f_min (float) – Minimum frequency (default=0).
-            f_max (float) – Maximum frequency (default=None, will be set to sample_rate // 2).
-            n_stft (int) – Number of bins in STFT (default=201).
-            norm (NormType) – Type of norm, value should be NormType.SLANEY or NormType::NONE. If norm is NormType.
-            SLANEY, divide the triangular mel weight by the width of the mel band. (default=NormType.NONE).
-            mel_type (MelType) – Type to use, value should be MelType.SLANEY or MelType.HTK (default=MelType.HTK).
-        Returns:
-            np.ndarray (tuple): A 2-dimension tuple indicating magnitude and phase.
+    Args:
+        n_mels (int) – Number of mel filterbanks (default=128).
+        sample_rate (int) – Sample rate of audio signal (default=16000).
+        f_min (float) – Minimum frequency (default=0).
+        f_max (float) – Maximum frequency (default=None, will be set to sample_rate // 2).
+        n_stft (int) – Number of bins in STFT (default=201).
+        norm (NormType) – Type of norm, value should be NormType.SLANEY or NormType::NONE. If norm is NormType.
+        SLANEY, divide the triangular mel weight by the width of the mel band. (default=NormType.NONE).
+        mel_type (MelType) – Type to use, value should be MelType.SLANEY or MelType.HTK (default=MelType.HTK).
+    Returns:
+        np.ndarray (tuple): A 2-dimension tuple indicating magnitude and phase.
 
-        Examples:
-            >>> import numpy as np
-            >>> import mindaudio.data.spectrum as spectrum
-            >>> waveforms, _ = io.read('./samples/ASR/BAC009S0002W0122.wav')
-            >>> spec = spectrum.spectrogram(waveforms, n_fft=1024)
-            >>> melscale_spec = spectrum.melscale(spec, n_stft=1024 // 2 +1)
-        """
+    Examples:
+        >>> import numpy as np
+        >>> import mindaudio.data.spectrum as spectrum
+        >>> waveforms, _ = io.read('./samples/ASR/BAC009S0002W0122.wav')
+        >>> spec = spectrum.spectrogram(waveforms, n_fft=1024)
+        >>> melscale_spec = spectrum.melscale(spec, n_stft=1024 // 2 +1)
+    """
     f_max = f_max if f_max is not None else sample_rate // 2
     mel_scale = msaudio.MelScale(
         n_mels, sample_rate, f_min, f_max, n_stft, norm, mel_type
@@ -801,7 +796,13 @@ def resynthesize(enhanced_mag, noisy_inputs, normalize_wavs=True):
     noisy_feats = stft(noisy_inputs, return_complex=False)
     noisy_phase = np.arctan2(noisy_feats[:, :, 1], noisy_feats[:, :, 0])
 
-    pre_stack = np.stack([np.cos(noisy_phase), np.sin(noisy_phase),], axis=-1,)
+    pre_stack = np.stack(
+        [
+            np.cos(noisy_phase),
+            np.sin(noisy_phase),
+        ],
+        axis=-1,
+    )
     # using enhanced magnitude to combine data
     complex_predictions = np.expand_dims(enhanced_mag, -1) * pre_stack
     result = complex_predictions[:, :, 0] + 1j * complex_predictions[:, :, 1]

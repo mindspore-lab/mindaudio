@@ -14,13 +14,14 @@
 # ============================================================================
 """Define methods."""
 from typing import List
+
 import numpy as np
 
 
 def load_language_dict(dict_file):
     """Load dict for ASR."""
     char_dict = {}
-    with open(dict_file, 'r') as fin:
+    with open(dict_file, "r") as fin:
         for line in fin:
             arr = line.strip().split()
             assert len(arr) == 2
@@ -40,8 +41,7 @@ def get_padding_length(length, frame_bucket_limits):
 
 
 def make_pad_mask(lengths: List[int], max_len: int = 0):
-    """Make mask containing indices of padded part.
-    """
+    """Make mask containing indices of padded part."""
     batch_size = int(len(lengths))
     max_len = max_len if max_len > 0 else max(lengths)
     seq_range = np.expand_dims(np.arange(0, max_len), 0)
@@ -52,8 +52,7 @@ def make_pad_mask(lengths: List[int], max_len: int = 0):
 
 
 def subsequent_mask(size: int):
-    """Create mask for subsequent steps (size, size).
-    """
+    """Create mask for subsequent steps (size, size)."""
     seq_range = np.arange(size)
     seq_range_expand = np.tile(seq_range, (size, 1))
     seq_length_expand = np.expand_dims(seq_range, -1)
@@ -77,8 +76,12 @@ def mask_finished_scores(score, end_flag):
     beam_size = score.shape[-1]
     zero_mask = np.zeros_like(end_flag)
     if beam_size > 1:
-        unfinished = np.concatenate((zero_mask, np.tile(end_flag, (1, beam_size - 1))), axis=1)
-        finished = np.concatenate((end_flag, np.tile(zero_mask, (1, beam_size - 1))), axis=1)
+        unfinished = np.concatenate(
+            (zero_mask, np.tile(end_flag, (1, beam_size - 1))), axis=1
+        )
+        finished = np.concatenate(
+            (end_flag, np.tile(zero_mask, (1, beam_size - 1))), axis=1
+        )
     else:
         unfinished = zero_mask
         finished = end_flag
@@ -102,7 +105,7 @@ def mask_finished_preds(pred, end_flag, eos):
     """
     beam_size = pred.shape[-1]
     finished = np.tile(end_flag, (1, beam_size)).astype(np.int32)
-    pred = pred * (1-finished) + eos*finished
+    pred = pred * (1 - finished) + eos * finished
     return pred
 
 

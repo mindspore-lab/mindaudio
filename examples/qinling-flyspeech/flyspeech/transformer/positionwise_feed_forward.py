@@ -18,7 +18,6 @@
 import mindspore
 import mindspore.common.dtype as mstype
 import mindspore.nn as nn
-
 from flyspeech.layers.dense import Dense
 
 
@@ -36,12 +35,14 @@ class PositionwiseFeedForward(nn.Cell):
         compute_type (dtype): whether to use mix precision training.
     """
 
-    def __init__(self,
-                 idim: int,
-                 hidden_units: int,
-                 dropout_rate: float,
-                 activation: nn.Cell,
-                 compute_type=mstype.float32):
+    def __init__(
+        self,
+        idim: int,
+        hidden_units: int,
+        dropout_rate: float,
+        activation: nn.Cell,
+        compute_type=mstype.float32,
+    ):
         """Construct a PositionwiseFeedForward object."""
         super(PositionwiseFeedForward, self).__init__()
         self.w_1 = Dense(idim, hidden_units).to_float(compute_type)

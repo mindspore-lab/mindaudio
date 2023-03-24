@@ -1,16 +1,22 @@
 """CTC layer."""
 
-import numpy as np
 import mindspore
 import mindspore.common.dtype as mstype
-import mindspore.ops.operations as ops
 import mindspore.nn as nn  # pylint: disable=C0412
+import mindspore.ops.operations as ops
+import numpy as np
 
 
 class CTC(nn.Cell):
     """CTC module."""
 
-    def __init__(self, odim: int, encoder_output_size: int, dropout_rate: float = 0.0, compute_type=mstype.float32):
+    def __init__(
+        self,
+        odim: int,
+        encoder_output_size: int,
+        dropout_rate: float = 0.0,
+        compute_type=mstype.float32,
+    ):
         """Construct CTC module.
 
         Args:
@@ -29,8 +35,13 @@ class CTC(nn.Cell):
         self.cast = ops.Cast()
         self.count = 0
 
-    def construct(self, hs_pad: mindspore.Tensor, hlens: mindspore.Tensor, ys_pad: mindspore.Tensor,
-                  ys_pad_indices: mindspore.Tensor) -> mindspore.Tensor:
+    def construct(
+        self,
+        hs_pad: mindspore.Tensor,
+        hlens: mindspore.Tensor,
+        ys_pad: mindspore.Tensor,
+        ys_pad_indices: mindspore.Tensor,
+    ) -> mindspore.Tensor:
         """Calculate CTC loss.
 
         Args:

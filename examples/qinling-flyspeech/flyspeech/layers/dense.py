@@ -18,7 +18,12 @@ import math
 
 import mindspore
 import mindspore.nn as nn
-from mindspore.common.initializer import HeUniform, Uniform, _calculate_correct_fan, initializer
+from mindspore.common.initializer import (
+    HeUniform,
+    Uniform,
+    _calculate_correct_fan,
+    initializer,
+)
 from mindspore.nn.cell import Cell
 
 
@@ -35,28 +40,36 @@ class Dense(Cell):
         nonlinerity (str): The non-linear function, use only with "relu" or "leaky_relu"
     """
 
-    def __init__(self,
-                 in_channel,
-                 out_channel,
-                 has_bias=True,
-                 activation=None,
-                 negative_slope=math.sqrt(5),
-                 mode='fan_in',
-                 nonlinearity='leaky_relu'):
+    def __init__(
+        self,
+        in_channel,
+        out_channel,
+        has_bias=True,
+        activation=None,
+        negative_slope=math.sqrt(5),
+        mode="fan_in",
+        nonlinearity="leaky_relu",
+    ):
         super(Dense, self).__init__()
-        kaiming_uniform_0 = initializer(HeUniform(negative_slope=negative_slope, mode=mode, nonlinearity=nonlinearity),
-                                        (out_channel, in_channel))
-        bias_init_0 = 'zeros'
+        kaiming_uniform_0 = initializer(
+            HeUniform(
+                negative_slope=negative_slope, mode=mode, nonlinearity=nonlinearity
+            ),
+            (out_channel, in_channel),
+        )
+        bias_init_0 = "zeros"
         if has_bias:
             fan_in = _calculate_correct_fan((out_channel, in_channel), mode=mode)
             scale = 1 / math.sqrt(fan_in)
             bias_init_0 = initializer(Uniform(scale), [out_channel], mindspore.float32)
-        self.dense = nn.Dense(in_channel,
-                              out_channel,
-                              weight_init=kaiming_uniform_0,
-                              bias_init=bias_init_0,
-                              has_bias=has_bias,
-                              activation=activation)
+        self.dense = nn.Dense(
+            in_channel,
+            out_channel,
+            weight_init=kaiming_uniform_0,
+            bias_init=bias_init_0,
+            has_bias=has_bias,
+            activation=activation,
+        )
 
     def construct(self, x):
         out = self.dense(x)

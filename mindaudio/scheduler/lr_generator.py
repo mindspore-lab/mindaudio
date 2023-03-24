@@ -1,6 +1,6 @@
 """learning rate generator"""
-import numpy as np
 import mindspore.ops as ops
+import numpy as np
 from mindspore.common.tensor import Tensor
 from mindspore.nn.learning_rate_schedule import LearningRateSchedule
 
@@ -21,7 +21,12 @@ class ASRWarmupLR(LearningRateSchedule):
     Note that the maximum lr equals to optimizer.lr in this scheduler.
     """
 
-    def __init__(self, learninig_rate: float = 0.001, warmup_steps: int = 25000, start_steps: int = 0):
+    def __init__(
+        self,
+        learninig_rate: float = 0.001,
+        warmup_steps: int = 25000,
+        start_steps: int = 0,
+    ):
         super(ASRWarmupLR, self).__init__()
         self.learninig_rate = learninig_rate
         self.warmup_steps = Tensor(np.array([warmup_steps]).astype(np.float32))
@@ -32,10 +37,12 @@ class ASRWarmupLR(LearningRateSchedule):
     def construct(self, global_step):
         """construct asrwarmup scheduler."""
         step_num = global_step + self.start_steps
-        warmup_percent = self.warmup_steps**0.5 * self.min(step_num**-0.5, step_num * self.warmup_steps**-1.5)
+        warmup_percent = self.warmup_steps**0.5 * self.min(
+            step_num**-0.5, step_num * self.warmup_steps**-1.5
+        )
         current_lr = self.learninig_rate * warmup_percent
         return current_lr
-    
+
 
 def get_lr(lr_init, total_epochs, steps_per_epoch):
     """

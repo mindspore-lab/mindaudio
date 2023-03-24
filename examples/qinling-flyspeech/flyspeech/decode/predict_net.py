@@ -14,11 +14,10 @@
 # ============================================================================
 """Prediction net for ASR inference."""
 
-import numpy as np
-
 import mindspore
 import mindspore.nn as nn
 import mindspore.ops as ops
+import numpy as np
 
 
 class PredictNet(nn.Cell):
@@ -60,13 +59,15 @@ class PredictNet(nn.Cell):
         beam_size = score.shape[-1]
         zero_mask = self.zeros_like(end_flag)
         if self.beam_size > 1:
-            unfinished = self.concat((zero_mask, self.tile(end_flag, (1, beam_size - 1))))
+            unfinished = self.concat(
+                (zero_mask, self.tile(end_flag, (1, beam_size - 1)))
+            )
             finished = self.concat((end_flag, self.tile(zero_mask, (1, beam_size - 1))))
         else:
             unfinished = zero_mask
             finished = end_flag
         score = score + unfinished * self.inf
-        score = score * (1-finished)
+        score = score * (1 - finished)
 
         return score
 
@@ -84,10 +85,20 @@ class PredictNet(nn.Cell):
         """
         beam_size = pred.shape[-1]
         finished = self.cast(self.tile(end_flag, (1, beam_size)), mindspore.int32)
-        pred = pred * (1-finished) + eos*finished
+        pred = pred * (1 - finished) + eos * finished
         return pred
 
-    def construct(self, memory, memory_mask, tgt, tgt_mask, valid_length, end_flag, scores, base_index):
+    def construct(
+        self,
+        memory,
+        memory_mask,
+        tgt,
+        tgt_mask,
+        valid_length,
+        end_flag,
+        scores,
+        base_index,
+    ):
         """Conduct beam search inference.
 
         Args:
@@ -107,17 +118,23 @@ class PredictNet(nn.Cell):
         for _, decoder in enumerate(self.backbone.acc_net.decoder.decoders):
             x, tgt_mask, memory, memory_mask = decoder(x, tgt_mask, memory, memory_mask)
         if self.backbone.acc_net.decoder.normalize_before:
-            y = self.backbone.acc_net.decoder.after_norm(self.gather(x, valid_length, 1))
+            y = self.backbone.acc_net.decoder.after_norm(
+                self.gather(x, valid_length, 1)
+            )
         else:
             y = self.gather(x, valid_length, 1)
 
         if self.backbone.acc_net.decoder.use_output_layer:
-            y = self.backbone.acc_net.decoder.log_softmax(self.backbone.acc_net.decoder.output_layer(y))
+            y = self.backbone.acc_net.decoder.log_softmax(
+                self.backbone.acc_net.decoder.output_layer(y)
+            )
 
         # 2.2 First beam prune: select topk best prob at current time
         top_k_logp, top_k_index = self.topk(y, self.beam_size)  # (B*N, N)
         top_k_logp = self.mask_finished_scores(top_k_logp, end_flag)  # (B*N, N)
-        top_k_index = self.mask_finished_preds(top_k_index, end_flag, self.eos)  # (B*N, N)
+        top_k_index = self.mask_finished_preds(
+            top_k_index, end_flag, self.eos
+        )  # (B*N, N)
         batch_size = top_k_logp.shape[0] // self.beam_size
         # 2.3 Second beam prune: select topk score with history
         scores = scores + top_k_logp  # (B*N, N), broadcast add
@@ -171,8 +188,12 @@ class CTCGreedySearch(nn.Cell):
         """
         batch_size = xs_pad.shape[0]
         if self.pretrained_model:
-            xs_pad, xs_masks = self.backbone.acc_net.pretrained_model.acc_net.extrator_feature_only(
-                xs_pad, xs_masks, xs_lengths)
+            (
+                xs_pad,
+                xs_masks,
+            ) = self.backbone.acc_net.pretrained_model.acc_net.extrator_feature_only(
+                xs_pad, xs_masks, xs_lengths
+            )
             if self.backbone.acc_net.feature_post_proj:
                 xs_pad = self.backbone.acc_net.feature_post_proj(xs_pad)
         xs_masks = xs_masks[:, :, :-2:2][:, :, :-2:2]
@@ -214,12 +235,26 @@ class Attention(nn.Cell):
         self.concat = ops.Concat(axis=1)
         self.scatterupdate = ops.TensorScatterUpdate()
         self.gather = ops.Gather()
-        self.beam_index_left = mindspore.Tensor(np.arange(beam_size).reshape(-1, 1), mindspore.int32)
-        self.beam_index_right = mindspore.Tensor(np.ones((beam_size, 1)), mindspore.int32)
+        self.beam_index_left = mindspore.Tensor(
+            np.arange(beam_size).reshape(-1, 1), mindspore.int32
+        )
+        self.beam_index_right = mindspore.Tensor(
+            np.ones((beam_size, 1)), mindspore.int32
+        )
         self.zero = mindspore.Tensor(0, mindspore.int32)
         self.one = mindspore.Tensor(1, mindspore.int32)
 
-    def construct(self, xs_pad, xs_masks, xs_lengths, hyps_sub_masks, input_ids, scores, end_flag, base_index):
+    def construct(
+        self,
+        xs_pad,
+        xs_masks,
+        xs_lengths,
+        hyps_sub_masks,
+        input_ids,
+        scores,
+        end_flag,
+        base_index,
+    ):
         """Conduct Attention inference.
 
         Args:
@@ -238,19 +273,29 @@ class Attention(nn.Cell):
         batch_size = xs_pad.shape[0]
         running_size = batch_size * self.beam_size
         if self.pretrained_model:
-            xs_pad, xs_masks = self.backbone.acc_net.pretrained_model.acc_net.extrator_feature_only(
-                xs_pad, xs_masks, xs_lengths)
+            (
+                xs_pad,
+                xs_masks,
+            ) = self.backbone.acc_net.pretrained_model.acc_net.extrator_feature_only(
+                xs_pad, xs_masks, xs_lengths
+            )
             if self.backbone.acc_net.feature_post_proj:
                 xs_pad = self.backbone.acc_net.feature_post_proj(xs_pad)
         xs_masks = xs_masks[:, :, :-2:2][:, :, :-2:2]
-        encoder_out, encoder_mask = self.backbone.acc_net.encoder(xs_pad, xs_masks, xs_masks)
+        encoder_out, encoder_mask = self.backbone.acc_net.encoder(
+            xs_pad, xs_masks, xs_masks
+        )
         maxlen = encoder_out.shape[1]
         encoder_dim = encoder_out.shape[2]
         # (B*N, maxlen, encoder_dim)
-        encoder_out = self.tile(self.expand_dims(encoder_out, 1), (1, self.beam_size, 1, 1))
+        encoder_out = self.tile(
+            self.expand_dims(encoder_out, 1), (1, self.beam_size, 1, 1)
+        )
         encoder_out = encoder_out.view((running_size, maxlen, encoder_dim))
         # (B*N, 1, max_len)
-        encoder_mask = self.tile(self.expand_dims(encoder_mask, 1), (1, self.beam_size, 1, 1))
+        encoder_mask = self.tile(
+            self.expand_dims(encoder_mask, 1), (1, self.beam_size, 1, 1)
+        )
         encoder_mask = encoder_mask.view((running_size, 1, maxlen))
         # 2. Decoder forward step by step
         valid_length = self.zero
@@ -263,17 +308,34 @@ class Attention(nn.Cell):
             if end_flag.sum() == running_size:
                 break
             # 2.1 Forward decoder step
-            hyps_mask = self.expand_dims(self.gather(self.cast(hyps_sub_masks, mindspore.float32), i, 0), 0)
+            hyps_mask = self.expand_dims(
+                self.gather(self.cast(hyps_sub_masks, mindspore.float32), i, 0), 0
+            )
             hyps_mask = self.cast(hyps_mask, mindspore.bool_)
             hyps_mask = self.tile(hyps_mask, (running_size, 1, 1))  # (B*N, i, i)
             input_ids, valid_length, end_flag, scores, best_k_pred = self.predict_model(
-                encoder_out, encoder_mask, input_ids, hyps_mask, valid_length, end_flag, scores, base_index)
+                encoder_out,
+                encoder_mask,
+                input_ids,
+                hyps_mask,
+                valid_length,
+                end_flag,
+                scores,
+                base_index,
+            )
             # 2.6 Update end flag
-            indices = self.concat((self.beam_index_left, self.beam_index_right * valid_length))
-            input_ids = self.scatterupdate(self.cast(input_ids, mindspore.float32), indices,
-                                           self.cast(best_k_pred, mindspore.float32))
+            indices = self.concat(
+                (self.beam_index_left, self.beam_index_right * valid_length)
+            )
+            input_ids = self.scatterupdate(
+                self.cast(input_ids, mindspore.float32),
+                indices,
+                self.cast(best_k_pred, mindspore.float32),
+            )
             input_ids = self.cast(input_ids, mindspore.int32)
-            end_flag = self.cast((input_ids[:, valid_length] == self.eos).view(-1, 1), mindspore.float32)
+            end_flag = self.cast(
+                (input_ids[:, valid_length] == self.eos).view(-1, 1), mindspore.float32
+            )
             i = i + 1
         # 3. Select best of best
         scores = scores.view(batch_size, self.beam_size)  # (B, N)
@@ -310,12 +372,18 @@ class CTCPrefixBeamSearch(nn.Cell):
             mindspore.Tensor: decoded results.
         """
         if self.pretrained_model:
-            xs_pad, xs_masks = self.backbone.acc_net.pretrained_model.acc_net.extrator_feature_only(
-                xs_pad, xs_masks, xs_lengths)
+            (
+                xs_pad,
+                xs_masks,
+            ) = self.backbone.acc_net.pretrained_model.acc_net.extrator_feature_only(
+                xs_pad, xs_masks, xs_lengths
+            )
             if self.backbone.acc_net.feature_post_proj:
                 xs_pad = self.backbone.acc_net.feature_post_proj(xs_pad)
         xs_masks = xs_masks[:, :, :-2:2][:, :, :-2:2]
-        encoder_out, encoder_mask = self.backbone.acc_net.encoder(xs_pad, xs_masks, xs_masks)
+        encoder_out, encoder_mask = self.backbone.acc_net.encoder(
+            xs_pad, xs_masks, xs_masks
+        )
         ctc_prbs = self.backbone.acc_net.ctc.compute_log_softmax_out(encoder_out)
         ctc_prbs = ctc_prbs.squeeze(0)
         top_k_logp_list, top_k_index_list = self.topk(ctc_prbs, self.beam_size)
@@ -332,13 +400,13 @@ class AttentionRescoring(nn.Cell):
         backbone (nn.Cell): ASR models for inference.
         pretrained_model (nn.Cell): speech pre-trained models, like wav2vec 2.0.
     """
+
     def __init__(self, backbone, beam_size, pretrained_models=False):
         super(AttentionRescoring, self).__init__()
         self.backbone = backbone
         self.pretrained_models = pretrained_models
         self.beam_size = beam_size
         self.log_softmax = nn.LogSoftmax(axis=-1)
-
 
     def construct(self, encoder_out, encoder_mask, hyps_in_pad, hyps_masks):
         """Conduct attention rescoring inference.

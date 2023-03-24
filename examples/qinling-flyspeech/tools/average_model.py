@@ -13,13 +13,12 @@
 # limitations under the License.
 # ============================================================================
 
-import os
 import argparse
 import glob
-import numpy as np
+import os
 
-from mindspore import context
-from mindspore import Parameter
+import numpy as np
+from mindspore import Parameter, context
 from mindspore.train.serialization import load_checkpoint, save_checkpoint
 
 if __name__ == "__main__":
@@ -57,13 +56,13 @@ if __name__ == "__main__":
         avg_param["name"] = model_list[0][i]["name"]
         avg_param["data"] = model_list[0][i]["data"]
         for j in range(1, args.num):
-            avg_param["data"] =avg_param["data"] +  model_list[j][i]["data"]
+            avg_param["data"] = avg_param["data"] + model_list[j][i]["data"]
         avg_param["data"] = np.true_divide(avg_param["data"], args.num)
         avg_param["data"] = Parameter(avg_param["data"], name=avg_param["name"])
-        
+
         avg_model.append(avg_param)
 
     dst_model = os.path.join(args.src_path, "avg_" + str(args.num) + ".ckpt")
-    
+
     print("Saving to {}".format(dst_model))
     save_checkpoint(avg_model, dst_model)
