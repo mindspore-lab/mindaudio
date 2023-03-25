@@ -2,11 +2,9 @@
 
 import os
 
-import mindspore.common.dtype as mstype
-import mindspore.ops as ops
 from dataset import create_dataset
 from hparams.hparams import parse_args
-from mindspore import ParameterTuple, Tensor, context, nn
+from mindspore import ParameterTuple, Tensor, context
 from mindspore.communication.management import get_group_size, get_rank, init
 from mindspore.context import ParallelMode
 from mindspore.nn import TrainOneStepCell
@@ -105,7 +103,7 @@ if __name__ == "__main__":
     args = parse_args()
     data_sink = args.device_target != "CPU"
     context.set_context(
-        mode=context.GRAPH_MODE, device_target=args.device_target, save_graphs=False
+        mode=args.mode, device_target=args.device_target, save_graphs=False
     )
     if args.device_target == "GPU":
         context.set_context(enable_graph_kernel=True)

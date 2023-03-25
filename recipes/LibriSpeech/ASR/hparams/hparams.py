@@ -44,7 +44,12 @@ def create_parser():
         metavar="N",
         help="number of total epochs to run",
     )
-
+    group.add_argument(
+        "--mode",
+        type=int,
+        default=0,
+        help="Running in GRAPH_MODE(0) or PYNATIVE_MODE(1) (default=0)",
+    )
     return parser_config, parser
 
 

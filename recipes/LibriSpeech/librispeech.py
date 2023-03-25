@@ -5,7 +5,6 @@ import shutil
 import tarfile
 from pathlib import Path
 
-import numpy as np
 import wget
 
 LIBRI_SPEECH_URLS = {
@@ -33,6 +32,13 @@ def _download_data(root):
                 wget.download(url, root)
 
 
+def creat_txt_file(content, root_path, txt_transcript_path):
+    txt_path = os.path.join(root_path, txt_transcript_path)
+    with open(txt_path, "w") as f:
+        f.write(content)
+        f.flush()
+
+
 def creat_json_dict(root):
     for dataset_type, libri_urls in LIBRI_SPEECH_URLS.items():
         split_dir = os.path.join(root, dataset_type)
@@ -44,6 +50,11 @@ def creat_json_dict(root):
         wav_dir = os.path.join(split_dir, "wav")
         if not os.path.exists(wav_dir):
             os.makedirs(wav_dir)
+
+        txt_dir = os.path.join(split_dir, "txt")
+        if not os.path.exists(txt_dir):
+            os.makedirs(txt_dir)
+
         for url in libri_urls:
             filename = url.split("/")[-1]
             target_filename = os.path.join(root, filename)
@@ -61,12 +72,11 @@ def creat_json_dict(root):
                 }
                 for item in transcriptions.items():
                     new_wav_path = os.path.join("wav", str(item[0]) + ".wav")
+                    new_txt_path = os.path.join("txt", str(item[0]) + ".txt")
                     transcript = item[1]
+                    creat_txt_file(transcript, split_dir, new_txt_path)
                     json_file["samples"].append(
-                        {
-                            "wav_path": new_wav_path,
-                            "transcript": transcript,
-                        }
+                        {"wav_path": new_wav_path, "txt_path": new_txt_path,}
                     )
                     wav_path = base_path + "-" + str(item[0].split("-")[-1]) + ".flac"
                     shutil.move(wav_path, wav_dir)

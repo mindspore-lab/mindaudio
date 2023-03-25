@@ -1,10 +1,6 @@
 """
 Eval DeepSpeech2
 """
-import argparse
-import json
-import os
-import pickle
 
 import mindspore.common.dtype as mstype
 import mindspore.ops as ops
@@ -43,7 +39,7 @@ if __name__ == "__main__":
     args = parse_args()
     context.set_context(
         device_id=args.device_id,
-        mode=context.GRAPH_MODE,
+        mode=args.mode,
         device_target=args.device_target,
         save_graphs=False,
     )
@@ -64,11 +60,11 @@ if __name__ == "__main__":
 
     ds_eval = create_dataset(
         audio_conf=args.DataConfig.SpectConfig,
-        manifest_filepath=args.DataConfig.test_manifest,
+        manifest_filepath=args.EvalDataConfig.test_manifest,
         labels=labels,
         normalize=True,
         train_mode=False,
-        batch_size=args.DataConfig.batch_size,
+        batch_size=args.EvalDataConfig.batch_size,
         rank=0,
         group_size=1,
     )

@@ -1,7 +1,5 @@
 import json
-import math
 import os
-from multiprocessing import cpu_count
 
 import mindspore.dataset.engine as de
 import numpy as np
@@ -31,7 +29,7 @@ class LoadAudioAndTranscript:
         """
         parse audio
         """
-        audio = mindaudio.read(str(audio_path))
+        audio, _ = mindaudio.read(str(audio_path))
         n_fft = int(self.sample_rate * self.window_size)
         win_length = n_fft
         hop_length = int(self.sample_rate * self.window_stride)
