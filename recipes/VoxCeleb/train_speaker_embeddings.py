@@ -711,11 +711,11 @@ def generate_train_data():
     label_fp_list.sort()
     for id_save_name in label_fp_list:
         label_fp.write(id_save_name + "\n")
-
+    label_fp.close()
     fea_fp_list.sort()
     for fea_save_name in fea_fp_list:
         fea_fp.write(fea_save_name + "\n")
-
+    fea_fp.close()
     dataset_path = hparams.feat_folder
     save_path = hparams.feat_folder_merge
     data_trans_dp(dataset_path, save_path)
