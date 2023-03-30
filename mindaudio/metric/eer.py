@@ -11,7 +11,7 @@ def compute_fa_miss(scores, labels, pos_label=1, return_thresholds=True):
     return P_fa, P_miss
 
 
-def get_EER(P_fa, P_miss, thresholds=None):
+def get_eer(P_fa, P_miss, thresholds=None):
     """Compute EER given false alarm and miss probabilities"""
     from scipy.interpolate import interp1d
     from scipy.optimize import brentq
@@ -25,10 +25,10 @@ def get_EER(P_fa, P_miss, thresholds=None):
     return eer, thresh_eer
 
 
-def get_EER_from_scores(scores, labels, pos_label=1):
+def get_eer_from_scores(scores, labels, pos_label=1):
     """Compute EER given scores and labels"""
     P_fa, P_miss, thresholds = compute_fa_miss(
         scores, labels, pos_label, return_thresholds=True
     )
-    eer, thresh_eer = get_EER(P_fa, P_miss, thresholds)
+    eer, thresh_eer = get_eer(P_fa, P_miss, thresholds)
     return eer, thresh_eer

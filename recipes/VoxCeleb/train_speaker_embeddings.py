@@ -538,64 +538,65 @@ def generate_npy(
     count = 0
     label_fp_list = []
     fea_fp_list = []
-    for batch in iterator:
-        wavs = batch["sig"].astype(ms.float32)
-        lens = np.ones(wavs.shape[0])
-        wavs_aug_tot = []
-        wavs_aug_tot.append(wavs)
+    for i in range(hparams.number_of_epochs):
+        for batch in iterator:
+            wavs = batch["sig"].astype(ms.float32)
+            lens = np.ones(wavs.shape[0])
+            wavs_aug_tot = []
+            wavs_aug_tot.append(wavs)
 
-        for aug in spec_aug:
-            wavs_aug = Tensor(aug.construct(wavs.asnumpy(), lens), ms.float32)
+            for aug in spec_aug:
+                wavs_aug = Tensor(aug.construct(wavs.asnumpy(), lens), ms.float32)
 
-            if wavs_aug.shape[1] > wavs.shape[1]:
-                wavs_aug = wavs_aug[:, 0 : wavs.shape[1]]
-            else:
-                zeroslike = ms.ops.ZerosLike()
-                zero_sig = zeroslike(wavs).astype(ms.float32)
-                zero_sig[:, 0 : wavs_aug.shape[1]] = wavs_aug
-                wavs_aug = zero_sig
+                if wavs_aug.shape[1] > wavs.shape[1]:
+                    wavs_aug = wavs_aug[:, 0 : wavs.shape[1]]
+                else:
+                    zeroslike = ms.ops.ZerosLike()
+                    zero_sig = zeroslike(wavs).astype(ms.float32)
+                    zero_sig[:, 0 : wavs_aug.shape[1]] = wavs_aug
+                    wavs_aug = zero_sig
 
-            if hparams.concat_augment:
-                wavs_aug_tot.append(wavs_aug)
-            else:
-                wavs = wavs_aug
-                wavs_aug_tot[0] = wavs
+                if hparams.concat_augment:
+                    wavs_aug_tot.append(wavs_aug)
+                else:
+                    wavs = wavs_aug
+                    wavs_aug_tot[0] = wavs
 
-        wavs = ms.ops.concat(wavs_aug_tot, axis=0)
-        n_augment = len(wavs_aug_tot)
+            wavs = ms.ops.concat(wavs_aug_tot, axis=0)
+            n_augment = len(wavs_aug_tot)
 
-        feats = fbank(
-            wavs.asnumpy(),
-            deltas=False,
-            n_mels=80,
-            left_frames=0,
-            right_frames=0,
-            n_fft=400,
-            hop_length=160,
-        ).transpose(0, 2, 1)
+            feats = fbank(
+                wavs.asnumpy(),
+                deltas=False,
+                n_mels=80,
+                left_frames=0,
+                right_frames=0,
+                n_fft=400,
+                hop_length=160,
+            ).transpose(0, 2, 1)
 
-        normal_func = InputNormalization(norm_type="sentence", std_norm=False)
-        feats = normal_func.construct(feats)
+            normal_func = InputNormalization(norm_type="sentence", std_norm=False)
+            feats = normal_func.construct(feats)
 
-        ct = datetime.now()
-        ts = ct.timestamp()
-        id_save_name = str(ts) + "_" + str(index) + "_id.npy"
-        fea_save_name = str(ts) + "_" + str(index) + "_fea.npy"
-        spkid = batch["spk_id_encoded"].asnumpy()
-        out_spkid = []
-        for i in range(n_augment):
-            out_spkid.append([spkid])
+            ct = datetime.now()
+            ts = ct.timestamp()
+            id_save_name = str(ts) + "_" + str(index) + "_id.npy"
+            fea_save_name = str(ts) + "_" + str(index) + "_fea.npy"
+            spkid = batch["spk_id_encoded"].asnumpy()
+            out_spkid = []
+            for i in range(n_augment):
+                out_spkid.append([spkid])
 
-        spkid = np.concatenate(out_spkid).reshape(-1, 1)
+            spkid = np.concatenate(out_spkid).reshape(-1, 1)
 
-        np.save(os.path.join(save_dir, id_save_name), spkid)
-        np.save(os.path.join(save_dir, fea_save_name), feats)
-        label_fp_list.append(id_save_name)
-        fea_fp_list.append(fea_save_name)
-        count = count + 1
-        percentage = float(count) / batch_counts * 100
-        percentage = round(percentage, 2)
-        print("Process {} percentage {}%".format(index, percentage))
+            np.save(os.path.join(save_dir, id_save_name), spkid)
+            np.save(os.path.join(save_dir, fea_save_name), feats)
+            label_fp_list.append(id_save_name)
+            fea_fp_list.append(fea_save_name)
+            count = count + 1
+            percentage = float(count) / batch_counts * 100
+            percentage = round(percentage, 2)
+            print("Process {} percentage {}%".format(index, percentage))
 
     file_lock.acquire()
     label_fp_list_global.extend(label_fp_list)
@@ -682,12 +683,17 @@ def generate_train_data():
     label_fp_list = manager.list()
     fea_fp_list = manager.list()
     file_lock = manager.Lock()
+
     for train_data in train_datalist:
         dataset_size = train_data.get_dataset_size()
         train_data = train_data.batch(batch_size=hparams.dataloader_options.batch_size)
         iterator = train_data.create_dict_iterator(num_epochs=hparams.number_of_epochs)
         print("len of train:", dataset_size)
-        batch_counts = dataset_size / hparams.dataloader_options.batch_size
+        batch_counts = (
+            dataset_size
+            / hparams.dataloader_options.batch_size
+            * hparams.number_of_epochs
+        )
         process = Process(
             target=generate_npy,
             args=(

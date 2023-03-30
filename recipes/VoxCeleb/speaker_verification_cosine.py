@@ -9,7 +9,6 @@ import mindspore as ms
 import numpy as np
 import wget
 from config import config as hparams
-from metrics import get_EER_from_scores
 from mindspore import Tensor, context, load_checkpoint, load_param_into_net
 from reader import DatasetGenerator
 from scipy.spatial.distance import cosine
@@ -20,6 +19,7 @@ from voxceleb_prepare import prepare_voxceleb
 import mindaudio.data.io as io
 from mindaudio.data.features import fbank
 from mindaudio.data.processing import stereo_to_mono
+from mindaudio.metric.eer import get_eer_from_scores
 from mindaudio.models.ecapatdnn import EcapaTDNN
 
 # bad utterances
@@ -566,7 +566,7 @@ def evaluate(spk2emb, utt2emb, trials):
             test_emb = utt2emb[test[:-4]]
             scores.append(1 - cosine(enroll_emb, test_emb))
 
-    return get_EER_from_scores(scores, labels)[0]
+    return get_eer_from_scores(scores, labels)[0]
 
 
 def evaluate2(spk2emb, utt2emb, norm_dict, params, trials):
