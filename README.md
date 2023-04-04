@@ -8,6 +8,7 @@
 ![GitHub pull requests](https://img.shields.io/github/issues-pr/mindspore-lab/mindaudio)
 ![GitHub](https://img.shields.io/github/license/mindspore-lab/mindaudio)](<img alt="GitHub" src="https://img.shields.io/github/license/mindspore-lab/mindaudio">)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 
 English | [中文](README_CN.md)
 
@@ -130,7 +131,7 @@ python librispeech.py --root_path "your_data_path"
 # Enter the specific task directory
 cd ASR
 # Standalone training
-python train.py -c "./hparams/Deepspeech2.yaml"
+python train.py -c "./deepspeech2.yaml"
 ```
 
 - Distribute training
@@ -139,14 +140,14 @@ python train.py -c "./hparams/Deepspeech2.yaml"
 # Enter the specific task directory
 cd ASR
 # Distribute training
-mpirun --allow-run-as-root -n 8 python train.py -c "./hparams/Deepspeech2.yaml"
+mpirun --allow-run-as-root -n 8 python train.py -c "./deepspeech2.yaml"
 ```
 
 - Validation
 
 ```shell
 # Validate a trained checkpoint
-python eval.py -c "./hparams/Deepspeech2.yaml"
+python eval.py -c "./deepspeech2.yaml"
 ```
 
 
@@ -167,7 +168,8 @@ Currently，the following tasks and models are supported on MindAudio。
 
 ### What's New
 
-- 2022/09/30: version 0.1.0, 33 data APIs + 3 models
+- 2022/09/30: beta, 33 data APIs + 3 models
+- 2023/03/30: version 0.1.0, 52 dataAPIs + 5 models
 
 ### Contributing
 

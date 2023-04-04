@@ -1,14 +1,13 @@
 TrainingConfig:
     epochs: 70
+    batch_size: 64 # maximum_batch_size=128, Otherwise, it is prone to memory errors.
+    train_manifest: './train/libri_train_manifest.json' # Run librispeech_prepare.py, will generate xx_manifest.json
 
-DataConfig:
-    train_manifest: './train/libri_train_manifest.json'
-    batch_size: 64
-    SpectConfig:
-        sample_rate: 16000
-        window_size: 0.02
-        window_stride: 0.01
-        window: "hamming"
+SpectConfig:
+    sample_rate: 16000
+    window_size: 0.02
+    window_stride: 0.01
+    window: "hamming"
 
 AugmentationConfig:
     speed_volume_perturb: False
@@ -39,17 +38,14 @@ CheckpointConfig:
     ckpt_path: './checkpoint'
     keep_checkpoint_max: 10
 
-Pretrained_ckpt: './ckpt'
-
-Decoder_type: 'greedy'
-
-save_output: 'librispeech_val_output'
-
-verbose: True
-
-EvalDataConfig:
+EvalConfig:
+    batch_size: 128
     test_manifest: './eval/libri_test_clean_manifest.json'
-    batch_size: 20
+    decoder_type: 'greedy'
+    save_output: 'librispeech_val_output'
+
+# use to finetune or eval model
+Pretrained_model: './ckpt'
 
 labels: ["'", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
          "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", " ", "_"]

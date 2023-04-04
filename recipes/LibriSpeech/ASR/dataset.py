@@ -7,8 +7,11 @@ import numpy as np
 import mindaudio
 from mindaudio.utils.distributed import DistributedSampler
 
+# 1250 is the max length in train dataset(LibriSpeech)
 TRAIN_INPUT_PAD_LENGTH = 1250
+# 350 may be greater than the max length of labels in train dataset(LibriSpeech).
 TRAIN_LABEL_PAD_LENGTH = 350
+# 3500 is the max length in test dataset(LibriSpeech)
 TEST_INPUT_PAD_LENGTH = 3500
 
 

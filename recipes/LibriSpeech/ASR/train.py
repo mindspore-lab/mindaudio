@@ -3,7 +3,7 @@
 import os
 
 from dataset import create_dataset
-from hparams.hparams import parse_args
+from hparams import parse_args
 from mindspore import ParameterTuple, Tensor, context
 from mindspore.communication.management import get_group_size, get_rank, init
 from mindspore.context import ParallelMode
@@ -25,12 +25,12 @@ from mindaudio.scheduler.lr_generator import get_lr
 
 def train(args):
     ds_train = create_dataset(
-        audio_conf=args.DataConfig.SpectConfig,
-        manifest_filepath=args.DataConfig.train_manifest,
+        audio_conf=args.SpectConfig,
+        manifest_filepath=args.TrainingConfig.train_manifest,
         labels=args.labels,
         normalize=True,
         train_mode=True,
-        batch_size=args.DataConfig.batch_size,
+        batch_size=args.TrainingConfig.batch_size,
         rank=rank_id,
         group_size=group_size,
     )
@@ -44,12 +44,12 @@ def train(args):
     lr = Tensor(lr)
 
     deepspeech_net = DeepSpeechModel(
-        batch_size=args.DataConfig.batch_size,
+        batch_size=args.TrainingConfig.batch_size,
         rnn_hidden_size=args.ModelConfig.hidden_size,
         nb_layers=args.ModelConfig.hidden_layers,
         labels=args.labels,
         rnn_type=args.ModelConfig.rnn_type,
-        audio_conf=args.DataConfig.SpectConfig,
+        audio_conf=args.SpectConfig,
         bidirectional=True,
     )
 
@@ -64,8 +64,8 @@ def train(args):
     )
     train_net = TrainOneStepCell(loss_net, optimizer)
     train_net.set_train(True)
-    if args.pre_trained_model_path != "":
-        param_dict = load_checkpoint(args.pre_trained_model_path)
+    if args.Pretrained_model != "":
+        param_dict = load_checkpoint(args.Pretrained_model)
         load_param_into_net(train_net, param_dict)
         print("Successfully loading the pre-trained model")
 
@@ -121,4 +121,4 @@ if __name__ == "__main__":
         if args.device_target == "Ascend":
             device_id = int(args.device_id)
             context.set_context(device_id=device_id)
-    train(args)
+    train(args=args)
