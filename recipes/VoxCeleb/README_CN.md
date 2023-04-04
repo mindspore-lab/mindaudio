@@ -8,7 +8,7 @@
 
 对数据集voxceleb1、voceleb2来说，识别说话人的准确率在98%~99%。
 
-训练说话人特征结束后, 通过余弦相似度来验证说话人, 预训练模型地址放在(https://download.mindspore.cn/toolkits/mindaudio/ecapatdnn/)。可以下载预训练模型，执行以下脚本来验证说话人:
+训练说话人特征结束后, 通过余弦相似度来验证说话人, 预训练模型地址放在(https://download.mindspore.cn/toolkits/mindaudio/ecapatdnn/)。 可以下载预训练模型，执行以下脚本来验证说话人:
 
 `python speaker_verification_cosine.py`
 
@@ -33,7 +33,7 @@ Voxceleb2 音频文件是m4a格式的，在送给MindAudio之前，所有文件�
 
 2. 将m4a文件转换成wav文件
 Voxceleb2 是按m4a格式保存音频文件的，想要在MindAudio中使用它们，需要先把所有的m4a文件转换成wav文件。
-此脚本调用ffmpeg来完成此转换(https://gist.github.com/seungwonpark/4f273739beef2691cd53b5c39629d830)，转换操作需要数小时，但只需要转换一次即可。
+此脚本调用ffmpeg来完成此转换(https://gist.github.com/seungwonpark/4f273739beef2691cd53b5c39629d830)， 转换操作需要数小时，但只需要转换一次即可。
 
 
 3. 将所有的wav文件放在wav文件夹下，目录结构 `voxceleb12/wav/id*/*.wav` (e.g, `voxceleb12/wav/id00012/21Uxsk56VDQ/00001.wav`)
