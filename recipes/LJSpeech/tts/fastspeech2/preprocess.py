@@ -2,8 +2,8 @@
 # this script converts wav files to .npy features used for training.
 
 import os
-import sys
-from multiprocessing import Pool, cpu_count
+import argparse
+from multiprocessing import cpu_count
 
 import mindspore as ms
 import numpy as np
@@ -14,8 +14,6 @@ from tqdm import tqdm
 import mindaudio
 from mindaudio.data.io import read
 
-sys.path.append(".")
-import argparse
 
 from dataset import all_dirs, all_postfix, feature_columns
 from phonemes import get_alignment
@@ -85,7 +83,7 @@ def get_fs2_features(audio, text):
     phoneme = "{" + " ".join(phoneme) + "}"
     base = "|".join([base, "ljspeech", phoneme, raw_text])
     phoneme = np.array(text_to_sequence(phoneme, ["english_cleaners"]))
-    wav, _, filename = read_wav(audio)
+    wav, _, _ = read_wav(audio)
     wav = wav[int(hps.sample_rate * start) : int(hps.sample_rate * end)]
 
     pitch, t = pw.dio(
@@ -122,9 +120,6 @@ def create_prep_dataset(data_path, manifest_path, is_train):
 def preprocess_ljspeech(data_path, manifest_path, is_train):
     ds = create_prep_dataset(data_path, manifest_path, is_train)
     it = ds.create_dict_iterator()
-
-    results = []
-    pool = Pool(processes=cpu_count())
 
     for k in feature_columns:
         os.makedirs(os.path.join(data_path, all_dirs[k]), exist_ok=True)

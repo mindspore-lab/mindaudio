@@ -1,12 +1,9 @@
-import sys
 from multiprocessing import Pool, cpu_count
 
 import mindspore as ms
 import numpy as np
 from mindspore.dataset.audio import MelScale, Spectrogram
 from tqdm import tqdm
-
-sys.path.append(".")
 
 from dataset import FEATURE_POSTFIX, WAV_POSTFIX
 

@@ -117,7 +117,7 @@ class Decoder(nn.Cell):
         if positions_decoder is not None:
             dec_output = enc_seq + positions_decoder
         else:
-            batch_size, max_len = enc_seq.shape[0], enc_seq.shape[1]
+            _, max_len = enc_seq.shape[0], enc_seq.shape[1]
             dec_output = enc_seq + self.position_enc[:, :max_len, :]
 
         for dec_layer in self.layer_stack:

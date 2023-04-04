@@ -2,24 +2,20 @@
 # this script converts wav files to .npy features used for training.
 
 import os
-import sys
-from multiprocessing import Pool, cpu_count
+from multiprocessing import cpu_count
 
 import mindspore as ms
 import numpy as np
 import pyworld as pw
 from mindspore.dataset.audio import MelScale, Spectrogram
 from tqdm import tqdm
+import argparse
 
 import mindaudio
 from mindaudio.data.io import read
 
-sys.path.append(".")
-import argparse
-
 from dataset import all_dirs, all_postfix, feature_columns
 from phonemes import get_alignment
-
 from recipes.AISHELL import AISHELL
 from recipes.AISHELL.tts import create_aishell_tts_dataset
 from recipes.text import text_to_sequence
@@ -76,7 +72,7 @@ def _normalize(S):
 def get_fs2_features(audio, text):
     text = str(text).replace("b'", "").replace("'", "")
     base = text[text.rfind("/") + 1 :].replace(".txt", "")
-    speaker = base[6 : 6 + 4]
+    _ = base[6 : 6 + 4]
     tg_path = os.path.join(hps.data_path, "TextGrid", f"{base}.TextGrid")
     phoneme, duration, start, end = get_alignment(
         tg_path, hps.sample_rate, hps.hop_samples
@@ -86,7 +82,7 @@ def get_fs2_features(audio, text):
     phoneme = "{" + " ".join(phoneme) + "}"
     base = "|".join([base, "aishell", phoneme, raw_text])
     phoneme = np.array(text_to_sequence(phoneme, ["english_cleaners"]))
-    wav, _, filename = read_wav(audio)
+    wav, _, _ = read_wav(audio)
     wav = wav[int(hps.sample_rate * start) : int(hps.sample_rate * end)]
 
     pitch, t = pw.dio(
@@ -123,9 +119,6 @@ def create_prep_dataset(data_path, manifest_path, split):
 def preprocess_aishell(data_path, manifest_path, split):
     ds = create_prep_dataset(data_path, manifest_path, split)
     it = ds.create_dict_iterator()
-
-    results = []
-    pool = Pool(processes=cpu_count())
 
     for k in feature_columns:
         os.makedirs(os.path.join(data_path, all_dirs[k]), exist_ok=True)

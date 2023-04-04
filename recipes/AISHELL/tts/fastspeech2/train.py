@@ -1,7 +1,6 @@
 import argparse
 import ast
 import os
-from time import time
 
 import mindspore as ms
 import mindspore.nn as nn

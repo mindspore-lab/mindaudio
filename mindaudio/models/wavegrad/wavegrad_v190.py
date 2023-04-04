@@ -7,7 +7,6 @@ from math import log as ln
 import mindspore as ms
 import mindspore.nn as nn
 import mindspore.ops as ops
-import numpy as np
 
 
 class Conv1dOrthogonal(nn.Conv1d):

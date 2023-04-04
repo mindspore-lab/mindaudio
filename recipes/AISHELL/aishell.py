@@ -43,7 +43,7 @@ class AISHELL:
         for line in transcript_lines:
             line = line.strip()
             audio_id, transcript = line.split(" ", 1)
-            speaker = audio_id[6 : 6 + 4]
+            # speaker : audio_id[6 : 6 + 4]
             audio_file = f"{audio_id}.wav"
             transcript_path = os.path.join(self.path, "transcript", f"{audio_id}.txt")
             with open(transcript_path, "w", encoding="utf-8") as f:
@@ -58,7 +58,7 @@ class AISHELL:
                 audio_dir = os.path.join(self.path, "wav", dataset)
                 for audio_file in Path(audio_dir).glob("*/*.wav"):
                     audio_file = str(audio_file)
-                    speaker = audio_file[-14:-9]
+                    # speaker : audio_file[-14:-9]
                     audio_id = audio_file[-20:-4]
                     if audio_id not in audio_transcript:
                         print("transcript not found:", audio_id, audio_file)

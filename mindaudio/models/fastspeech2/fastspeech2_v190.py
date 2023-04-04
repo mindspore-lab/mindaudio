@@ -1,6 +1,4 @@
-import mindspore as ms
 import mindspore.nn as nn
-import numpy as np
 
 from mindaudio.models.fastspeech2.loss import FastSpeech2Loss
 from mindaudio.models.fastspeech2.utils import get_mask_from_lengths
