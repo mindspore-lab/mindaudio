@@ -25,12 +25,6 @@ def create_parser():
         help="Distributed training",
     )
     group.add_argument(
-        "--bidirectional",
-        action="store_false",
-        default=True,
-        help="Use bidirectional RNN",
-    )
-    group.add_argument(
         "--device_target",
         type=str,
         default="Ascend",

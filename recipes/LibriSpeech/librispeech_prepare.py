@@ -91,7 +91,7 @@ def creat_json_dict(root):
 
 
 def prepare_librispeech(root, data_ready):
-    if data_ready:
+    if not data_ready:
         _download_data(root)
     creat_json_dict(root)
 
@@ -101,5 +101,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--root_path", type=str, default="", help="The path to store data"
     )
+    parser.add_argument(
+        "--data_ready", type=bool, default=False, help="Downloaded librispeech or not"
+    )
     arg = parser.parse_args()
-    prepare_librispeech(arg.root_path, False)
+    prepare_librispeech(arg.root_path, arg.data_ready)

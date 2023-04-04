@@ -7,7 +7,8 @@
 ![GitHub issues](https://img.shields.io/github/issues/mindspore-lab/mindaudio)
 ![GitHub pull requests](https://img.shields.io/github/issues-pr/mindspore-lab/mindaudio)
 ![GitHub](https://img.shields.io/github/license/mindspore-lab/mindaudio)](<img alt="GitHub" src="https://img.shields.io/github/license/mindspore-lab/mindaudio">)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://pycqa.github.io/isort/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 
 [English](README.md) | 中文
 
@@ -122,7 +123,7 @@ python librispeech.py --root_path "your_data_path"
 # 进入具体任务目录
 cd ASR
 # 单卡训练
-python train.py -c "./hparams/Deepspeech2.yaml"
+python train.py -c "./deepspeech2.yaml"
 ```
 
 - 多卡训练
@@ -131,14 +132,14 @@ python train.py -c "./hparams/Deepspeech2.yaml"
 # 进入具体任务目录
 cd ASR
 # 启动多卡训练
-mpirun --allow-run-as-root -n 8 python train.py -c "./hparams/Deepspeech2.yaml"
+mpirun --allow-run-as-root -n 8 python train.py -c "./deepspeech2.yaml"
 ```
 
 - 推理
 
 ```shell
 #推理
-python eval.py -c "./hparams/Deepspeech2.yaml"
+python eval.py -c "./deepspeech2.yaml"
 ```
 
 
