@@ -1,23 +1,20 @@
 # Given the path to ljspeech/wavs,
 # this script converts wav files to .npy features used for training.
 
-import os
 import argparse
+import os
 from multiprocessing import cpu_count
 
 import mindspore as ms
 import numpy as np
 import pyworld as pw
+from dataset import all_dirs, all_postfix, feature_columns
 from mindspore.dataset.audio import MelScale, Spectrogram
+from phonemes import get_alignment
 from tqdm import tqdm
 
 import mindaudio
 from mindaudio.data.io import read
-
-
-from dataset import all_dirs, all_postfix, feature_columns
-from phonemes import get_alignment
-
 from recipes.LJSpeech import LJSpeech
 from recipes.LJSpeech.tts import create_ljspeech_tts_dataset
 from recipes.text import text_to_sequence

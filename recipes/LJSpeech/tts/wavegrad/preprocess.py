@@ -2,10 +2,9 @@ from multiprocessing import Pool, cpu_count
 
 import mindspore as ms
 import numpy as np
+from dataset import FEATURE_POSTFIX, WAV_POSTFIX
 from mindspore.dataset.audio import MelScale, Spectrogram
 from tqdm import tqdm
-
-from dataset import FEATURE_POSTFIX, WAV_POSTFIX
 
 import mindaudio
 from mindaudio.data.io import read

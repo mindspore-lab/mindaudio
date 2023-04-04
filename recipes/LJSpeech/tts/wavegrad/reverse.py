@@ -130,9 +130,9 @@ for m in tqdm(range(S)):
 if not args.plot:
     exit()
 else:
-    import matplotlib.pyplot as plt # pylint: disable=E402
-    from librosa import display # pylint: disable=E402
-    from matplotlib.animation import FuncAnimation # pylint: disable=E402
+    import matplotlib.pyplot as plt  # pylint: disable=E402
+    from librosa import display  # pylint: disable=E402
+    from matplotlib.animation import FuncAnimation  # pylint: disable=E402
 
 for wav in wavs:
     feat = _normalize(mel(stft(wav)))

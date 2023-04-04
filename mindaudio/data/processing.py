@@ -58,7 +58,7 @@ def normalize(waveforms, norm="max", axis=0):
     threshold = np.finfo(dtype).tiny
 
     # perform norm on magnitude only
-    mag = np.abs(waveforms).astype(np.float)
+    mag = np.abs(waveforms).astype(float)
 
     if norm == "mean":
         mean = np.mean(mag, axis=axis, keepdims=True)

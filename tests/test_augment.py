@@ -12,8 +12,6 @@ import mindaudio.data.spectrum as spectrum
 class TestOperators:
     def setup_method(self):
         self.root_path = sys.path[0]
-
-        self.test_data, _ = io.read(self.data_path)
         self.rir_path = os.path.join(self.root_path, "samples", "rir")
         self.bg_path = os.path.join(self.root_path, "samples", "ASR")
         self.rir_list = [
@@ -35,6 +33,7 @@ class TestOperators:
             os.path.join(self.bg_path, "BAC009S0002W0124.wav"),
         ]
         self.data_path = self.wav_list[0]
+        self.test_data, _ = io.read(self.data_path)
 
     def test_frequencymasking(self):
         orignal = spectrum.spectrogram(self.test_data)
