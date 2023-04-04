@@ -7,7 +7,6 @@ import mindspore as ms
 import mindspore.nn as nn
 import mindspore.ops as ops
 import numpy as np
-from mindspore import SummaryCollector
 from mindspore.communication import init
 
 import mindaudio
@@ -56,15 +55,12 @@ class MyTrainOneStepCell(nn.TrainOneStepWithLossScaleCell):
         super().__init__(network, optimizer, scale_sense)
         self.grad_clip = grad_clip
         self.max_grad_norm = max_grad_norm
-        self.slr = ops.ScalarSummary()
         self.t = time()
 
     def construct(self, *args):
         loss = self.network(*args)
-        self.slr("loss", loss)
 
         status, scaling_sens = self.start_overflow_check(loss, self.scale_sense)
-        self.slr("scaling_sens", scaling_sens)
         scaling_sens_filled = ops.ones_like(loss) * ops.cast(
             scaling_sens, ops.dtype(loss)
         )
@@ -150,9 +146,6 @@ def main():
         model, optimiser, max_grad_norm=hps.max_grad_norm, scale_sense=scale_sense
     )
 
-    slr = ops.ScalarSummary()
-    slr("lr", lr)
-
     num_epochs = hps.num_epochs
     callbacks = []
     if not args.is_distributed or rank == 0:
@@ -166,20 +159,6 @@ def main():
             optimiser=optimiser,
         )
         callbacks.append(save)
-        specified = {
-            "collect_metric": False,
-            "histogram_regular": "^conv1*|^conv2*|^dense.*",
-            "collect_graph": True,
-            "collect_dataset_graph": False,
-        }
-        summary_collector = SummaryCollector(
-            summary_dir=os.path.join(args.train_url, "summary_0"),
-            collect_specified_data=specified,
-            collect_freq=200,
-            keep_default_action=False,
-            collect_tensor_freq=5000,
-        )
-        callbacks.append(summary_collector)
 
     model = ms.Model(network=network)
     model.train(
