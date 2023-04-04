@@ -19,18 +19,19 @@ class FastSpeech2Loss(nn.Cell):
             "energy_loss",
         ]
 
-    def construct(self, items):
-        mel_targets = items["mel_targets"]
-        pitch_targets = items["pitch_targets"]
-        energy_targets = items["energy_targets"]
-        duration_targets = items["duration_targets"]
-        mel_predictions = items["mel_predictions"]
-        pitch_predictions = items["pitch_predictions"]
-        energy_predictions = items["energy_predictions"]
-        log_duration_predictions = items["log_duration_predictions"]
-        src_masks = items["src_masks"]
-        mel_masks = items["mel_masks"]
-
+    def construct(
+        self,
+        mel_targets,
+        pitch_targets,
+        energy_targets,
+        duration_targets,
+        mel_predictions,
+        pitch_predictions,
+        energy_predictions,
+        log_duration_predictions,
+        src_masks,
+        mel_masks,
+    ):
         src_masks = ~src_masks
         mel_masks = ~mel_masks
         log_duration_targets = ms.ops.log(duration_targets + 1.0)

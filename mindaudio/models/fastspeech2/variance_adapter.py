@@ -207,12 +207,12 @@ class VarianceAdaptor(nn.Cell):
             )
             x = x + energy_embedding
 
-        return {
-            "output": x,
-            "pitch_predictions": pitch_prediction,
-            "energy_predictions": energy_prediction,
-            "log_duration_predictions": log_duration_prediction,
-            "duration_rounded": duration_rounded,
-            "mel_len": mel_len,
-            "mel_masks": mel_mask,
-        }
+        return (
+            x,
+            pitch_prediction,
+            energy_prediction,
+            log_duration_prediction,
+            duration_rounded,
+            mel_len,
+            mel_mask,
+        )

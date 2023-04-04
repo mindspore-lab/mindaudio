@@ -45,7 +45,15 @@ class FastSpeech2(nn.Cell):
                 -1, max_src_len, -1
             )
 
-        yh = self.variance_adaptor(
+        (
+            x,
+            pitch_prediction,
+            energy_prediction,
+            log_duration_prediction,
+            duration_rounded,
+            _,
+            mel_mask,
+        ) = self.variance_adaptor(
             x=output,
             src_mask=src_masks,
             mel_mask=mel_masks,
@@ -57,19 +65,17 @@ class FastSpeech2(nn.Cell):
             e_control=e_control,
             d_control=d_control,
         )
-        output, mel_masks = self.decoder(
-            yh["output"], yh["mel_masks"], positions_decoder
-        )
+        output, mel_masks = self.decoder(x, mel_mask, positions_decoder)
         output = self.mel_linear(output)
-        yh.update(
-            {
-                "mel_predictions": output,
-                "mel_masks": mel_masks,
-                "src_masks": src_masks,
-                "src_lens": src_lens,
-            }
+        return (
+            output,
+            mel_masks,
+            src_masks,
+            pitch_prediction,
+            energy_prediction,
+            log_duration_prediction,
+            duration_rounded,
         )
-        return yh
 
     def construct(self, *args, **kwargs):
         return self.forward(*args, **kwargs)
@@ -95,7 +101,15 @@ class FastSpeech2WithLoss(FastSpeech2):
         e_targets,
         d_targets,
     ):
-        yh = self.forward(
+        (
+            mel_predictions,
+            mel_masks,
+            src_masks,
+            pitch_predictions,
+            energy_predictions,
+            log_duration_predictions,
+            _,
+        ) = self.forward(
             speakers=speakers,
             texts=texts,
             src_lens=src_lens,
@@ -108,12 +122,15 @@ class FastSpeech2WithLoss(FastSpeech2):
             e_targets=e_targets,
             d_targets=d_targets,
         )
-        yh.update(
-            {
-                "mel_targets": mels,
-                "pitch_targets": p_targets,
-                "energy_targets": e_targets,
-                "duration_targets": d_targets,
-            }
+        return self.loss_fn(
+            mel_targets=mel_predictions,
+            pitch_targets=p_targets,
+            energy_targets=e_targets,
+            duration_targets=d_targets,
+            mel_predictions=mel_predictions,
+            pitch_predictions=pitch_predictions,
+            energy_predictions=energy_predictions,
+            log_duration_predictions=log_duration_predictions,
+            src_masks=src_masks,
+            mel_masks=mel_masks,
         )
-        return self.loss_fn(yh)

@@ -5,7 +5,6 @@ def get_mask_from_lengths(lengths, max_len=None):
     if max_len is None:
         _, max_len = ms.ops.max(lengths)
     ids = ms.numpy.arange(0, int(max_len)).expand_dims(0)
-    # ids = (ms.ops.ones(int(max_len), ms.float32).cumsum() - 1).expand_dims(0)
     mask = ids >= lengths.expand_dims(1)
 
     return mask
