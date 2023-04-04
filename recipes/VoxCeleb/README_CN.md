@@ -73,7 +73,7 @@ Voxceleb1、Voxceleb2 数据集准备好之后, 可以直接运行下面脚本�
 
 `bash ./run_distribute_train_ascend.sh hccl.json`
 
-hccl.json 文件是使用 hccl 工具生成的,可以参考此文章实现 (https://gitee.com/mindspore/models/tree/master/utils/hccl_tools)。注意，此脚本中要使用hccl.json文件的绝对路径。
+hccl.json 文件是使用 hccl 工具生成的,可以参考此文章实现 (https://gitee.com/mindspore/models/tree/master/utils/hccl_tools)。 注意，此脚本中要使用hccl.json文件的绝对路径。
 
 # 评估
 模型训练结束之后, 可以运行下面脚本来做说话人验证:
