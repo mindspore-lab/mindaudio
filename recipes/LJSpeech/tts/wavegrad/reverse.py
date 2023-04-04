@@ -129,11 +129,10 @@ for m in tqdm(range(S)):
 # BELOW: plots gif for last steps of reverse diffusion process
 if not args.plot:
     exit()
-
-
-import matplotlib.pyplot as plt
-from librosa import display
-from matplotlib.animation import FuncAnimation
+else:
+    import matplotlib.pyplot as plt # pylint: disable=E402
+    from librosa import display # pylint: disable=E402
+    from matplotlib.animation import FuncAnimation # pylint: disable=E402
 
 for wav in wavs:
     feat = _normalize(mel(stft(wav)))

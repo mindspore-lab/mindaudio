@@ -5,7 +5,6 @@ from string import punctuation
 
 import mindspore as ms
 import numpy as np
-import yaml
 from g2p_en import G2p
 from pypinyin import Style, pinyin
 
@@ -99,7 +98,6 @@ def synthesize(model, batchs):
     print("batchs:", len(batchs))
     for i, batch in enumerate(batchs):
         output = model(p_control=1.0, e_control=1.0, d_control=1.0, **batch)
-        mel_len = output["mel_len"].asnumpy()
         mel_prediction = output["mel_predictions"].asnumpy()
         np.save("msfs2_%s.npy" % i, mel_prediction)
 

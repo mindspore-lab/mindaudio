@@ -1,7 +1,6 @@
 import os
 from multiprocessing import cpu_count
 
-import mindspore as ms
 import numpy as np
 
 from mindaudio.models.transformer import get_sinusoid_encoding_table

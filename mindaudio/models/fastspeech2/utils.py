@@ -1,5 +1,4 @@
 import mindspore as ms
-import numpy as np
 
 
 def get_mask_from_lengths(lengths, max_len=None):

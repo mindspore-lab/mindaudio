@@ -14,10 +14,13 @@ hyperparameter. Some cleaners are English-specific. You'll typically want to use
 
 
 # Regular expression matching whitespace:
+# pylint: disable=E402
 import re
 
+# pylint: disable=E402
 from unidecode import unidecode
 
+# pylint: disable=E402
 from .numbers import normalize_numbers
 
 _whitespace_re = re.compile(r"\s+")
