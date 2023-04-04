@@ -8,4 +8,3 @@
 | VoxCeleb    | Speaker Verification | ECAPA-TDNN  |
 | AISHELL     | Text-to-Speech       | Fastspeech2 |
 | LJSpeech    | Text-to-Speech       | WaveGrad    |
-
