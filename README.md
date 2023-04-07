@@ -161,7 +161,6 @@ Currently，the following tasks and models are supported on MindAudio。
 | LibriSpeech | Speech Recognition   | DeepSpeech2 |
 | AISHELL     | Speech Recognition   | conformer   |
 | VoxCeleb    | Speaker Verification | ECAPA-TDNN  |
-| LJSpeech    | Text-to-Speech       | Fastspeech2 |
 | LJSpeech    | Text-to-Speech       | WaveGrad    |
 
 ## Notes
