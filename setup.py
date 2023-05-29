@@ -86,10 +86,7 @@ setup(
     license="Apache License 2.0",
     include_package_data=True,
     packages=find_packages(exclude=("mindaudio")),
-    cmdclass={
-        "egg_info": EggInfo,
-        "build_py": BuildPy,
-    },
+    cmdclass={"egg_info": EggInfo, "build_py": BuildPy,},
     install_requires=["numpy >= 1.17.0", "PyYAML >= 5.3", "tqdm", "Levenshtein"],
 )
 print(find_packages())
