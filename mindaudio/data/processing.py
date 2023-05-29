@@ -82,7 +82,7 @@ def normalize(waveforms, norm="max", axis=0):
         scale = np.sum(mag, axis=axis, keepdims=True)
 
     elif norm == "l2":
-        scale = np.sum(mag**2, axis=axis, keepdims=True) ** (1.0 / 2)
+        scale = np.sum(mag ** 2, axis=axis, keepdims=True) ** (1.0 / 2)
 
     else:
         raise TypeError("Unsupported norm type {}".format(repr(norm)))

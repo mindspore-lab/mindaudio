@@ -5,22 +5,7 @@ python train.py --config_path <CONFIG_FILE>
 
 import os
 
-from adapter.config import get_config
-from adapter.log import get_logger
-from adapter.moxing_adapter import moxing_wrapper
-from adapter.parallel_info import get_device_id, get_device_num, get_rank_id
 from dataset.asr_dataset import create_dataset
-from asr_model import ASREvalNet, init_asr_model
-from mindaudio.utils.callback import (
-    CalRunTimeCallback,
-    EvalCallback,
-    MemoryStartTimeCallback,
-    ResumeCallback,
-    TimeMonitor,
-)
-from utils.net import get_parameter_numel
-from utils.scheduler import ASRWarmupLR
-from utils.train_one_step import TrainOneStepWithLossScaleCell
 from mindspore import ParameterTuple, context, set_seed
 from mindspore.communication.management import init
 from mindspore.context import ParallelMode
@@ -30,27 +15,24 @@ from mindspore.train import Model
 from mindspore.train.callback import CheckpointConfig, ModelCheckpoint, SummaryCollector
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
 
+from mindaudio.models.conformerASR import ASREvalNet, init_asr_model
+from mindaudio.utils.callback import (
+    CalRunTimeCallback,
+    EvalCallback,
+    MemoryStartTimeCallback,
+    ResumeCallback,
+    TimeMonitor,
+)
+from mindaudio.utils.config import get_config
+from mindaudio.utils.log import get_logger
+from mindaudio.utils.moxing_adapter import moxing_wrapper
+from mindaudio.utils.net import get_parameter_numel
+from mindaudio.utils.parallel_info import get_device_id, get_device_num, get_rank_id
+from mindaudio.utils.scheduler import ASRWarmupLR
+from mindaudio.utils.train_one_step import TrainOneStepWithLossScaleCell
+
 logger = get_logger()
-config = get_config("asr_config")
-
-if config.enable_modelarts:
-    from utils.cloud_callback import SyncDirCallback, SyncDirEndCallback
-
-
-def summary_func(callback_list, summary_dir, config_obj):
-    """func for summary."""
-    callback_list.append(
-        SummaryCollector(summary_dir=summary_dir, collect_freq=config_obj.log_interval)
-    )
-    if config_obj.enable_modelarts:
-        cloud_summary_dir = os.path.join(config_obj.train_url, "summary")
-        callback_list.append(
-            SyncDirCallback(
-                local_path=summary_dir,
-                obs_path=cloud_summary_dir,
-                steps_size=config_obj.log_interval,
-            )
-        )
+config = get_config("conformer")
 
 
 columns_list = [
@@ -182,10 +164,6 @@ def train():
             append_info=ckpt_append_info,
         )
         callback_list.append(ModelCheckpoint(directory=model_dir, config=config_ck))
-
-    # mindinsight summary
-    if config.enable_summary:
-        summary_func(callback_list, summary_dir, config)
 
     callback_list.append(CalRunTimeCallback())
 

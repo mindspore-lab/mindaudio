@@ -8,7 +8,6 @@ import pickle
 import mindspore as ms
 import numpy as np
 import wget
-from config import config as hparams
 from mindspore import Tensor, context, load_checkpoint, load_param_into_net
 from reader import DatasetGenerator
 from scipy.spatial.distance import cosine
@@ -21,6 +20,7 @@ from mindaudio.data.features import fbank
 from mindaudio.data.processing import stereo_to_mono
 from mindaudio.metric.eer import get_eer_from_scores
 from mindaudio.models.ecapatdnn import EcapaTDNN
+from mindaudio.utils.config import config as hparams
 
 # bad utterances
 excluded_set = {

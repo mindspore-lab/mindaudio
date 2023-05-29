@@ -52,12 +52,7 @@ class Decoder:
             s1 (string): space-separated sentence
             s2 (string): space-separated sentence
         """
-        (
-            s1,
-            s2,
-        ) = s1.replace(
-            " ", ""
-        ), s2.replace(" ", "")
+        (s1, s2,) = s1.replace(" ", ""), s2.replace(" ", "")
         return Lev.distance(s1, s2)
 
     def decode(self, probs, sizes=None):

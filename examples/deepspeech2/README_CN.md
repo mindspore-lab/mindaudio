@@ -31,13 +31,9 @@ DeepSpeech2是一种采用CTC损失训练的语音识别模型。它用神经网
 ## 使用步骤
 
 ### 1. 数据集准备
-该过程在上级目录中有详细描述，生成的json文件包括wav文件和对应txt文件的地址信息。
+该过程在recipes/librispeech中有详细描述，生成的json文件包括wav文件和对应txt文件的地址信息。
 
 ### 2. 训练
-```shell
-# Enter the specific task directory
-cd ASR
-```
 #### 单卡训练
 由于数据集较大，不推荐使用此种训练方式
 ```shell

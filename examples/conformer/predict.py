@@ -6,14 +6,12 @@ python predict.py --config_path <CONFIG_FILE>
 import os
 
 import numpy as np
-from adapter.config import get_config
-from adapter.log import get_logger
-from adapter.moxing_adapter import moxing_wrapper
-from adapter.parallel_info import get_device_id
-from dataset.asr_predict_dataset import (
-    create_asr_predict_dataset,
-    load_language_dict,
-)
+from dataset.asr_predict_dataset import create_asr_predict_dataset, load_language_dict
+from mindspore import context
+from mindspore.train.model import Model
+from mindspore.train.serialization import load_checkpoint, load_param_into_net
+
+from mindaudio.models.conformerASR import init_asr_model
 from mindaudio.models.decoders.predict_net import (
     Attention,
     AttentionRescoring,
@@ -27,13 +25,13 @@ from mindaudio.models.decoders.recognize import (
     ctc_prefix_beam_search,
     recognize,
 )
-from mindaudio.models.conformerASR import init_asr_model
-from mindspore import context
-from mindspore.train.model import Model
-from mindspore.train.serialization import load_checkpoint, load_param_into_net
+from mindaudio.utils.config import get_config
+from mindaudio.utils.log import get_logger
+from mindaudio.utils.moxing_adapter import moxing_wrapper
+from mindaudio.utils.parallel_info import get_device_id
 
 logger = get_logger()
-config = get_config("asr_config")
+config = get_config("conformer")
 
 
 @moxing_wrapper(config)

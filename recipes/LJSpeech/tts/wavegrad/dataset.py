@@ -1,7 +1,6 @@
 from multiprocessing import cpu_count
 
 import numpy as np
-
 from recipes.LJSpeech import LJSpeech
 from recipes.LJSpeech.tts import create_ljspeech_tts_dataset
 
@@ -15,16 +14,14 @@ def diffuse(x, S, noise_level):
     r = np.random.rand()
     noise_scale = (l_a + r * (l_b - l_a)).astype(np.float32)
     noise = np.random.randn(*(x.shape)).astype(np.float32)
-    noisy_audio = noise_scale * x + (1.0 - noise_scale**2) ** 0.5 * noise
+    noisy_audio = noise_scale * x + (1.0 - noise_scale ** 2) ** 0.5 * noise
 
     return noisy_audio.astype(np.float32), noise_scale, noise
 
 
 def create_wavegrad_dataset(hps, batch_size, is_train=True, rank=0, group_size=1):
     ds = LJSpeech(
-        data_path=hps.data_path,
-        manifest_path=hps.manifest_path,
-        is_train=is_train,
+        data_path=hps.data_path, manifest_path=hps.manifest_path, is_train=is_train,
     )
     ds = create_ljspeech_tts_dataset(ds, rank=rank, group_size=group_size)
 

@@ -5,11 +5,11 @@ import os
 import mindspore as ms
 import numpy as np
 from mindspore.dataset.audio import MelScale, Spectrogram
+from recipes.LJSpeech.tts.wavegrad.preprocess import _normalize, read_wav
 from tqdm import tqdm
 
 import mindaudio
 from mindaudio.data.io import write
-from recipes.LJSpeech.tts.wavegrad.preprocess import _normalize, read_wav
 
 
 def parse_args():
@@ -101,7 +101,7 @@ audio = np.random.normal(
     0, 1, [feature.shape[0], hps.hop_samples * feature.shape[-1]]
 ).astype(np.float32)
 print("audio:", audio.shape)
-noise_scale = ms.Tensor(alpha_cum**0.5)[:, None]
+noise_scale = ms.Tensor(alpha_cum ** 0.5)[:, None]
 
 S = len(alpha)
 mels = []

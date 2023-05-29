@@ -101,19 +101,11 @@ class PositionwiseFeedForward(nn.Cell):
         super().__init__()
 
         self.w_1 = nn.Conv1d(
-            d_in,
-            d_hid,
-            kernel_size=kernel_size[0],
-            pad_mode="same",
-            has_bias=True,
+            d_in, d_hid, kernel_size=kernel_size[0], pad_mode="same", has_bias=True,
         )
 
         self.w_2 = nn.Conv1d(
-            d_hid,
-            d_in,
-            kernel_size=kernel_size[1],
-            pad_mode="same",
-            has_bias=True,
+            d_hid, d_in, kernel_size=kernel_size[1], pad_mode="same", has_bias=True,
         )
 
         self.dropout = nn.Dropout(keep_prob=1 - dropout)

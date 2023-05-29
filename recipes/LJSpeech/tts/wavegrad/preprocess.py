@@ -4,18 +4,18 @@ import mindspore as ms
 import numpy as np
 from dataset import FEATURE_POSTFIX, WAV_POSTFIX
 from mindspore.dataset.audio import MelScale, Spectrogram
+from recipes.LJSpeech import LJSpeech
+from recipes.LJSpeech.tts import create_ljspeech_tts_dataset
 from tqdm import tqdm
 
 import mindaudio
 from mindaudio.data.io import read
-from recipes.LJSpeech import LJSpeech
-from recipes.LJSpeech.tts import create_ljspeech_tts_dataset
 
 
 def read_wav(filename):
     filename = str(filename).replace("b'", "").replace("'", "")
     audio, _ = read(filename)
-    signed_int16_max = 2**15
+    signed_int16_max = 2 ** 15
     if audio.dtype == np.int16:
         audio = audio.astype(np.float32) / signed_int16_max
     audio = audio / np.max(np.abs(audio))

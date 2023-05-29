@@ -4,6 +4,7 @@ import mindspore
 import mindspore.common.dtype as mstype
 import mindspore.nn as nn
 import mindspore.ops as ops
+from communication.management import get_group_size
 from layers.ctc import CTC
 from layers.label_smoothing_loss import LabelSmoothingLoss
 from transformer.cmvn import GlobalCMVN
@@ -11,7 +12,6 @@ from transformer.decoder import BiTransformerDecoder, TransformerDecoder
 from transformer.encoder import ConformerEncoder, TransformerEncoder
 from utils.cmvn import load_cmvn
 from utils.common import IGNORE_ID
-from communication.management import get_group_size
 
 
 class ASRModelWithAcc(nn.Cell):
@@ -109,10 +109,7 @@ class ASRModelWithAcc(nn.Cell):
         encoder_out, encoder_mask = self.encoder(xs_pad, xs_masks, xs_chunk_masks)
         encoder_out = self.cast(encoder_out, mstype.float32)
         encoder_mask = self.cast(encoder_mask, mstype.float32)
-        encoder_out_lens = self.cast(
-            encoder_mask.squeeze().sum(axis=1),
-            mstype.int32,
-        )
+        encoder_out_lens = self.cast(encoder_mask.squeeze().sum(axis=1), mstype.int32,)
 
         # 2a. Attention-decoder branch
         if self.ctc_weight != 1.0:
@@ -180,11 +177,7 @@ class ASRModelWithAcc(nn.Cell):
             )
 
         # 3. Compute attention accuracy
-        acc_att = self._th_accuracy(
-            decoder_out,
-            ys_out_pad,
-            ys_masks,
-        )
+        acc_att = self._th_accuracy(decoder_out, ys_out_pad, ys_masks,)
 
         return loss_att, acc_att
 

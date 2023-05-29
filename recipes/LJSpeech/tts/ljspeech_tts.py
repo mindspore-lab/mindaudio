@@ -4,9 +4,7 @@ from mindaudio.utils.distributed import DistributedSampler
 
 
 def create_ljspeech_tts_dataset(
-    ds,
-    rank: int = 0,
-    group_size: int = 1,
+    ds, rank: int = 0, group_size: int = 1,
 ):
     input_columns = ["audio", "text"]
     sampler = DistributedSampler(ds, rank, group_size, shuffle=True)

@@ -117,12 +117,7 @@ def context_window(waveforms, left_frames=0, right_frames=0):
     if first_call:
         first_call = False
         tile = np.tile(kernel, (x.shape[1], 1, 1))
-        tile = tile.reshape(
-            (
-                x.shape[1] * context_size,
-                kernel_size,
-            )
-        )
+        tile = tile.reshape((x.shape[1] * context_size, kernel_size,))
         kernel = np.expand_dims(tile, 1)
 
     x_shape = x.shape

@@ -76,10 +76,7 @@ def creat_json_dict(root):
                     transcript = item[1]
                     creat_txt_file(transcript, split_dir, new_txt_path)
                     json_file["samples"].append(
-                        {
-                            "wav_path": new_wav_path,
-                            "txt_path": new_txt_path,
-                        }
+                        {"wav_path": new_wav_path, "txt_path": new_txt_path,}
                     )
                     wav_path = base_path + "-" + str(item[0].split("-")[-1]) + ".flac"
                     shutil.move(wav_path, wav_dir)

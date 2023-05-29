@@ -20,7 +20,7 @@ from mindspore.train.serialization import load_checkpoint, load_param_into_net
 from mindaudio.loss.ctc_loss import NetWithCTCLoss
 from mindaudio.models.deepspeech2 import DeepSpeechModel
 from mindaudio.scheduler.lr_generator import get_lr
-from mindaudi0.utils.hparams import parse_args
+from mindaudio.utils.hparams import parse_args
 
 
 def train(args):

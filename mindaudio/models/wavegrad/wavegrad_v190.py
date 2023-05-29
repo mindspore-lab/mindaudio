@@ -141,7 +141,7 @@ class UBlock(nn.Cell):
             hidden_size, hidden_size, kernel_size, dilation=dilation[3], pad_mode="same"
         )
         self.leaky_relu = nn.LeakyReLU(0.2)
-        self.const = ms.Tensor(2**0.5, dtype=ms.float32)
+        self.const = ms.Tensor(2 ** 0.5, dtype=ms.float32)
 
     def scale_and_shift(self, x, shift, scale):
         x = (scale * x + shift) / self.const

@@ -144,12 +144,7 @@ def mask_finished_preds(
     return pred
 
 
-def compute_mask_indices2(
-    shape,
-    padding_mask,
-    mask_prob,
-    mask_length,
-) -> np.ndarray:
+def compute_mask_indices2(shape, padding_mask, mask_prob, mask_length,) -> np.ndarray:
     """compute mask indices2"""
     b, t = shape
     mask = np.full((b, t), False)

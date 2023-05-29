@@ -100,9 +100,10 @@ class ASRDataset(LoadAudioAndTranscript):
         batch_spect, batch_script, target_indices = [], [], []
         input_length = np.zeros(batch_size, np.float32)
         for data in batch_idx:
-            audio_path, transcript_path = os.path.join(
-                self.root_path, data[0]
-            ), os.path.join(self.root_path, data[1])
+            audio_path, transcript_path = (
+                os.path.join(self.root_path, data[0]),
+                os.path.join(self.root_path, data[1]),
+            )
             spect = self.parse_audio(audio_path)
             transcript = self.parse_transcript(transcript_path)
             batch_spect.append(spect)

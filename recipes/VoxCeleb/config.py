@@ -16,9 +16,7 @@ class Config:
         for k, v in cfg_dict.items():
             if isinstance(v, (list, tuple)):
                 setattr(
-                    self,
-                    k,
-                    [Config(x) if isinstance(x, dict) else x for x in v],
+                    self, k, [Config(x) if isinstance(x, dict) else x for x in v],
                 )
             else:
                 setattr(self, k, Config(v) if isinstance(v, dict) else v)

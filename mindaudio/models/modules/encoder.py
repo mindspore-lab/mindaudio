@@ -6,10 +6,7 @@ import mindspore
 import mindspore.common.dtype as mstype
 import mindspore.nn as nn
 from layers.layernorm import LayerNorm
-from modules.attention import (
-    MultiHeadedAttention,
-    RelPositionMultiHeadedAttention,
-)
+from modules.attention import MultiHeadedAttention, RelPositionMultiHeadedAttention
 from modules.convolution import ConvolutionModule
 from modules.embedding import (
     ConvPositionalEncoding,
@@ -17,10 +14,7 @@ from modules.embedding import (
     PositionalEncoding,
     RelPositionalEncoding,
 )
-from modules.encoder_layer import (
-    ConformerEncoderLayer,
-    TransformerEncoderLayer,
-)
+from modules.encoder_layer import ConformerEncoderLayer, TransformerEncoderLayer
 from modules.positionwise_feed_forward import PositionwiseFeedForward
 from modules.subsampling import Conv2dSubsampling4
 from utils.net import get_activation

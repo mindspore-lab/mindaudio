@@ -4,14 +4,9 @@ from collections import defaultdict
 
 import mindspore.common.dtype as mstype
 import numpy as np
-from utils.common import (
-    add_sos_eos,
-    log_add,
-    pad_sequence,
-    remove_duplicates_and_blank,
-)
-from utils.mask import make_pad_mask, subsequent_mask
 from mindspore import Tensor
+from utils.common import add_sos_eos, log_add, pad_sequence, remove_duplicates_and_blank
+from utils.mask import make_pad_mask, subsequent_mask
 
 
 def mask_finished_scores(score, end_flag):

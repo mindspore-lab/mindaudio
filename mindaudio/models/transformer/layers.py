@@ -8,14 +8,7 @@ from mindaudio.models.transformer.sublayers import (
 
 class FFTBlock(nn.Cell):
     def __init__(
-        self,
-        d_model,
-        d_inner,
-        kernel_size,
-        n_head,
-        d_k,
-        d_v,
-        dropout=0.1,
+        self, d_model, d_inner, kernel_size, n_head, d_k, d_v, dropout=0.1,
     ):
         super().__init__()
 
