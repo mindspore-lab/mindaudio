@@ -4,12 +4,9 @@ import mindspore
 import mindspore.ops as ops
 import numpy as np
 from mindspore.common.tensor import Tensor
-from mindspore.nn.learning_rate_schedule import (
-    CosineDecayLR,
-    LearningRateSchedule,
-    PolynomialDecayLR,
-    WarmUpLR,
-)
+from mindspore.nn.learning_rate_schedule import (CosineDecayLR,
+                                                 LearningRateSchedule,
+                                                 PolynomialDecayLR, WarmUpLR)
 
 
 class ASRWarmupLR(LearningRateSchedule):

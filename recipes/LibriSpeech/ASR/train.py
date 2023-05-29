@@ -10,12 +10,8 @@ from mindspore.context import ParallelMode
 from mindspore.nn import TrainOneStepCell
 from mindspore.nn.optim import Adam
 from mindspore.train import Model
-from mindspore.train.callback import (
-    CheckpointConfig,
-    LossMonitor,
-    ModelCheckpoint,
-    TimeMonitor,
-)
+from mindspore.train.callback import (CheckpointConfig, LossMonitor,
+                                      ModelCheckpoint, TimeMonitor)
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
 
 from mindaudio.loss.ctc_loss import NetWithCTCLoss

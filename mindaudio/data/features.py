@@ -2,7 +2,8 @@ import mindspore as ms
 import mindspore.dataset.audio as msaudio
 import numpy as np
 from mindspore import Tensor, nn
-from mindspore.dataset.audio.utils import BorderType, NormMode, WindowType, create_dct
+from mindspore.dataset.audio.utils import (BorderType, NormMode, WindowType,
+                                           create_dct)
 from scipy.ndimage import median_filter
 
 from .spectrum import amplitude_to_dB, istft, magphase, melspectrogram, stft

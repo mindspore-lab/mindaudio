@@ -18,12 +18,8 @@ from mindspore import Tensor, context, load_checkpoint, load_param_into_net
 from mindspore.communication.management import get_group_size, get_rank, init
 from mindspore.context import ParallelMode
 from mindspore.nn import FixedLossScaleUpdateCell
-from mindspore.train.callback import (
-    CheckpointConfig,
-    ModelCheckpoint,
-    RunContext,
-    _InternalCallbackParam,
-)
+from mindspore.train.callback import (CheckpointConfig, ModelCheckpoint,
+                                      RunContext, _InternalCallbackParam)
 from reader import DatasetGeneratorBatch as DatasetGenerator
 from spec_augment import EnvCorrupt, InputNormalization, TimeDomainSpecAugment
 from voxceleb_prepare import prepare_voxceleb
@@ -32,9 +28,8 @@ import mindaudio.data.io as io
 from mindaudio.data.features import fbank
 from mindaudio.data.processing import stereo_to_mono
 from mindaudio.loss.AdditiveAngularMargin import AdditiveAngularMargin
-from mindaudio.loss.loss_scale import (
-    TrainOneStepWithLossScaleCellv2 as TrainOneStepWithLossScaleCell,
-)
+from mindaudio.loss.loss_scale import \
+    TrainOneStepWithLossScaleCellv2 as TrainOneStepWithLossScaleCell
 from mindaudio.models.ecapatdnn import Classifier, EcapaTDNN
 from mindaudio.utils.config import config as hparams
 from mindaudio.utils.distributed import DistributedSampler

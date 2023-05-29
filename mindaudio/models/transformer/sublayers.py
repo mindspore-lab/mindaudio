@@ -3,7 +3,8 @@ from mindspore import dtype as mstype
 from mindspore import nn, ops
 from mindspore.common.initializer import Normal, initializer
 
-from mindaudio.models.transformer.score_function import ScaledDotProductAttention
+from mindaudio.models.transformer.score_function import \
+    ScaledDotProductAttention
 
 
 class MultiHeadAttention(nn.Cell):

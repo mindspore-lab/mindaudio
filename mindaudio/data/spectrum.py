@@ -1,7 +1,8 @@
 import mindspore as ms
 import mindspore.dataset.audio as msaudio
 import numpy as np
-from mindspore.dataset.audio.utils import BorderType, MelType, NormType, WindowType
+from mindspore.dataset.audio.utils import (BorderType, MelType, NormType,
+                                           WindowType)
 from numpy import fft
 from scipy.signal import get_window
 

@@ -6,14 +6,8 @@ import numpy as np
 import wget
 
 import mindaudio.data.io as io
-from mindaudio.data.augment import (
-    add_babble,
-    add_noise,
-    add_reverb,
-    drop_chunk,
-    drop_freq,
-    speed_perturb,
-)
+from mindaudio.data.augment import (add_babble, add_noise, add_reverb,
+                                    drop_chunk, drop_freq, speed_perturb)
 from mindaudio.data.processing import stereo_to_mono
 
 OPENRIR_URL = "http://www.openslr.org/resources/28/rirs_noises.zip"

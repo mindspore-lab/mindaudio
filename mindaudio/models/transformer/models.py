@@ -4,7 +4,8 @@ from mindspore import nn, ops
 
 from mindaudio.models.transformer import constants
 from mindaudio.models.transformer.layers import FFTBlock
-from mindaudio.models.transformer.positional_encoding import get_sinusoid_encoding_table
+from mindaudio.models.transformer.positional_encoding import \
+    get_sinusoid_encoding_table
 
 
 class Encoder(nn.Cell):

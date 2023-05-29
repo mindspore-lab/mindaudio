@@ -8,7 +8,8 @@ from mindspore.nn import Conv1d
 from .filters import notch_filter
 from .io import read
 from .processing import resample, rescale
-from .spectrum import _pad_shape, compute_amplitude, dB_to_amplitude, istft, stft
+from .spectrum import (_pad_shape, compute_amplitude, dB_to_amplitude, istft,
+                       stft)
 
 __all__ = [
     "frequencymasking",

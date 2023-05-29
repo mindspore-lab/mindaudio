@@ -6,7 +6,8 @@ import numpy as np
 import scipy
 from mindspore import Parameter, Tensor, ops
 
-from .spectrum import amplitude_to_dB, compute_amplitude, dB_to_amplitude, frame
+from .spectrum import (amplitude_to_dB, compute_amplitude, dB_to_amplitude,
+                       frame)
 
 __all__ = [
     "normalize",

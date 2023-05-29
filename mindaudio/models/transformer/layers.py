@@ -1,9 +1,7 @@
 from mindspore import nn
 
-from mindaudio.models.transformer.sublayers import (
-    MultiHeadAttention,
-    PositionwiseFeedForward,
-)
+from mindaudio.models.transformer.sublayers import (MultiHeadAttention,
+                                                    PositionwiseFeedForward)
 
 
 class FFTBlock(nn.Cell):
