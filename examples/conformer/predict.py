@@ -6,22 +6,25 @@ python predict.py --config_path <CONFIG_FILE>
 import os
 
 import numpy as np
-from dataset.asr_predict_dataset import (create_asr_predict_dataset,
-                                         load_language_dict)
+from dataset.asr_predict_dataset import create_asr_predict_dataset, load_language_dict
 from mindspore import context
 from mindspore.train.model import Model
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
 
 from mindaudio.models.conformerASR import init_asr_model
-from mindaudio.models.decoders.predict_net import (Attention,
-                                                   AttentionRescoring,
-                                                   CTCGreedySearch,
-                                                   CTCPrefixBeamSearch,
-                                                   PredictNet)
-from mindaudio.models.decoders.recognize import (attention_rescoring,
-                                                 ctc_greedy_search,
-                                                 ctc_prefix_beam_search,
-                                                 recognize)
+from mindaudio.models.decoders.predict_net import (
+    Attention,
+    AttentionRescoring,
+    CTCGreedySearch,
+    CTCPrefixBeamSearch,
+    PredictNet,
+)
+from mindaudio.models.decoders.recognize import (
+    attention_rescoring,
+    ctc_greedy_search,
+    ctc_prefix_beam_search,
+    recognize,
+)
 from mindaudio.utils.config import get_config
 from mindaudio.utils.log import get_logger
 from mindaudio.utils.moxing_adapter import moxing_wrapper

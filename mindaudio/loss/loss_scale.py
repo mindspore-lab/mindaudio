@@ -69,7 +69,8 @@ class ClipGradients(nn.Cell):
                 )
             else:
                 t = self.clip_by_norm(
-                    grad, self.cast(ops.functional.tuple_to_array((clip_value,)), dt),
+                    grad,
+                    self.cast(ops.functional.tuple_to_array((clip_value,)), dt),
                 )
             new_grads = new_grads + (t,)
         return new_grads

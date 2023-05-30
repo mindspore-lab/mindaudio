@@ -2,8 +2,7 @@ import mindspore as ms
 import mindspore.dataset.audio as msaudio
 import numpy as np
 from mindspore import Tensor, nn
-from mindspore.dataset.audio.utils import (BorderType, NormMode, WindowType,
-                                           create_dct)
+from mindspore.dataset.audio.utils import BorderType, NormMode, WindowType, create_dct
 from scipy.ndimage import median_filter
 
 from .spectrum import amplitude_to_dB, istft, magphase, melspectrogram, stft
@@ -118,7 +117,12 @@ def context_window(waveforms, left_frames=0, right_frames=0):
     if first_call:
         first_call = False
         tile = np.tile(kernel, (x.shape[1], 1, 1))
-        tile = tile.reshape((x.shape[1] * context_size, kernel_size,))
+        tile = tile.reshape(
+            (
+                x.shape[1] * context_size,
+                kernel_size,
+            )
+        )
         kernel = np.expand_dims(tile, 1)
 
     x_shape = x.shape

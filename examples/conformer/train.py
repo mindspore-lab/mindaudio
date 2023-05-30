@@ -12,20 +12,22 @@ from mindspore.context import ParallelMode
 from mindspore.nn.optim import Adam
 from mindspore.nn.wrap.loss_scale import DynamicLossScaleUpdateCell
 from mindspore.train import Model
-from mindspore.train.callback import (CheckpointConfig, ModelCheckpoint,
-                                      SummaryCollector)
+from mindspore.train.callback import CheckpointConfig, ModelCheckpoint, SummaryCollector
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
 
 from mindaudio.models.conformerASR import ASREvalNet, init_asr_model
-from mindaudio.utils.callback import (CalRunTimeCallback, EvalCallback,
-                                      MemoryStartTimeCallback, ResumeCallback,
-                                      TimeMonitor)
+from mindaudio.utils.callback import (
+    CalRunTimeCallback,
+    EvalCallback,
+    MemoryStartTimeCallback,
+    ResumeCallback,
+    TimeMonitor,
+)
 from mindaudio.utils.config import get_config
 from mindaudio.utils.log import get_logger
 from mindaudio.utils.moxing_adapter import moxing_wrapper
 from mindaudio.utils.net import get_parameter_numel
-from mindaudio.utils.parallel_info import (get_device_id, get_device_num,
-                                           get_rank_id)
+from mindaudio.utils.parallel_info import get_device_id, get_device_num, get_rank_id
 from mindaudio.utils.scheduler import ASRWarmupLR
 from mindaudio.utils.train_one_step import TrainOneStepWithLossScaleCell
 

@@ -1,5 +1,6 @@
 import numpy as np
 import sentencepiece as spm
+
 from examples.tokenisers.utils import VOCAB_SIZE, text_to_sequence
 
 

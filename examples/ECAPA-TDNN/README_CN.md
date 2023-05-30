@@ -88,7 +88,7 @@ python train_speaker_embeddings.py
 如果预处理数据已经生成, 可以运行下面代码单独在单卡上训练:
 
 ```shell
-# Standalone training with prepared data 
+# Standalone training with prepared data
 python train_speaker_embeddings.py --need_generate_data=False
 ```
 
@@ -112,7 +112,7 @@ python speaker_verification_cosine.py
 当说话人验证数据预处理之后, 可以运行下面脚本跳过数据预处理，只做说话人验证:
 
 ```shell
-# eval with prepared data 
+# eval with prepared data
 python speaker_verification_cosine.py --need_generate_data=False
 ```
 

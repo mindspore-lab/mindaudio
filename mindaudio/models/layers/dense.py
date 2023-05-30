@@ -4,8 +4,12 @@ import math
 
 import mindspore
 import mindspore.nn as nn
-from mindspore.common.initializer import (HeUniform, Uniform,
-                                          _calculate_correct_fan, initializer)
+from mindspore.common.initializer import (
+    HeUniform,
+    Uniform,
+    _calculate_correct_fan,
+    initializer,
+)
 from mindspore.nn.cell import Cell
 
 

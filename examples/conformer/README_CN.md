@@ -11,7 +11,7 @@ conformer是将一种transformer和cnn结合起来，对音频序列进行局部
 Conformer整体结构包括：SpecAug、ConvolutionSubsampling、Linear、Dropout、ConformerBlocks×N，可见如下结构图。
 
 - ConformerBlock结构（N个该结构）：Feed Forward Module、Multi-Head Self Attention Module、Convolution Module、Feed Forward Module、Layernorm。其中每个Module都是前接一个Layernorm后接一个Dropout，且都有残差链连接，残差数据为输入数据本身。
-  
+
 - 马卡龙结构：可以看到ConformerBlock神似马卡龙结构，即两个一样的Feed Forward Module中间夹了Multi-Head Self Attention Module和Convolution。
 
   ![image-20230310165349460](https://raw.githubusercontent.com/mindspore-lab/mindaudio/main/tests/result/conformer.png)
@@ -87,4 +87,3 @@ python eval.py
 | ctc prefix beam search | 5.05 |
 | attention decoder      | 5.00 |
 | attention rescoring    | 4.73 |
-

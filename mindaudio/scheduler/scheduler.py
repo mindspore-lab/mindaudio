@@ -4,9 +4,12 @@ import mindspore
 import mindspore.ops as ops
 import numpy as np
 from mindspore.common.tensor import Tensor
-from mindspore.nn.learning_rate_schedule import (CosineDecayLR,
-                                                 LearningRateSchedule,
-                                                 PolynomialDecayLR, WarmUpLR)
+from mindspore.nn.learning_rate_schedule import (
+    CosineDecayLR,
+    LearningRateSchedule,
+    PolynomialDecayLR,
+    WarmUpLR,
+)
 
 
 class ASRWarmupLR(LearningRateSchedule):
@@ -42,8 +45,8 @@ class ASRWarmupLR(LearningRateSchedule):
     def construct(self, global_step):
         """construct asrwarmup scheduler"""
         step_num = global_step + self.start_steps
-        warmup_percent = self.warmup_steps ** 0.5 * self.min(
-            step_num ** -0.5, step_num * self.warmup_steps ** -1.5
+        warmup_percent = self.warmup_steps**0.5 * self.min(
+            step_num**-0.5, step_num * self.warmup_steps**-1.5
         )
         current_lr = self.learninig_rate * warmup_percent
 

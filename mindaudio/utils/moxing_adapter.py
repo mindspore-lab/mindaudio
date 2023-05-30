@@ -146,8 +146,7 @@ def modelarts_pre_process(config):
 def moxing_wrapper(config, pre_process=None, post_process=None):
     """Moxing wrapper to download dataset and upload outputs."""
     from adapter.log import get_logger
-    from adapter.parallel_info import (get_device_id, get_device_num,
-                                       get_rank_id)
+    from adapter.parallel_info import get_device_id, get_device_num, get_rank_id
 
     logger = get_logger()
 
@@ -160,7 +159,9 @@ def moxing_wrapper(config, pre_process=None, post_process=None):
                 import moxing as mox
 
                 mox.file.set_auth(
-                    ak=config.ak, sk=config.sk, server=config.server,
+                    ak=config.ak,
+                    sk=config.sk,
+                    server=config.server,
                 )
                 if config.compile_url and "MS_COMPILER_CACHE_PATH" in os.environ:
                     local_cache_dir = os.path.dirname(

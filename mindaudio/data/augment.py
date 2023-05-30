@@ -8,8 +8,7 @@ from mindspore.nn import Conv1d
 from .filters import notch_filter
 from .io import read
 from .processing import resample, rescale
-from .spectrum import (_pad_shape, compute_amplitude, dB_to_amplitude, istft,
-                       stft)
+from .spectrum import _pad_shape, compute_amplitude, dB_to_amplitude, istft, stft
 
 __all__ = [
     "frequencymasking",
@@ -27,7 +26,11 @@ __all__ = [
 
 
 def frequencymasking(
-    waveform, iid_masks=False, frequency_mask_param=0, mask_start=0, mask_value=0.0,
+    waveform,
+    iid_masks=False,
+    frequency_mask_param=0,
+    mask_start=0,
+    mask_value=0.0,
 ):
     """
     Apply masking to a spectrogram in the frequency domain.
@@ -60,7 +63,11 @@ def frequencymasking(
 
 
 def timemasking(
-    waveform, iid_masks=False, frequency_mask_param=0, mask_start=0, mask_value=0.0,
+    waveform,
+    iid_masks=False,
+    frequency_mask_param=0,
+    mask_start=0,
+    mask_value=0.0,
 ):
     """
     Apply masking to a spectrogram in the time domain.
@@ -573,7 +580,11 @@ def drop_freq(
 
     # Subtract each frequency
     for frequency in drop_frequency:
-        notch_kernel = notch_filter(frequency, filter_length, drop_width,)
+        notch_kernel = notch_filter(
+            frequency,
+            filter_length,
+            drop_width,
+        )
         drop_filter = convolve1d(drop_filter, notch_kernel, pad)
 
     # Apply filter
@@ -727,7 +738,9 @@ def drop_chunk(
 
     # Pick a number of times to drop
     drop_times = np.random.randint(
-        low=drop_count_low, high=drop_count_high + 1, size=(batch_size,),
+        low=drop_count_low,
+        high=drop_count_high + 1,
+        size=(batch_size,),
     )
 
     # Iterate batch to set mask
@@ -737,7 +750,9 @@ def drop_chunk(
 
         # Pick lengths
         length = np.random.randint(
-            low=drop_length_low, high=drop_length_high + 1, size=(drop_times[i],),
+            low=drop_length_low,
+            high=drop_length_high + 1,
+            size=(drop_times[i],),
         )
 
         # Compute range of starting locations
@@ -753,7 +768,9 @@ def drop_chunk(
 
         # Pick starting locations
         start = np.random.randint(
-            low=start_min, high=start_max + 1, size=(drop_times[i],),
+            low=start_min,
+            high=start_max + 1,
+            size=(drop_times[i],),
         )
 
         end = start + length
@@ -876,5 +893,9 @@ def pitch_shift(waveforms, sr, n_steps, bins_per_octave=12):
     rate = 2.0 ** (-float(n_steps) / bins_per_octave)
     waveforms_stretch = time_stretch(waveforms, rate=rate)
     # Stretch in time, then resample
-    y_shift = resample(waveforms_stretch, orig_freq=float(sr) / rate, new_freq=sr,)
+    y_shift = resample(
+        waveforms_stretch,
+        orig_freq=float(sr) / rate,
+        new_freq=sr,
+    )
     return _pad_shape(y_shift, data_shape=waveforms_stretch.shape[-1])

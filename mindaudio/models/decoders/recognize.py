@@ -5,8 +5,7 @@ from collections import defaultdict
 import mindspore.common.dtype as mstype
 import numpy as np
 from mindspore import Tensor
-from utils.common import (add_sos_eos, log_add, pad_sequence,
-                          remove_duplicates_and_blank)
+from utils.common import add_sos_eos, log_add, pad_sequence, remove_duplicates_and_blank
 from utils.mask import make_pad_mask, subsequent_mask
 
 

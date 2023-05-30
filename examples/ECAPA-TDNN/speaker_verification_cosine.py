@@ -767,7 +767,10 @@ def eval_impl():
         os.makedirs(hparams.npy_file_path, exist_ok=False)
 
     enroll_dict = compute_embeddings(
-        model, dataset_enroll, dur=len(dataset_enroll), exc_set=excluded_set,
+        model,
+        dataset_enroll,
+        dur=len(dataset_enroll),
+        exc_set=excluded_set,
     )
     eer = evaluate(enroll_dict, enroll_dict, veri_file_path)
     print("eer baseline:", eer)
@@ -833,7 +836,11 @@ def eval_impl():
         items = list(train_dict_mean.values())
         train_arr = np.asarray(items)
         pos_score, neg_score = evaluate2(
-            enroll_dict_mean, enroll_dict_mean, train_arr, hparams, veri_file_path,
+            enroll_dict_mean,
+            enroll_dict_mean,
+            train_arr,
+            hparams,
+            veri_file_path,
         )
 
         eer = EER(np.array(pos_score), np.array(neg_score))

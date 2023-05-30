@@ -13,8 +13,7 @@ import numpy as np
 import mindaudio
 from mindaudio.utils.common import IGNORE_ID, add_sos_eos, pad_sequence
 from mindaudio.utils.log import get_logger
-from mindaudio.utils.mask import (add_optional_chunk_mask, make_pad_mask,
-                                  subsequent_mask)
+from mindaudio.utils.mask import add_optional_chunk_mask, make_pad_mask, subsequent_mask
 
 logger = get_logger()
 

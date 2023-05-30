@@ -116,7 +116,8 @@ def prepare_voxceleb(
             shutil.unpack_archive(os.path.join(source, VOX_TEST_WAV), data_folder_path)
         if not os.path.exists(os.path.join(data_folder_path, "meta")):
             shutil.copytree(
-                os.path.join(source, "meta"), os.path.join(data_folder_path, "meta"),
+                os.path.join(source, "meta"),
+                os.path.join(data_folder_path, "meta"),
             )
 
     # Check if this phase is already done (if so, skip it)

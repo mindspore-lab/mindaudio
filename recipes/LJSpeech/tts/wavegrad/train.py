@@ -130,7 +130,7 @@ def main():
             global_step = int(ckpt["cur_step"].asnumpy())
 
     scale_sense = nn.DynamicLossScaleUpdateCell(
-        loss_scale_value=2 ** 12, scale_factor=2, scale_window=1000
+        loss_scale_value=2**12, scale_factor=2, scale_window=1000
     )
     net = MyTrainOneStepCell(
         wavegrad, optimiser, max_grad_norm=hps.max_grad_norm, scale_sense=scale_sense

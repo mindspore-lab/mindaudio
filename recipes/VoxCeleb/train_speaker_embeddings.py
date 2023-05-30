@@ -15,14 +15,17 @@ import mindspore.nn as nn
 import numpy as np
 import wget
 from config import config as hparams
-from loss_scale import \
-    TrainOneStepWithLossScaleCellv2 as TrainOneStepWithLossScaleCell
+from loss_scale import TrainOneStepWithLossScaleCellv2 as TrainOneStepWithLossScaleCell
 from mindspore import Tensor, context, load_checkpoint, load_param_into_net
 from mindspore.communication.management import get_group_size, get_rank, init
 from mindspore.context import ParallelMode
 from mindspore.nn import FixedLossScaleUpdateCell
-from mindspore.train.callback import (CheckpointConfig, ModelCheckpoint,
-                                      RunContext, _InternalCallbackParam)
+from mindspore.train.callback import (
+    CheckpointConfig,
+    ModelCheckpoint,
+    RunContext,
+    _InternalCallbackParam,
+)
 from reader import DatasetGeneratorBatch as DatasetGenerator
 from sampler import DistributedSampler
 from spec_augment import EnvCorrupt, InputNormalization, TimeDomainSpecAugment
@@ -191,7 +194,9 @@ def data_trans_dp(datasetPath, dataSavePath):
     samples_per_file = 4000
     total_process_num = math.ceil(len(fea_utt_lst) / samples_per_file)
     print(
-        "samples_per_file, total_process_num:", samples_per_file, total_process_num,
+        "samples_per_file, total_process_num:",
+        samples_per_file,
+        total_process_num,
     )
     samples_dict = Manager().dict()
     labels_dict = Manager().dict()
@@ -227,10 +232,12 @@ def data_trans_dp(datasetPath, dataSavePath):
             p.join()
     print(datetime.now().strftime("%m-%d-%H:%M:%S"))
     pickle.dump(
-        dict(samples_dict), open(os.path.join(dataSavePath, "ind_sample.p"), "wb"),
+        dict(samples_dict),
+        open(os.path.join(dataSavePath, "ind_sample.p"), "wb"),
     )
     pickle.dump(
-        dict(labels_dict), open(os.path.join(dataSavePath, "ind_label.p"), "wb"),
+        dict(labels_dict),
+        open(os.path.join(dataSavePath, "ind_label.p"), "wb"),
     )
 
 
@@ -315,7 +322,13 @@ def update_average(loss_, avg_loss, step):
 
 
 def train_net(
-    rank, model, epoch_max, data_train, ckpt_cb, steps_per_epoch, train_batch_size,
+    rank,
+    model,
+    epoch_max,
+    data_train,
+    ckpt_cb,
+    steps_per_epoch,
+    train_batch_size,
 ):
     """define the training method"""
     # Create dict to save internal callback object's parameters
@@ -414,7 +427,9 @@ def train():
     if hparams.run_distribute:
         device_id = int(os.getenv("DEVICE_ID", "0"))
         context.set_context(
-            mode=context.GRAPH_MODE, device_target="Ascend", device_id=device_id,
+            mode=context.GRAPH_MODE,
+            device_target="Ascend",
+            device_id=device_id,
         )
         init()
         hparams.rank = get_rank()
@@ -471,7 +486,7 @@ def train():
 
     loss = nn.loss.SoftmaxCrossEntropyWithLogits(sparse=False, reduction="mean")
 
-    scale_mag = FixedLossScaleUpdateCell(loss_scale_value=2 ** 14)
+    scale_mag = FixedLossScaleUpdateCell(loss_scale_value=2**14)
     model_constructed = BuildTrainNetwork(
         mymodel, my_classifier, aam, loss, minibatch_size, class_num
     )

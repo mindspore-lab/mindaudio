@@ -4,8 +4,7 @@ from mindspore import nn, ops
 
 from mindaudio.models.transformer import constants
 from mindaudio.models.transformer.layers import FFTBlock
-from mindaudio.models.transformer.positional_encoding import \
-    get_sinusoid_encoding_table
+from mindaudio.models.transformer.positional_encoding import get_sinusoid_encoding_table
 
 
 class Encoder(nn.Cell):
@@ -31,7 +30,9 @@ class Encoder(nn.Cell):
         self.position_enc = ops.stop_gradient(Tensor(pretrained_embs)[None, ...])
 
         self.src_word_emb = nn.Embedding(
-            n_src_vocab, d_word_vec, padding_idx=constants.PAD,
+            n_src_vocab,
+            d_word_vec,
+            padding_idx=constants.PAD,
         )
 
         self.layer_stack = nn.CellList(
@@ -65,7 +66,9 @@ class Encoder(nn.Cell):
             )
         for enc_layer in self.layer_stack:
             enc_output = enc_layer(
-                enc_output, non_pad_mask=non_pad_mask, slf_attn_mask=slf_attn_mask_bool,
+                enc_output,
+                non_pad_mask=non_pad_mask,
+                slf_attn_mask=slf_attn_mask_bool,
             )
         return enc_output
 

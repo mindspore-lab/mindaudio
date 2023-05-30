@@ -6,8 +6,7 @@ import numpy as np
 import scipy
 from mindspore import Parameter, Tensor, ops
 
-from .spectrum import (amplitude_to_dB, compute_amplitude, dB_to_amplitude,
-                       frame)
+from .spectrum import amplitude_to_dB, compute_amplitude, dB_to_amplitude, frame
 
 __all__ = [
     "normalize",
@@ -83,7 +82,7 @@ def normalize(waveforms, norm="max", axis=0):
         scale = np.sum(mag, axis=axis, keepdims=True)
 
     elif norm == "l2":
-        scale = np.sum(mag ** 2, axis=axis, keepdims=True) ** (1.0 / 2)
+        scale = np.sum(mag**2, axis=axis, keepdims=True) ** (1.0 / 2)
 
     else:
         raise TypeError("Unsupported norm type {}".format(repr(norm)))

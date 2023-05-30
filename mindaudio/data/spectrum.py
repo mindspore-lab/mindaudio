@@ -1,8 +1,7 @@
 import mindspore as ms
 import mindspore.dataset.audio as msaudio
 import numpy as np
-from mindspore.dataset.audio.utils import (BorderType, MelType, NormType,
-                                           WindowType)
+from mindspore.dataset.audio.utils import BorderType, MelType, NormType, WindowType
 from numpy import fft
 from scipy.signal import get_window
 
@@ -20,7 +19,7 @@ __all__ = [
 ]
 
 # Define max block sizes(256 KB)
-MAX_MEM_BLOCK = 2 ** 8 * 2 ** 10
+MAX_MEM_BLOCK = 2**8 * 2**10
 
 
 def amplitude_to_dB(wavform, stype="power", ref=1.0, amin=1e-10, top_db=80.0):
@@ -426,7 +425,7 @@ def istft(
     y = np.zeros(shape, dtype=np.float_)
 
     n_columns = (
-        2 ** 8 * 2 ** 10 // (np.prod(stft_matrix.shape[:-1]) * stft_matrix.itemsize)
+        2**8 * 2**10 // (np.prod(stft_matrix.shape[:-1]) * stft_matrix.itemsize)
     )
     n_columns = max(n_columns, 1)
 
@@ -484,7 +483,7 @@ def _window_sumsquare(window, n_frames, win_length, n_fft, hop_length):
 
     # Compute the squared window at the desired length
     win_sq = get_window(window, win_length)
-    win_sq = win_sq ** 2
+    win_sq = win_sq**2
     win_sq = _pad_center(win_sq, n_fft)
 
     n = len(x)
@@ -797,7 +796,13 @@ def resynthesize(enhanced_mag, noisy_inputs, normalize_wavs=True):
     noisy_feats = stft(noisy_inputs, return_complex=False)
     noisy_phase = np.arctan2(noisy_feats[:, :, 1], noisy_feats[:, :, 0])
 
-    pre_stack = np.stack([np.cos(noisy_phase), np.sin(noisy_phase),], axis=-1,)
+    pre_stack = np.stack(
+        [
+            np.cos(noisy_phase),
+            np.sin(noisy_phase),
+        ],
+        axis=-1,
+    )
     # using enhanced magnitude to combine data
     complex_predictions = np.expand_dims(enhanced_mag, -1) * pre_stack
     result = complex_predictions[:, :, 0] + 1j * complex_predictions[:, :, 1]

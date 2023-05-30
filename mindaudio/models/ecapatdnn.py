@@ -216,7 +216,12 @@ class SERes2NetBlock(nn.Cell):
             groups=groups,
         )
         self.res2net_block = Res2NetBlock(
-            out_channels, out_channels, res2net_scale, kernel_size, dilation, bias,
+            out_channels,
+            out_channels,
+            res2net_scale,
+            kernel_size,
+            dilation,
+            bias,
         )
         self.tdnn2 = TDNNBlock(
             out_channels,
@@ -460,7 +465,11 @@ class Classifier(nn.Cell):
     """
 
     def __init__(
-        self, input_size, lin_blocks=0, lin_neurons=192, out_neurons=1211,
+        self,
+        input_size,
+        lin_blocks=0,
+        lin_neurons=192,
+        out_neurons=1211,
     ):
         super().__init__()
         self.blocks = nn.CellList()

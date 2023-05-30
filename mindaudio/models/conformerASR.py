@@ -109,7 +109,10 @@ class ASRModelWithAcc(nn.Cell):
         encoder_out, encoder_mask = self.encoder(xs_pad, xs_masks, xs_chunk_masks)
         encoder_out = self.cast(encoder_out, mstype.float32)
         encoder_mask = self.cast(encoder_mask, mstype.float32)
-        encoder_out_lens = self.cast(encoder_mask.squeeze().sum(axis=1), mstype.int32,)
+        encoder_out_lens = self.cast(
+            encoder_mask.squeeze().sum(axis=1),
+            mstype.int32,
+        )
 
         # 2a. Attention-decoder branch
         if self.ctc_weight != 1.0:
@@ -177,7 +180,11 @@ class ASRModelWithAcc(nn.Cell):
             )
 
         # 3. Compute attention accuracy
-        acc_att = self._th_accuracy(decoder_out, ys_out_pad, ys_masks,)
+        acc_att = self._th_accuracy(
+            decoder_out,
+            ys_out_pad,
+            ys_masks,
+        )
 
         return loss_att, acc_att
 

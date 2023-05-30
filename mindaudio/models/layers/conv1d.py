@@ -5,8 +5,13 @@ import math
 import mindspore
 import mindspore.nn as nn
 import mindspore.ops as ops
-from mindspore.common.initializer import (HeNormal, HeUniform, Uniform,
-                                          _calculate_correct_fan, initializer)
+from mindspore.common.initializer import (
+    HeNormal,
+    HeUniform,
+    Uniform,
+    _calculate_correct_fan,
+    initializer,
+)
 from mindspore.nn.cell import Cell
 
 

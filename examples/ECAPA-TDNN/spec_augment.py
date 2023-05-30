@@ -6,8 +6,14 @@ import numpy as np
 import wget
 
 import mindaudio.data.io as io
-from mindaudio.data.augment import (add_babble, add_noise, add_reverb,
-                                    drop_chunk, drop_freq, speed_perturb)
+from mindaudio.data.augment import (
+    add_babble,
+    add_noise,
+    add_reverb,
+    drop_chunk,
+    drop_freq,
+    speed_perturb,
+)
 from mindaudio.data.processing import stereo_to_mono
 
 OPENRIR_URL = "http://www.openslr.org/resources/28/rirs_noises.zip"
@@ -24,7 +30,10 @@ class InputNormalization:
     """
 
     def __init__(
-        self, mean_norm=True, std_norm=True, norm_type="global",
+        self,
+        mean_norm=True,
+        std_norm=True,
+        norm_type="global",
     ):
         self.mean_norm = mean_norm
         self.std_norm = std_norm
@@ -101,7 +110,11 @@ class AddNoise:
 
     def construct(self, waveforms):
         noisy_waveform = add_noise(
-            waveforms, self.noise_data, self.snr_low, self.snr_high, self.mix_prob,
+            waveforms,
+            self.noise_data,
+            self.snr_low,
+            self.snr_high,
+            self.mix_prob,
         )
 
         # Normalizing to prevent clipping
@@ -116,7 +129,9 @@ class AddReverb:
     # This class convolve an audio signal with an impulse response.
 
     def __init__(
-        self, csv_file, reverb_prob=1.0,
+        self,
+        csv_file,
+        reverb_prob=1.0,
     ):
         self.csv_file = csv_file
         self.reverb_prob = reverb_prob
@@ -139,7 +154,11 @@ class AddBabble:
     # Simulate babble noise by mixing the signals in a batch.
 
     def __init__(
-        self, speaker_count=3, snr_low=0, snr_high=0, mix_prob=1,
+        self,
+        speaker_count=3,
+        snr_low=0,
+        snr_high=0,
+        mix_prob=1,
     ):
         self.speaker_count = speaker_count
         self.snr_low = snr_low
@@ -184,7 +203,10 @@ class EnvCorrupt:
             open_noise_csv = os.path.join(openrir_folder, "noise.csv")
             open_reverb_csv = os.path.join(openrir_folder, "reverb.csv")
             prepare_openrir(
-                openrir_folder, open_reverb_csv, open_noise_csv, openrir_max_noise_len,
+                openrir_folder,
+                open_reverb_csv,
+                open_noise_csv,
+                openrir_max_noise_len,
             )
 
             # Specify filepath and sample rate if not specified already
@@ -213,7 +235,10 @@ class EnvCorrupt:
             )
 
         if reverb_prob > 0.0 and reverb_csv is not None:
-            self.add_reverb = AddReverb(reverb_prob=reverb_prob, csv_file=reverb_csv,)
+            self.add_reverb = AddReverb(
+                reverb_prob=reverb_prob,
+                csv_file=reverb_csv,
+            )
 
     def construct(self, waves, lens):
         """
