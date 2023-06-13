@@ -4,12 +4,11 @@ import logging.config
 import logging.handlers
 import os
 import sys
-from logging import StreamHandler  # pylint: disable=C0412
-from logging.handlers import RotatingFileHandler  # pylint: disable=C0412
+from logging import StreamHandler
+from logging.handlers import RotatingFileHandler
 from typing import List, Tuple, Union
 
-from flyspeech.adapter.moxing_adapter import check_in_modelarts
-from flyspeech.adapter.parallel_info import get_device_id
+from .parallel_info import get_device_id
 
 logger_list = []
 stream_handler_list = {}
@@ -17,7 +16,7 @@ file_handler_list = {}
 
 _level = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
 _modelarts_log_file_dir = "/cache/log"
-_local_default_log_file_dir = "~/.cache/flyspeech"
+_local_default_log_file_dir = "~/.cache/mindaudio"
 _default_filehandler_format = (
     "[%(levelname)s] %(asctime)s [%(pathname)s:%(lineno)d] %(funcName)s: %(message)s"
 )
@@ -129,8 +128,6 @@ def get_file_path(file_save_dir: str, file_name: str) -> str:
     """Gets the list of files where the logs are saved."""
     if not file_save_dir:
         file_save_dir = os.path.expanduser(_local_default_log_file_dir)
-    if check_in_modelarts():
-        file_save_dir = _modelarts_log_file_dir
 
     device_id = get_device_id()
     file_save_dir = os.path.join(file_save_dir, "device_{}".format(device_id))
@@ -169,14 +166,14 @@ def get_file_handler_list(
 
 
 def get_logger(
-    logger_name: str = "Flyspeech",
+    logger_name: str = "mindaudio",
     to_std: bool = True,
     stdout_devices: Union[List, Tuple] = (),
     stdout_level: str = "INFO",
     stdout_format: str = "",
     file_level: str = "INFO",
     file_save_dir: str = "",
-    file_name: str = "flyspeech.log",
+    file_name: str = "mindaudio.log",
     max_file_size: int = 50,
     max_num_of_files: int = 5,
 ) -> logging.Logger:
@@ -198,9 +195,9 @@ def get_logger(
         file_level (str): The level of the log output to file.
             Default: 'INFO' indicates that the logger will output info log.
         file_save_dir (str): The folder where the log files are stored.
-            Default: '', indicate that save log file to ~/.cache/flyspeech/
+            Default: '', indicate that save log file to ~/.cache/mindaudio/
         file_name (str): The name of log file.
-            Default: 'flyspeech', indicate that save log to flyspeech.log.
+            Default: 'mindaudio', indicate that save log to mindaudio.log.
         max_file_size (int): The maximum size of a single log file. Unit: MB.
             Default: 50.
         max_num_of_files (int): The maximum number of files to save. Default: 5
@@ -233,14 +230,14 @@ def get_logger(
     return logger
 
 
-def print_log(*msg, output_obj="Flyspeech", level="INFO"):
+def print_log(*msg, output_obj="mindaudio", level="INFO"):
     """Output logs by different ways.
 
     Args:
         *msg (tuple): Log content.
         output_obj (str or logging.Logger or optional): The object used to
             output the log.
-            Default: 'Flyspeech', use the logger named Flyspeech.
+            Default: 'mindaudio', use the logger named mindaudio.
             if output_obj is set to None, it means use python's print
                 function to output *msg.
             if output_obj is set to 'silent', it means that nothing will

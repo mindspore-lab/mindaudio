@@ -1,1 +1,3 @@
-from mindaudio.metric import wer
+from .cer import *
+from .eer import *
+from .wer import *

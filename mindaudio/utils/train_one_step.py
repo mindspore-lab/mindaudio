@@ -5,7 +5,8 @@ from mindspore import context
 from mindspore.common import dtype as mstype
 from mindspore.common.initializer import initializer
 from mindspore.common.parameter import Parameter
-from mindspore.common.tensor import RowTensor, Tensor
+from mindspore.common.sparse_tensor import RowTensorInner
+from mindspore.common.tensor import Tensor
 from mindspore.communication.management import get_group_size
 from mindspore.context import ParallelMode
 from mindspore.nn.cell import Cell
@@ -56,7 +57,7 @@ def tensor_grad_scale(scale, grad):
 
 @_grad_scale.register("Tensor", "RowTensor")
 def tensor_grad_scale_row_tensor(scale, grad):
-    return RowTensor(
+    return RowTensorInner(
         grad.indices,
         grad.values * F.cast(reciprocal(scale), F.dtype(grad.values)),
         grad.dense_shape,
