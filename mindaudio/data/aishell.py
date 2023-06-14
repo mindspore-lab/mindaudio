@@ -106,7 +106,7 @@ def prepare_aishell(data_path, download):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="prepare Librispeech")
+    parser = argparse.ArgumentParser(description="prepare aishell")
     parser.add_argument(
         "--data_path", type=str, default="", help="The path to store data"
     )
@@ -114,7 +114,7 @@ if __name__ == "__main__":
         "--download",
         type=bool,
         default=False,
-        help="Whether need to download librispeech",
+        help="Whether need to download aishell",
     )
     arg = parser.parse_args()
     prepare_aishell(arg.data_path, arg.download)

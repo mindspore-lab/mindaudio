@@ -176,17 +176,6 @@ def get_padding_length(length, frame_bucket_limits):
     return frame_bucket_limits[-1]
 
 
-def safe_readline(f):
-    """Safety read line."""
-    pos = f.tell()
-    while True:
-        try:
-            return f.readline()
-        except UnicodeDecodeError:
-            pos -= 1
-            f.seek(pos)
-
-
 def load_samples(data_file, worker_id, frame_factor, workers_num):
     """Load all training samples from data file."""
     data = []
@@ -895,8 +884,7 @@ def create_asr_predict_dataset(data_file, dataset_conf, collate_conf, num_worker
         operations=data_preprocess_asr,
         input_columns=["uutid", "wav_path", "length", "tokens"],
         output_columns=["uutid", "xs_pad", "xs_masks", "tokens", "xs_lengths"],
-        column_order=["uutid", "xs_pad", "xs_masks", "tokens", "xs_lengths"],
         num_parallel_workers=num_workers,
     )
-
+    ds = ds.project(["uutid", "xs_pad", "xs_masks", "tokens", "xs_lengths"])
     return ds

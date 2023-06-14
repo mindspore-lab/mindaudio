@@ -1,9 +1,12 @@
+from .aishell import *
 from .augment import *
 from .features import *
 from .filters import *
 from .io import *
+from .librispeech import *
 from .processing import *
 from .spectrum import *
+from .voxceleb import *
 
 __all__ = []
 __all__.extend(augment.__all__)

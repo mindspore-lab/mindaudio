@@ -106,7 +106,7 @@ training_with_eval: True
 
 # decode option
 test_data: "/data/test.csv"
-dict: "/path/dict/lang_char.txt"
+dict: "/data/lang_char.txt"
 decode_ckpt: "avg_30.ckpt"
 decode_mode: "attention" # ctc_greedy_search,ctc_prefix_beam_search,attention,attention_rescoring
 full_graph: True

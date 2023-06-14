@@ -35,18 +35,12 @@ Conformer整体结构包括：SpecAug、ConvolutionSubsampling、Linear、Dropou
 以aishell数据集为例，mindaudio提供下载、生成统计信息的脚本（包含wav文件地址信息以及对应中文信息），执行此脚本会生成train.csv、dev.csv、test.csv三个文件。
 
 ```shell
-cd minaudio/data
-# data_path为存放数据的地址
-python aishell.py --data_path "/data" --download Ture
-```
-
-如用户已下载data_aishell.tgz，可取消下载，设置如下：
-
-```shell
-cd minaudio/data
+cd mindaudio/data
 # data_path为存放数据的地址
 python aishell.py --data_path "/data" --download False
 ```
+
+如需下载数据， --download True
 
 ### 2. 数据预处理
 
@@ -55,7 +49,7 @@ python aishell.py --data_path "/data" --download False
 根据aishell提供的aishell_transcript_v0.8.txt，生成逐字的编码文件，每个字对应一个id，输出包含编码信息的文件：lang_char.txt。
 
 ```shell
-cd minaudio/utils
+cd mindaudio/utils
 python text2token.py -s 1 -n 1 "data_path/data_aishell/transcript/aishell_transcript_v0.8.txt" | cut -f 2- -d" " | tr " " "\n" \
         | sort | uniq | grep -a -v -e '^\s*$' | awk '{print $0 " " NR+1}' >> ${/data_path/lang_char.txt}
 ```
@@ -74,7 +68,6 @@ python compute_cmvn_stats.py --num_workers 16 --train_config conformer.yaml --in
 ### 3. 训练
 
 #### 单卡训练
-单卡训练速度较慢，不提倡使用此种方式
 ```shell
 cd examples/conformer
 # Standalone training
@@ -85,7 +78,7 @@ python train.py --config_path ./conformer.yaml
 
 #### 在Ascend上进行多卡训练
 
-此样例使用 8张NPU，如果你想改变NPU的数量，可以更改下列命令中 -n 后的卡数。
+此样例使用 8张NPU.
 ```shell
 # Distribute_training
 mpirun -n 8 python train.py ----config_path ./conformer.yaml
@@ -121,11 +114,11 @@ python cer.py --char=1 --v=1 ${result_dir}/result.txt > ${result_dir}/cer.txt
 * Feature info: using fbank feature, cmvn, online speed perturb
 * Training info: lr 0.001, acc_grad 1, 240 epochs, 8 Ascend910
 * Decoding info: ctc_weight 0.3, average_num 30
-* Performance result: total_time 11h17min
+* Performance result: total_time 11h17min, 8p, using hccl_tools.
 
-| decoding mode          | CER  |
-| ---------------------- | ---- |
-| ctc greedy search      | 5.05 |
-| ctc prefix beam search | 5.05 |
-| attention decoder      | 5.00 |
-| attention rescoring    | 4.73 |
+| model     | decoding mode          | CER  |
+| --------- | ---------------------- | ---- |
+| conformer | ctc greedy search      | 5.05 |
+| conformer | ctc prefix beam search | 5.05 |
+| conformer | attention decoder      | 5.00 |
+| conformer | attention rescoring    | 4.73 |

@@ -42,11 +42,9 @@ MindAudio是一个基于全场景AI框架 [MindSpore](https://www.mindspore.cn/)
 - **集成常用数据集，一键进行数据预处理** 由于音频深度学习领域中数据集较多，处理过程较复杂，对新手不友好。MindAudio针对不同数据提供一套高效的数据处理方案，并支持用户根据需求进行定制化修改。
 
 ```python
->>> from ..librispeech import create_base_dataset, train_data_pipeline
-# 创建基础数据集
->>>ds_train = create_base_dataset(manifest_filepath，labels)
-# 进行数据特征提取
->>>ds_train = train_data_pipeline(ds_train, batch_size=64)
+>>> import mindaudio
+# aishell数据预处理
+>>>mindaudio.data.aishell.prepare_aishell("data_path", download=False)
 ```
 
 - **支持多种任务模型** MindAudio提供多种任务模型, 如ASR任务中的DeepSpeech2，TTS任务中的WavGrad等，并提供预训练权重、训练策略和性能报告，帮助用户快速上手复现音频领域任务。
@@ -69,7 +67,7 @@ Git上最新的MindAudio可以通过以下指令安装。
 ```shell
 git clone https://github.com/mindspore-lab/mindaudio.git
 cd mindaudio
-pip install -r requirements.txt
+pip install -r requirements/requirements.txt
 python setup.py install
 ```
 
@@ -84,7 +82,7 @@ mindaudio提供一系列常用的音频数据处理API，可便捷调用进行�
 >>> import numpy as np
 >>> import matplotlib.pyplot as plt
 # 读取音频文件
->>> test_data, sr = mindaudio.read(data_path)
+>>> test_data, sr = mindaudio.read("./tests/samples/ASR/BAC009S0002W0122.wav")
 # 进行数据特征提取
 >>> n_fft = 512
 >>> matrix = mindaudio.stft(test_data, n_fft=n_fft)
@@ -106,22 +104,20 @@ mindaudio提供一系列常用的音频数据处理API，可便捷调用进行�
 
 ### 语音任务实现
 
-针对不同的数据集和任务，我们提供不同的数据集预处理和训练策略。以ASR任务为例，我们提供了在LibriSpeech数据集上的训练以及推理示例：
+针对不同的数据集和任务，我们提供不同的数据集预处理和训练策略。以ASR任务为例，我们提供了在LibriSpeech数据集上deepspeech2的训练以及推理示例：
 
 - 数据集准备
 
 ```shell
-# 进入相应数据集目录
-cd recipes/LibriSpeech
+import mindaudio
 # 数据集准备
-python librispeech.py --root_path "your_data_path"
+mindaudio.data.librispeech.prepare_librispeech("data_path", download=False)
 ```
 
 - 单卡训练
 
 ```shell
-# 进入具体任务目录
-cd ASR
+cd examples/deepspeech2
 # 单卡训练
 python train.py -c "./deepspeech2.yaml"
 ```
@@ -129,8 +125,7 @@ python train.py -c "./deepspeech2.yaml"
 - 多卡训练
 
 ```shell
-# 进入具体任务目录
-cd ASR
+cd examples/deepspeech2
 # 启动多卡训练
 mpirun --allow-run-as-root -n 8 python train.py -c "./deepspeech2.yaml"
 ```
