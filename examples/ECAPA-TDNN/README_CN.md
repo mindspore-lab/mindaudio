@@ -18,7 +18,7 @@ ECAPA-TDNN由比利时哥特大学Desplanques等人于2020年提出，通过引�
 
 模型结构如下图：
 
-
+![tdnn.png](https://github.com/mindspore-lab/mindaudio/blob/main/tests/result/tdnn.png?raw=true)
 
 ### 数据处理
 
