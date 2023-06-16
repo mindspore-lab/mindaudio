@@ -46,11 +46,9 @@ MindAudio is an open source all-in-one toolkit for the voice field, witch based 
   Due to the large number of data sets in the audio deep learning field, the processing process is more complex and not friendly to novices. MindAudio provides a set of efficient data processing solutions for different data, and supports users to customize according to their needs.
 
 ```python
->>> from ..librispeech import create_base_dataset, train_data_pipeline
-# Create the underlying data set
->>>ds_train = create_base_dataset(manifest_filepath，labels)
-# Carry out data feature extraction
->>>ds_train = train_data_pipeline(ds_train, batch_size=64)
+>>> import mindaudio
+# aishell preprocessing
+>>>mindaudio.data.aishell.prepare_aishell("data_path", download=False)
 ```
 
 - **Support for multiple task models.**
@@ -78,7 +76,7 @@ The latest version of MindAudio can be installed as follows:
 ```shell
 git clone https://github.com/mindspore-lab/mindaudio.git
 cd mindaudio
-pip install -r requirements.txt
+pip install -r requirements/requirements.txt
 python setup.py install
 ```
 
@@ -93,7 +91,7 @@ mindaudio provides a series of commonly used audio data processing apis, which c
 >>> import numpy as np
 >>> import matplotlib.pyplot as plt
 # Read audio file
->>> test_data, sr = mindaudio.read(data_path)
+>>> test_data, sr = mindaudio.read("./tests/samples/ASR/BAC009S0002W0122.wav")
 # Carry out data feature extraction
 >>> n_fft = 512
 >>> matrix = mindaudio.stft(test_data, n_fft=n_fft)
@@ -119,17 +117,15 @@ For different data sets and tasks, we provide different data set preprocessing a
 - Dataset preparation
 
 ```shell
-# Enter the corresponding data set directory
-cd recipes/LibriSpeech
+import mindaudio
 # Dataset preparation
-python librispeech.py --root_path "your_data_path"
+mindaudio.data.librispeech.prepare_librispeech("data_path", download=False)
 ```
 
 - Standalone training
 
 ```shell
-# Enter the specific task directory
-cd ASR
+cd examples/deepspeech2
 # Standalone training
 python train.py -c "./deepspeech2.yaml"
 ```
@@ -137,8 +133,7 @@ python train.py -c "./deepspeech2.yaml"
 - Distribute training
 
 ```shell
-# Enter the specific task directory
-cd ASR
+cd examples/deepspeech2
 # Distribute training
 mpirun --allow-run-as-root -n 8 python train.py -c "./deepspeech2.yaml"
 ```

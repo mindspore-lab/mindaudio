@@ -8,7 +8,7 @@ encoder_conf:
     num_blocks: 12      # the number of encoder blocks
     dropout_rate: 0.1
     positional_dropout_rate: 0.1
-    attention_dropout_rate: 0.0
+    attention_dropout_rate: 0
     input_layer: conv2d # encoder input type, you can chose conv2d, conv2d6 and conv2d8
     normalize_before: True
     cnn_module_kernel: 15
@@ -24,8 +24,8 @@ decoder_conf:
     num_blocks: 6
     dropout_rate: 0.1
     positional_dropout_rate: 0.1
-    self_attention_dropout_rate: 0.0
-    src_attention_dropout_rate: 0.0
+    self_attention_dropout_rate: 0
+    src_attention_dropout_rate: 00
 
 # hybrid CTC/attention
 model_conf:
@@ -86,12 +86,12 @@ scheduler: warmuplr
 scheduler_conf:
     warmup_steps: 25000
 
-cmvn_file: "/path/train/global_cmvn"
+cmvn_file: "/data/data_aishell/global_cmvn"
 is_json_cmvn: True
 
 exp_name: default
-train_data: "/path/train/format.data"
-eval_data: "/path/dev/format.data"
+train_data: "/data/train.csv"
+eval_data: "/data/dev.csv"
 save_checkpoint: True
 save_checkpoint_epochs: 1
 save_checkpoint_steps: 460
@@ -105,8 +105,8 @@ save_graphs: False
 training_with_eval: True
 
 # decode option
-test_data: "/path/test/format.data"
-dict: "/path/dict/lang_char.txt"
+test_data: "/data/test.csv"
+dict: "/data/lang_char.txt"
 decode_ckpt: "avg_30.ckpt"
 decode_mode: "attention" # ctc_greedy_search,ctc_prefix_beam_search,attention,attention_rescoring
 full_graph: True

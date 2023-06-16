@@ -26,50 +26,85 @@ Conformer整体结构包括：SpecAug、ConvolutionSubsampling、Linear、Dropou
 
 - 文字：
 
-​		文字编码使用dict进行中文编码转换，用户可使用分词模型进行替换。
+​		文字编码使用逐字中文编码转换，用户可使用分词模型进行替换。
 
 ## 使用步骤
 
 ### 1. 数据集准备
-该过程在recipes/aishell文件夹中有详细描述，生成的csv文件包括wav文件地址信息以及转换后的中文编码信息。
 
-### 2. 训练
-#### 单卡训练
-单卡训练速度较慢，不提倡使用此种方式
+以aishell数据集为例，mindaudio提供下载、生成统计信息的脚本（包含wav文件地址信息以及对应中文信息），执行此脚本会生成train.csv、dev.csv、test.csv三个文件。
+
 ```shell
+cd mindaudio/data
+# data_path为存放数据的地址
+python aishell.py --data_path "/data" --download False
+```
+
+如需下载数据， --download True
+
+### 2. 数据预处理
+
+#### 文字部分
+
+根据aishell提供的aishell_transcript_v0.8.txt，生成逐字的编码文件，每个字对应一个id，输出包含编码信息的文件：lang_char.txt。
+
+```shell
+cd mindaudio/utils
+python text2token.py -s 1 -n 1 "data_path/data_aishell/transcript/aishell_transcript_v0.8.txt" | cut -f 2- -d" " | tr " " "\n" \
+        | sort | uniq | grep -a -v -e '^\s*$' | awk '{print $0 " " NR+1}' >> ${/data_path/lang_char.txt}
+```
+
+#### 音频部分
+
+本模型使用了全局cmvn，为提高模型训练效率，在训练前会对数据的特征进行统计，生成包含统计信息的文件：global_cmvn.json。
+
+```shell
+cd examples/conformer
+python compute_cmvn_stats.py --num_workers 16 --train_config conformer.yaml --in_scp data_path/train.csv --out_cmvn data_path/global_cmvn
+```
+
+注意：--num_workers可根据训练设备的核数进行调整
+
+### 3. 训练
+
+#### 单卡训练
+```shell
+cd examples/conformer
 # Standalone training
-python train.py
+python train.py --config_path ./conformer.yaml
 ```
 
 注意:默认使用Ascend机器
 
 #### 在Ascend上进行多卡训练
 
-此样例使用 8张NPU，如果你想改变NPU的数量，可以更改下列命令中 -n 后的卡数。
+此样例使用 8张NPU.
 ```shell
 # Distribute_training
-mpirun -n 8 python train.py
+mpirun -n 8 python train.py ----config_path ./conformer.yaml
 ```
 注意:如果脚本是由root用户执行的，必须在mpirun中添加——allow-run-as-root参数，如下所示:
 ```shell
-mpirun --allow-run-as-root -n 8 python train.py
+mpirun --allow-run-as-root -n 8 python train.py ----config_path ./conformer.yaml
 ```
 
-#### 在GPU上进行多卡训练
-If you want to use the GPU for distributed training, see the following command：
-```shell
-# Distribute_training
-# assume you have 8 GPUs
-mpirun -n 8 python train.py  --device_target "GPU"
-```
+如在GPU中进行训练，可更改yaml文件中的配置。
 
-### 3.评估模型
+### 4.评估模型
 
 提供ctc greedy search、ctc prefix beam search、attention decoder、attention rescoring四种解码方式，可在yaml配置文件中对解码方式进行修改。
 
+执行脚本后将生成包含预测结果的文件：result.txt
+
 ```shell
-# Validate a trained model
-python eval.py
+python predict.py ---config_path ./conformer.yaml
+```
+
+生成预测结果后使用mindaudo/metric中的脚本进行评估。
+
+```shell
+cd mindaudio/metric
+python cer.py --char=1 --v=1 ${result_dir}/result.txt > ${result_dir}/cer.txt
 ```
 
 
@@ -79,11 +114,11 @@ python eval.py
 * Feature info: using fbank feature, cmvn, online speed perturb
 * Training info: lr 0.001, acc_grad 1, 240 epochs, 8 Ascend910
 * Decoding info: ctc_weight 0.3, average_num 30
-* Performance result: total_time 11h17min
+* Performance result: total_time 11h17min, 8p, using hccl_tools.
 
-| decoding mode          | CER  |
-| ---------------------- | ---- |
-| ctc greedy search      | 5.05 |
-| ctc prefix beam search | 5.05 |
-| attention decoder      | 5.00 |
-| attention rescoring    | 4.73 |
+| model     | decoding mode          | CER  |
+| --------- | ---------------------- | ---- |
+| conformer | ctc greedy search      | 5.05 |
+| conformer | ctc prefix beam search | 5.05 |
+| conformer | attention decoder      | 5.00 |
+| conformer | attention rescoring    | 4.73 |

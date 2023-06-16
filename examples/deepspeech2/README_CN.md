@@ -31,7 +31,46 @@ DeepSpeech2是一种采用CTC损失训练的语音识别模型。它用神经网
 ## 使用步骤
 
 ### 1. 数据集准备
-该过程在recipes/librispeech中有详细描述，生成的json文件包括wav文件和对应txt文件的地址信息。
+如为未下载数据集，可使用提供的脚本进行一键下载以及数据准备，如下所示：
+
+```shell
+cd mindaudio/data
+# Download and creat json
+python librispeech_prepare.py --root_path "your_data_path"
+```
+
+如已下载好压缩文件，请按如下命令操作：
+
+```shell
+# creat json
+python librispeech_prepare.py --root_path "your_data_path"  --data_ready True
+```
+
+LibriSpeech存储flac音频格式的文件。要在MindAudio中使用它们，须将所有flac文件转换为wav文件，用户可以使用[ffmpeg](https://gist.github.com/seungwonpark/4f273739beef2691cd53b5c39629d830)或[sox](https://sourceforge.net/projects/sox/)进行转换。
+
+处理后，数据集目录结构如下所示:
+
+```
+    ├─ LibriSpeech_dataset
+    │  ├── train
+    │  │   ├─libri_test_clean_manifest.json
+    │  │   ├─ wav
+    │  │   └─ txt
+    │  ├── val
+    │  │   ├─libri_test_clean_manifest.json
+    │  │   ├─ wav
+    │  │   └─ txt
+    │  ├── test_clean
+    │  │   ├─libri_test_clean_manifest.json
+    │  │   ├─ wav
+    │  │   └─ txt
+    │  └── test_other
+    │  │   ├─libri_test_clean_manifest.json
+    │  │   ├─ wav
+    │  │   └─ txt
+```
+
+4个**.json文件存储了相应数据的绝对路径，在后续进行模型训练以及验证中，请将yaml配置文件中的xx_manifest改为对应libri_xx_manifest.json的存放地址。
 
 ### 2. 训练
 #### 单卡训练

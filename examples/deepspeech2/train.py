@@ -19,7 +19,7 @@ from mindspore.train.serialization import load_checkpoint, load_param_into_net
 
 from mindaudio.loss.ctc_loss import NetWithCTCLoss
 from mindaudio.models.deepspeech2 import DeepSpeechModel
-from mindaudio.scheduler.lr_generator import get_lr
+from mindaudio.scheduler.scheduler_factory import step_lr
 from mindaudio.utils.hparams import parse_args
 
 
@@ -36,12 +36,11 @@ def train(args):
     )
 
     steps_size = ds_train.get_dataset_size()
-    lr = get_lr(
+    lr = step_lr(
         lr_init=args.OptimConfig.learning_rate,
         total_epochs=args.TrainingConfig.epochs,
         steps_per_epoch=steps_size,
     )
-    lr = Tensor(lr)
 
     deepspeech_net = DeepSpeechModel(
         batch_size=args.TrainingConfig.batch_size,

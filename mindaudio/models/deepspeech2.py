@@ -57,8 +57,7 @@ class SequenceWise(nn.Cell):
 
 class MaskConv(nn.Cell):
     """
-    MaskConv architecture. MaskConv is actually not implemented in this part because some operation in MindSpore
-    is not supported. lengths is kept for future use.
+    MaskConv architecture.
     """
 
     def __init__(self):
@@ -190,7 +189,7 @@ class BatchRNN(nn.Cell):
 
 class DeepSpeechModel(nn.Cell):
     """
-    ResNet architecture.
+    DeepSpeechModel.
     Args:
         batch_size(int):  smaple_number of per step in training (default=128)
         rnn_type (str):  rnn type to use (default="LSTM")

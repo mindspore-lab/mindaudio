@@ -5,7 +5,8 @@ python train.py --config_path <CONFIG_FILE>
 
 import os
 
-from dataset.asr_dataset import create_dataset
+from asr_model import creadte_asr_model, create_asr_eval_net
+from dataset import create_dataset
 from mindspore import ParameterTuple, context, set_seed
 from mindspore.communication.management import init
 from mindspore.context import ParallelMode
@@ -15,7 +16,7 @@ from mindspore.train import Model
 from mindspore.train.callback import CheckpointConfig, ModelCheckpoint, SummaryCollector
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
 
-from mindaudio.models.conformerASR import ASREvalNet, init_asr_model
+from mindaudio.scheduler.scheduler_factory import ASRWarmupLR
 from mindaudio.utils.callback import (
     CalRunTimeCallback,
     EvalCallback,
@@ -25,10 +26,8 @@ from mindaudio.utils.callback import (
 )
 from mindaudio.utils.config import get_config
 from mindaudio.utils.log import get_logger
-from mindaudio.utils.moxing_adapter import moxing_wrapper
 from mindaudio.utils.net import get_parameter_numel
 from mindaudio.utils.parallel_info import get_device_id, get_device_num, get_rank_id
-from mindaudio.utils.scheduler import ASRWarmupLR
 from mindaudio.utils.train_one_step import TrainOneStepWithLossScaleCell
 
 logger = get_logger()
@@ -50,7 +49,6 @@ columns_list = [
 ]
 
 
-@moxing_wrapper(config)
 def train():
     """main function for asr_train."""
     # Set random seed
@@ -108,7 +106,7 @@ def train():
     logger.info("Training dataset has %d steps in each epoch.", steps_size)
 
     # define network
-    net_with_loss = init_asr_model(config, input_dim, vocab_size)
+    net_with_loss = creadte_asr_model(config, input_dim, vocab_size)
     weights = ParameterTuple(net_with_loss.trainable_params())
     logger.info("Total parameter of ASR model: %s.", get_parameter_numel(net_with_loss))
 
@@ -145,7 +143,7 @@ def train():
     ]
 
     if config.training_with_eval:
-        eval_net = ASREvalNet(net_with_loss)
+        eval_net = create_asr_eval_net(net_with_loss)
         callback_list.append(
             EvalCallback(
                 eval_net,

@@ -6,35 +6,33 @@ python predict.py --config_path <CONFIG_FILE>
 import os
 
 import numpy as np
-from dataset.asr_predict_dataset import create_asr_predict_dataset, load_language_dict
+from asr_model import creadte_asr_model
+from dataset import create_asr_predict_dataset, load_language_dict
 from mindspore import context
 from mindspore.train.model import Model
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
 
-from mindaudio.models.conformerASR import init_asr_model
-from mindaudio.models.decoders.predict_net import (
+from mindaudio.models.decoders.decoder_factory import (
     Attention,
     AttentionRescoring,
     CTCGreedySearch,
     CTCPrefixBeamSearch,
     PredictNet,
 )
-from mindaudio.models.decoders.recognize import (
+from mindaudio.utils.config import get_config
+from mindaudio.utils.log import get_logger
+from mindaudio.utils.parallel_info import get_device_id
+from mindaudio.utils.recognize import (
     attention_rescoring,
     ctc_greedy_search,
     ctc_prefix_beam_search,
     recognize,
 )
-from mindaudio.utils.config import get_config
-from mindaudio.utils.log import get_logger
-from mindaudio.utils.moxing_adapter import moxing_wrapper
-from mindaudio.utils.parallel_info import get_device_id
 
 logger = get_logger()
 config = get_config("conformer")
 
 
-@moxing_wrapper(config)
 def main():
     """main function for asr_predict."""
     exp_dir = config.exp_name
@@ -60,7 +58,7 @@ def main():
     input_dim = collate_conf.feature_extraction_conf.mel_bins
 
     # define network
-    network = init_asr_model(config, input_dim, vocab_size)
+    network = creadte_asr_model(config, input_dim, vocab_size)
     param_dict = load_checkpoint(decode_ckpt)
     load_param_into_net(network, param_dict)
     logger.info("Successfully loading the asr model: %s", decode_ckpt)

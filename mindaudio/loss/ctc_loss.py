@@ -2,7 +2,7 @@
 
 import mindspore
 import mindspore.common.dtype as mstype
-import mindspore.nn as nn  # pylint: disable=C0412
+import mindspore.nn as nn
 import mindspore.ops.operations as ops
 import numpy as np
 
@@ -29,18 +29,17 @@ class CTC(nn.Cell):
         super().__init__()
         eprojs = encoder_output_size
         self.ctc_lo = nn.Dense(eprojs, odim).to_float(compute_type)
-        self.ctc_loss = ops.CTCLoss(ctc_merge_repeated=True)
-        self.log_softmax = nn.LogSoftmax(axis=1)
-        self.dropout = nn.Dropout(1.0 - dropout_rate)
+        self.ctc_loss = ops.CTCLossV2(blank=0, reduction="none", zero_infinity=True)
+        self.log_softmax = nn.LogSoftmax(axis=2)
+        self.dropout = nn.Dropout(p=dropout_rate)
         self.cast = ops.Cast()
-        self.count = 0
 
     def construct(
         self,
         hs_pad: mindspore.Tensor,
         hlens: mindspore.Tensor,
         ys_pad: mindspore.Tensor,
-        ys_pad_indices: mindspore.Tensor,
+        ys_lengths: mindspore.Tensor,
     ) -> mindspore.Tensor:
         """Calculate CTC loss.
 
@@ -54,11 +53,9 @@ class CTC(nn.Cell):
         ys_hat = self.ctc_lo(self.dropout(hs_pad))
         ys_hat = self.cast(ys_hat, mstype.float32)
         # ys_hat: (B, L, D) -> (L, B, D)
-        B, L, D = ys_hat.shape
-        ys_hat = ys_hat.transpose(1, 0, 2).reshape((-1, D))
-        ys_hat = self.log_softmax(ys_hat).reshape((L, B, D))
-        ys_pad = ys_pad.reshape(-1).astype(mindspore.int32)
-        loss, _ = self.ctc_loss(ys_hat, ys_pad_indices, ys_pad, hlens)
+        ys_hat = ys_hat.transpose(1, 0, 2)
+        ys_hat = self.log_softmax(ys_hat)
+        loss, _ = self.ctc_loss(ys_hat, ys_pad, hlens, ys_lengths)
 
         # Batch-size average
         loss = loss.sum()

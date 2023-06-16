@@ -52,7 +52,7 @@ class VariancePredictor(nn.Cell):
             nn.ReLU(),
         )
         self.norm1 = nn.LayerNorm((self.filter_size,))
-        self.dropout1 = nn.Dropout(keep_prob=1.0 - self.dropout)
+        self.dropout1 = nn.Dropout(p=self.dropout)
         self.conv2 = nn.SequentialCell(
             nn.Conv1d(
                 self.filter_size,
@@ -64,7 +64,7 @@ class VariancePredictor(nn.Cell):
             nn.ReLU(),
         )
         self.norm2 = nn.LayerNorm((self.filter_size,))
-        self.dropout2 = nn.Dropout(keep_prob=1.0 - self.dropout)
+        self.dropout2 = nn.Dropout(p=self.dropout)
         self.linear_layer = nn.Dense(self.conv_output_size, 1)
 
     def construct(self, x, mask=None):

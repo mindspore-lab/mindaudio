@@ -26,11 +26,11 @@ from mindspore.train.callback import (
 )
 from reader import DatasetGeneratorBatch as DatasetGenerator
 from spec_augment import EnvCorrupt, InputNormalization, TimeDomainSpecAugment
-from voxceleb_prepare import prepare_voxceleb
 
 import mindaudio.data.io as io
 from mindaudio.data.features import fbank
 from mindaudio.data.processing import stereo_to_mono
+from mindaudio.data.voxceleb import prepare_voxceleb
 from mindaudio.loss.AdditiveAngularMargin import AdditiveAngularMargin
 from mindaudio.loss.loss_scale import (
     TrainOneStepWithLossScaleCellv2 as TrainOneStepWithLossScaleCell,

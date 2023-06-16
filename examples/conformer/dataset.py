@@ -1,6 +1,7 @@
 """ASR Training Data Generator."""
 
 import codecs
+import csv
 import math
 import multiprocessing as mp
 import os
@@ -12,6 +13,7 @@ import numpy as np
 
 import mindaudio
 from mindaudio.utils.common import IGNORE_ID, add_sos_eos, pad_sequence
+from mindaudio.utils.distributed import DistributedSampler
 from mindaudio.utils.log import get_logger
 from mindaudio.utils.mask import add_optional_chunk_mask, make_pad_mask, subsequent_mask
 
@@ -174,58 +176,39 @@ def get_padding_length(length, frame_bucket_limits):
     return frame_bucket_limits[-1]
 
 
-def safe_readline(f):
-    """Safety read line."""
-    pos = f.tell()
-    while True:
-        try:
-            return f.readline()
-        except UnicodeDecodeError:
-            pos -= 1
-            f.seek(pos)
-
-
 def load_samples(data_file, worker_id, frame_factor, workers_num):
     """Load all training samples from data file."""
     data = []
-    with codecs.open(data_file, "r", encoding="utf-8") as f:
-        size = os.fstat(f.fileno()).st_size
-        chunk_size = size // workers_num
-        offset = worker_id * chunk_size
-        end = offset + chunk_size
-        f.seek(offset)
-        logger.info("offset %d", offset)
-        # TODO: whether need safe readline
-        if offset > 0:
-            safe_readline(f)  # drop first incomplete line
-        line = f.readline()
-        miss_file_cnt = 0
-        while line:
-            arr = line.strip().split("\t")
-            # len(arr) == 7 for ASR and wav2vec 2.0 training
-            # len(arr) == 8 for Hubert training
-            if len(arr) != 7 and len(arr) != 8:
-                line = f.readline()
-                continue
-            uttid = arr[0].split(":")[1]
-            tokenid = arr[5].split(":")[1]
-            output_dim = int(arr[6].split(":")[1].split(",")[1])
-            wav_path = ":".join(arr[1].split(":")[1:])
-            duration = int(float(arr[2].split(":")[1]) * frame_factor)
-            if not os.path.exists(wav_path):
-                miss_file_cnt += 1
-                line = f.readline()
-                continue
-            if len(arr) == 7:
-                data.append((uttid, wav_path, duration, tokenid, output_dim))
-            if len(arr) == 8:
-                kmeans_id = arr[7].split(":")[1]
-                data.append((uttid, wav_path, duration, tokenid, output_dim, kmeans_id))
-            if f.tell() > end:
-                break
-            line = f.readline()
-        logger.info("Missing file num: %d", miss_file_cnt)
-        return data
+    labels = []
+    with open("/disk1/huangyu/data/test.txt", "r") as f:
+        lines = f.readlines()
+        i = 0
+        for row in lines:
+            labels.append(row.split()[0])
+            i += 1
+
+    with open(data_file, "r") as csvfile:
+        csvreader = csv.reader(csvfile)
+        datanum = 0
+        for row in csvreader:
+            if datanum > 0:
+                # arr = row.split("\t")
+                uttid = row[2].split("/")[-1]
+                tokenid = row[3]
+
+                output_dim = len(labels) + 1
+                wav_path = row[2]
+                duration = int(float(row[1]) * frame_factor)
+                newid = ""
+                for x in list(tokenid.replace(" ", "")):
+                    if x in labels:
+                        newid = newid + str(labels.index(x)) + " "
+                    else:
+                        newid = newid + str(1) + " "
+                # newid = str(labels.index(x) for x in list(tokenid.replace(' ','')))
+                data.append((uttid, wav_path, duration, newid, output_dim))
+            datanum += 1
+    return data
 
 
 def parse_file(path, frame_factor, workers=8):
@@ -729,7 +712,11 @@ def create_dataset(
             "ys_lengths",
             "xs_chunk_masks",
         ],
-        column_order=[
+        num_parallel_workers=number_workers,
+        python_multiprocessing=False,
+    )
+    ds = ds.project(
+        [
             "xs_pad",
             "ys_pad",
             "ys_in_pad",
@@ -741,9 +728,7 @@ def create_dataset(
             "ys_sub_masks",
             "ys_lengths",
             "xs_chunk_masks",
-        ],
-        num_parallel_workers=number_workers,
-        python_multiprocessing=False,
+        ]
     )
 
     return output_dim, ds
@@ -837,79 +822,6 @@ def load_language_dict(dict_file):
     return sos, eos, vocab_size, char_dict
 
 
-def create_e2e_predict_dataset(data_file, extractor_conf, dataset_conf, num_workers=1):
-    """Create joint wav2vec 2.0 & ASR predictiong dataset.
-
-    Args:
-        data_file (str): input data file.
-        extractor_conf (dict): configuration for feature extraction.
-        dataset_conf (dict): configurations for the dataset.
-        num_workers (int): number of process workers.
-
-    Returns:
-        A iterable data generator.
-    """
-    dataset = AsrPredictDataset(
-        data_file,
-        dataset_conf["max_length"],
-        dataset_conf["min_length"],
-        dataset_conf["token_max_length"],
-        dataset_conf["token_min_length"],
-        16000,
-    )
-
-    ds = de.GeneratorDataset(
-        dataset,
-        ["uutid", "wav_path", "length", "tokens"],
-        max_rowsize=12,
-        shuffle=False,
-    )
-
-    kernel_size = [int(i) for i in extractor_conf["kernel_size_list"].split(",")]
-    stride = [int(i) for i in extractor_conf["stride_list"].split(",")]
-    frame_bucket_limit = [int(i) for i in dataset_conf["frame_bucket_limit"].split(",")]
-
-    def data_preprocess_e2e(uutid, wav_path, tokens):
-        # load wav data
-        waveform, _ = mindaudio.read(wav_path.item(0))
-        waveform = waveform * (1 << 15)
-        xs = waveform
-        xs_lengths = waveform.shape[0]
-
-        # pad wavs
-        padding_length = get_padding_length(xs_lengths, frame_bucket_limit)
-        xs_pad = pad_sequence(
-            [xs],
-            padding_max_len=padding_length,
-            batch_first=True,
-            padding_value=0,
-            atype=np.float32,
-        )
-
-        # generate wav2vec mask and encoder mask
-        downsampled_bucket_length = get_feat_extract_output_lengths(
-            padding_length, kernel_size, stride
-        )
-        xs_len_ds = np.array(
-            get_feat_extract_output_lengths(xs_lengths, kernel_size, stride)
-        )
-        padding_mask = make_pad_mask([xs_len_ds], max_len=downsampled_bucket_length)
-        padding_mask = np.expand_dims(~padding_mask, 1)
-        xs_masks = padding_mask.astype(np.float32)
-        xs_lengths = np.array([xs_lengths])
-
-        return uutid, xs_pad, xs_masks, tokens, xs_lengths
-
-    ds = ds.map(
-        operations=data_preprocess_e2e,
-        input_columns=["uutid", "wav_path", "tokens"],
-        output_columns=["uutid", "xs_pad", "xs_masks", "tokens", "xs_lengths"],
-        column_order=["uutid", "xs_pad", "xs_masks", "tokens", "xs_lengths"],
-        num_parallel_workers=num_workers,
-    )
-    return ds
-
-
 def create_asr_predict_dataset(data_file, dataset_conf, collate_conf, num_workers=1):
     """Create ASR predictiong dataset.
 
@@ -972,8 +884,7 @@ def create_asr_predict_dataset(data_file, dataset_conf, collate_conf, num_worker
         operations=data_preprocess_asr,
         input_columns=["uutid", "wav_path", "length", "tokens"],
         output_columns=["uutid", "xs_pad", "xs_masks", "tokens", "xs_lengths"],
-        column_order=["uutid", "xs_pad", "xs_masks", "tokens", "xs_lengths"],
         num_parallel_workers=num_workers,
     )
-
+    ds = ds.project(["uutid", "xs_pad", "xs_masks", "tokens", "xs_lengths"])
     return ds

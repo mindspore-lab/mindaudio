@@ -9,12 +9,13 @@ from typing import Callable, Dict, List, Optional, Tuple
 import mindspore as ms
 import numpy as np
 import yaml
-from adapter.log import get_logger
 from mindspore import Parameter, load_checkpoint, nn
 from mindspore.communication.management import get_group_size, get_rank
 from mindspore.train.callback import RunContext
 from mindspore.train.callback._callback import Callback
 from mindspore.train.serialization import save_checkpoint
+
+from .log import get_logger
 
 logger = get_logger()
 
@@ -269,7 +270,7 @@ class EvalCallback(BaseCallback):
         run_interval: int,
         save_ckpt_path: str,
         save_ckpt_network: Optional[nn.Cell] = None,
-        ckpt_prefix: str = "Flyspeech",
+        ckpt_prefix: str = "conformer",
         eval_log_interval: int = 10,
         average_model_flag: bool = True,
         num_best_ckpt: int = 30,
@@ -453,3 +454,41 @@ class ResumeCallback(Callback):
 
     def on_train_epoch_begin(self, run_context):
         run_context.original_args().cur_epoch_num += self.start_epoch_num
+
+
+class SaveCallBack(Callback):
+    def __init__(
+        self,
+        model,
+        save_step,
+        save_dir,
+        global_step=None,
+        optimiser=None,
+        checkpoint_path=None,
+        model_save_name="model",
+        optimiser_save_name="optimiser",
+    ):
+        super().__init__()
+        self.save_step = save_step
+        self.checkpoint_path = checkpoint_path
+        self.model = model
+        self.optimiser = optimiser
+        self.save_dir = save_dir
+        self.global_step = global_step
+        self.model_save_name = model_save_name
+        self.optimiser_save_name = optimiser_save_name
+        os.makedirs(save_dir, exist_ok=True)
+
+    def step_end(self, run_context):
+        cb_params = run_context.original_args()
+        cur_step = cb_params.cur_step_num + self.global_step
+        if cur_step % self.save_step != 0:
+            return
+        for module, name in zip(
+            [self.model, self.optimiser],
+            [self.model_save_name, self.optimiser_save_name],
+        ):
+            name = os.path.join(self.save_dir, name)
+            ms.save_checkpoint(
+                module, name + "_%d.ckpt" % cur_step, append_dict={"cur_step": cur_step}
+            )
