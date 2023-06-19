@@ -17,7 +17,7 @@ def read_requirements(fps):
 setup(
     name="mindaudio",
     author="MindSpore Lab",
-    author_email="mindspore-lab@example.com"",
+    author_email="mindspore-lab@example.com",
     url="https://github.com/mindspore-lab/mindaudio",
     project_urls={
         "Sources": "https://github.com/mindspore-lab/mindaudio",
