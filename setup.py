@@ -27,7 +27,6 @@ setup(
     license="Apache Software License 2.0",
     include_package_data=True,
     packages=find_packages(include=["mindaudio", "mindaudio.*"]),
-    install_requires=read_requirements(["requirements.txt"]),
     python_requires=">=3.7",
     install_requires=[
         "numpy >= 1.17.0",
