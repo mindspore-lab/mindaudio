@@ -1,95 +1,53 @@
 #!/usr/bin/env python
 
-import os
-import shutil
-import stat
-
 from setuptools import find_packages, setup
-from setuptools.command.build_py import build_py
-from setuptools.command.egg_info import egg_info
 
 exec(open("mindaudio/version.py").read())
 
-version = __version__
-package_name = "mindaudio"
-cur_dir = os.path.dirname(os.path.realpath(__file__))
-pkg_dir = os.path.join(cur_dir, "build")
 
+def read_requirements(fps):
+    reqs = []
+    for fp in fps:
+        with open(fp) as f:
+            reqs.extend(f.readlines())
 
-def clean():
-    # pylint: disable=unused-argument
-    def readonly_handler(func, path, execinfo):
-        os.chmod(path, stat.S_IWRITE)
-        func(path)
-
-    if os.path.exists(os.path.join(cur_dir, "build")):
-        shutil.rmtree(os.path.join(cur_dir, "build"), onerror=readonly_handler)
-    if os.path.exists(os.path.join(cur_dir, f"{package_name}.egg-info")):
-        shutil.rmtree(
-            os.path.join(cur_dir, f"{package_name}.egg-info"), onerror=readonly_handler
-        )
-
-
-clean()
-
-
-def update_permissions(path):
-    """
-    Update permissions.
-    Args:
-        path (str): Target directory path.
-    """
-    for dirpath, dirnames, filenames in os.walk(path):
-        for dirname in dirnames:
-            dir_fullpath = os.path.join(dirpath, dirname)
-            os.chmod(
-                dir_fullpath,
-                stat.S_IREAD
-                | stat.S_IWRITE
-                | stat.S_IEXEC
-                | stat.S_IRGRP
-                | stat.S_IXGRP,
-            )
-        for filename in filenames:
-            file_fullpath = os.path.join(dirpath, filename)
-            os.chmod(file_fullpath, stat.S_IREAD)
-
-
-class EggInfo(egg_info):
-    """Egg info."""
-
-    def run(self):
-        super().run()
-        egg_info_dir = os.path.join(cur_dir, f"{package_name}.egg-info")
-        update_permissions(egg_info_dir)
-
-
-class BuildPy(build_py):
-    """BuildPy."""
-
-    def run(self):
-        super().run()
-        mindarmour_dir = os.path.join(pkg_dir, "lib", package_name)
-        update_permissions(mindarmour_dir)
+    return reqs
 
 
 setup(
-    name=package_name,
-    version=version,
-    author="MindLab-AI",
-    url="https://github.com/mindlab-ai/mindaudio",
+    name="mindaudio",
+    author="MindSpore Lab",
+    author_email="mindspore-lab@example.com"",
+    url="https://github.com/mindspore-lab/mindaudio",
     project_urls={
-        "Sources": "https://github.com/mindlab-ai/mindaudio",
-        "Issue Tracker": "https://github.com/mindlab-ai/mindaudio/issues",
+        "Sources": "https://github.com/mindspore-lab/mindaudio",
+        "Issue Tracker": "https://github.com/mindspore-lab/mindaudio/issues",
     },
-    description="An open source computer vision research tool box.",
-    license="Apache License 2.0",
+    description="A toolbox of audio models and algorithms based on MindSpore.",
+    license="Apache Software License 2.0",
     include_package_data=True,
-    packages=find_packages(exclude=("mindaudio")),
-    cmdclass={
-        "egg_info": EggInfo,
-        "build_py": BuildPy,
-    },
-    install_requires=["numpy >= 1.17.0", "PyYAML >= 5.3", "tqdm", "Levenshtein"],
+    packages=find_packages(include=["mindaudio", "mindaudio.*"]),
+    install_requires=read_requirements(["requirements.txt"]),
+    python_requires=">=3.7",
+    install_requires=[
+        "numpy >= 1.17.0",
+        "pyYAML >= 5.3",
+        "tqdm",
+    ],
+    classifiers=[
+        "Development Status :: 2 - Pre-Alpha",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: Apache Software License",
+        "Natural Language :: English",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+    ],
+    test_suite="tests",
+    tests_require=[
+        "pytest",
+    ],
+    version=__version__,
+    zip_safe=False,
 )
-print(find_packages())
