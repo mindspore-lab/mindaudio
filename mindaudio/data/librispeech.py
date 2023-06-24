@@ -4,7 +4,6 @@ import os
 import shutil
 import tarfile
 from pathlib import Path
-
 import wget
 
 LIBRI_SPEECH_URLS = {
@@ -21,15 +20,16 @@ LIBRI_SPEECH_URLS = {
     "test_other": ["http://www.openslr.org/resources/12/test-other.tar.gz"],
 }
 
+__all__ = ["prepare_librispeech"]
 
-def _download_data(root):
+def download_data(data_path):
     for split_type, lst_libri_urls in LIBRI_SPEECH_URLS.items():
         print(split_type, lst_libri_urls)
         for url in lst_libri_urls:
             filename = url.split("/")[-1]
-            target_filename = os.path.join(root, filename)
+            target_filename = os.path.join(data_path, filename)
             if not os.path.exists(target_filename):
-                wget.download(url, root)
+                wget.download(url, data_path)
 
 
 def creat_txt_file(content, root_path, txt_transcript_path):
@@ -39,13 +39,13 @@ def creat_txt_file(content, root_path, txt_transcript_path):
         f.flush()
 
 
-def create_json_dict(root):
+def create_json_dict(data_path):
     for dataset_type, libri_urls in LIBRI_SPEECH_URLS.items():
-        split_dir = os.path.join(root, dataset_type)
+        split_dir = os.path.join(data_path, dataset_type)
         if not os.path.exists(split_dir):
             os.makedirs(split_dir)
 
-        json_file = {"root_path": split_dir, "samples": []}
+        json_file = {"data_path": split_dir, "samples": []}
 
         wav_dir = os.path.join(split_dir, "wav")
         if not os.path.exists(wav_dir):
@@ -57,11 +57,11 @@ def create_json_dict(root):
 
         for url in libri_urls:
             filename = url.split("/")[-1]
-            target_filename = os.path.join(root, filename)
+            target_filename = os.path.join(data_path, filename)
             tar = tarfile.open(target_filename)
-            tar.extractall(root)
+            tar.extractall(data_path)
             tar.close()
-            data_path = os.path.join(root, "LibriSpeech")
+            data_path = os.path.join(data_path, "LibriSpeech")
             file_paths = list(Path(data_path).rglob(f"*.{'txt'}"))
 
             for txt_path in file_paths:
@@ -90,22 +90,15 @@ def create_json_dict(root):
             shutil.rmtree(data_path)
 
 
-def prepare_librispeech(root, data_ready):
-    if not data_ready:
-        _download_data(root)
-    create_json_dict(root)
+def prepare_librispeech(data_path, download):
+    if download:
+        download_data(data_path)
+    create_json_dict(data_path)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="prepare Librispeech")
-    parser.add_argument(
-        "--root_path", type=str, default="", help="The path to store data"
-    )
-    parser.add_argument(
-        "--download",
-        type=bool,
-        default=False,
-        help="Whether need to download librispeech",
-    )
+    parser.add_argument("--data_path", type=str, default="", help="The path to store data")
+    parser.add_argument("--download", type=bool, default=False, help="set true to download librispeech datasets")
     arg = parser.parse_args()
-    prepare_librispeech(arg.root_path, arg.data_ready)
+    prepare_librispeech(arg.data_path, arg.download)

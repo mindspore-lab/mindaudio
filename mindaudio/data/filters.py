@@ -2,7 +2,8 @@ from typing import Optional, Union
 
 import mindspore.dataset.audio as msaudio
 import numpy as np
-from typing_extensions import Literal
+from typing import Literal
+#from typing_extensions import Literal
 
 __all__ = [
     "notch_filter",
@@ -15,7 +16,6 @@ __all__ = [
     "filtfilt",
     "mel",
 ]
-
 
 def notch_filter(notch_freq, filter_width=101, notch_width=0.05):
     """

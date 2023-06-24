@@ -17,6 +17,8 @@ from tqdm.contrib import tqdm
 from .io import read
 from .processing import stereo_to_mono
 
+__all__ = ["prepare_voxceleb"]
+
 logger = logging.getLogger(__name__)
 VOX_OPT_FILE = "opt_voxceleb_prepare.pkl"
 VOX_TRAIN_CSV = "train.csv"
