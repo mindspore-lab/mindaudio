@@ -13,3 +13,4 @@ matplotlib
 Levenshtein
 pylint
 pytest
+Pillow==9.4.0

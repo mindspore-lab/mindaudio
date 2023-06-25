@@ -19,7 +19,7 @@ class LengthRegulator(nn.Cell):
 
         output = pad(output, max_len)
 
-        return output, ms.Tensor(np.stack(mel_len))
+        return output, ms.Tensor(np.stack(mel_len), dtype=ms.float32)
 
     def expand(self, batch, predicted):
         out = batch.repeat(predicted.asnumpy().astype(np.int32).tolist(), 0)
@@ -32,7 +32,7 @@ class LengthRegulator(nn.Cell):
 
 
 class VariancePredictor(nn.Cell):
-    def __init__(self, hps):
+    def __init__(self, hps, cout=1):
         super().__init__()
 
         self.input_size = hps.model.transformer.encoder_hidden
@@ -52,7 +52,7 @@ class VariancePredictor(nn.Cell):
             nn.ReLU(),
         )
         self.norm1 = nn.LayerNorm((self.filter_size,))
-        self.dropout1 = nn.Dropout(p=self.dropout)
+        self.dropout1 = nn.Dropout(keep_prob=1.0 - self.dropout)
         self.conv2 = nn.SequentialCell(
             nn.Conv1d(
                 self.filter_size,
@@ -64,8 +64,9 @@ class VariancePredictor(nn.Cell):
             nn.ReLU(),
         )
         self.norm2 = nn.LayerNorm((self.filter_size,))
-        self.dropout2 = nn.Dropout(p=self.dropout)
-        self.linear_layer = nn.Dense(self.conv_output_size, 1)
+        self.dropout2 = nn.Dropout(keep_prob=1.0 - self.dropout)
+        self.linear_layer = nn.Dense(self.conv_output_size, cout)
+        self.cout = cout
 
     def construct(self, x, mask=None):
         # x: [b, t, c] from MHA
@@ -81,6 +82,8 @@ class VariancePredictor(nn.Cell):
         x = x.squeeze(-1)
 
         if mask is not None:
+            if self.cout > 1:
+                mask = mask[:, :, None]
             x *= 1 - mask
 
         return x
@@ -89,10 +92,12 @@ class VariancePredictor(nn.Cell):
 class VarianceAdaptor(nn.Cell):
     def __init__(self, hps):
         super().__init__()
-        self.duration_predictor = VariancePredictor(hps)
+        self.dtype = ms.float16 if hps.use_fp16 else ms.float32
+        self.np_dtype = np.float16 if hps.use_fp16 else np.float32
+        self.duration_predictor = VariancePredictor(hps).to_float(self.dtype)
         self.length_regulator = LengthRegulator()
-        self.pitch_predictor = VariancePredictor(hps)
-        self.energy_predictor = VariancePredictor(hps)
+        self.pitch_predictor = VariancePredictor(hps).to_float(self.dtype)
+        self.energy_predictor = VariancePredictor(hps).to_float(self.dtype)
         self.pitch_feature_level = hps.pitch.feature
         self.energy_feature_level = hps.energy.feature
 
@@ -104,8 +109,7 @@ class VarianceAdaptor(nn.Cell):
         n_bins = hps.model.variance_embedding.n_bins
         assert pitch_quantization in ["linear", "log"]
         assert energy_quantization in ["linear", "log"]
-        pitch_min, pitch_max = hps.pitch.pitch_min, hps.pitch.pitch_max
-        energy_min, energy_max = hps.energy.energy_min, hps.pitch.pitch_max
+        pitch_min, pitch_max, energy_min, energy_max = np.load("stats.npy")
 
         if pitch_quantization == "log":
             self.pitch_bins = ms.Parameter(
@@ -113,35 +117,37 @@ class VarianceAdaptor(nn.Cell):
                     np.linspace(
                         np.log(pitch_min + 1e-5), np.log(pitch_max + 1e-5), n_bins - 1
                     )
-                ),
+                ).astype(self.np_dtype),
                 name="pitch_bins_log",
                 requires_grad=False,
             )
         else:
             self.pitch_bins = ms.Parameter(
-                np.linspace(pitch_min, pitch_max, n_bins - 1),
+                np.linspace(pitch_min, pitch_max, n_bins - 1).astype(self.np_dtype),
                 name="pitch_bins",
                 requires_grad=False,
             )
         if energy_quantization == "log":
             self.energy_bins = ms.Parameter(
-                np.exp(np.linspace(np.log(energy_min), np.log(energy_max), n_bins - 1)),
+                np.exp(
+                    np.linspace(np.log(energy_min), np.log(energy_max), n_bins - 1)
+                ).astype(self.np_dtype),
                 name="energy_bins_log",
                 requires_grad=False,
             )
         else:
             self.energy_bins = ms.Parameter(
-                np.linspace(energy_min, energy_max, n_bins - 1),
+                np.linspace(energy_min, energy_max, n_bins - 1).astype(self.np_dtype),
                 name="energy_bins",
                 requires_grad=False,
             )
 
         self.pitch_embedding = nn.Embedding(
             n_bins, hps.model.transformer.encoder_hidden
-        )
+        ).to_float(self.dtype)
         self.energy_embedding = nn.Embedding(
             n_bins, hps.model.transformer.encoder_hidden
-        )
+        ).to_float(self.dtype)
 
     def get_pitch_embedding(self, x, target, mask, control):
         prediction = self.pitch_predictor(x, mask) * control
@@ -191,8 +197,8 @@ class VarianceAdaptor(nn.Cell):
             x, mel_len = self.length_regulator(x, duration_target, max_len)
             duration_rounded = duration_target
         else:
-            T = ms.ops.round(ms.ops.exp(log_duration_prediction) - 1) * d_control
-            duration_rounded = ms.ops.clip_by_value(T, ms.Tensor(0), None)
+            T = ms.ops.round(ms.ops.exp(log_duration_prediction) - 1.0) * d_control
+            duration_rounded = ms.ops.clip_by_value(T, ms.Tensor(0.0), None)
             x, mel_len = self.length_regulator(x, duration_rounded, max_len)
             mel_mask = get_mask_from_lengths(mel_len)
 
@@ -207,12 +213,106 @@ class VarianceAdaptor(nn.Cell):
             )
             x = x + energy_embedding
 
-        return (
-            x,
-            pitch_prediction,
-            energy_prediction,
-            log_duration_prediction,
-            duration_rounded,
-            mel_len,
-            mel_mask,
+        return {
+            "output": x,
+            "pitch_predictions": pitch_prediction,
+            "energy_predictions": energy_prediction,
+            "log_duration_predictions": log_duration_prediction,
+            "duration_rounded": duration_rounded,
+            "mel_len": mel_len,
+            "mel_masks": mel_mask,
+        }
+
+    def forward_expanded(
+        self,
+        x,
+        src_mask,
+        mel_mask=None,
+        max_len=None,
+        pitch_target=None,
+        energy_target=None,
+        duration_target=None,
+        p_control=1.0,
+        e_control=1.0,
+        d_control=1.0,
+        expanded_phonemes=None,
+        expanded_src_lens=None,
+        expanded_max_src_len=None,
+    ):
+        # x: [b, t, c]
+        log_duration_prediction = self.duration_predictor(x, src_mask)
+        pitch_prediction = None
+        energy_prediction = None
+
+        T = ms.ops.round(ms.ops.exp(log_duration_prediction) - 1) * d_control
+        duration_rounded = ms.ops.clip_by_value(T, ms.Tensor(0), None)
+
+        x = expanded_phonemes
+        if self.pitch_feature_level == "frame_level":
+            pitch_prediction, pitch_embedding = self.get_pitch_embedding(
+                x, pitch_target, mel_mask, p_control
+            )
+            x = x + pitch_embedding
+        if self.energy_feature_level == "frame_level":
+            energy_prediction, energy_embedding = self.get_energy_embedding(
+                x, energy_target, mel_mask, p_control
+            )
+            x = x + energy_embedding
+
+        return {
+            "output": x,
+            "pitch_predictions": pitch_prediction,
+            "energy_predictions": energy_prediction,
+            "log_duration_predictions": log_duration_prediction,
+            "duration_rounded": duration_rounded,
+            "mel_masks": mel_mask,
+        }
+
+    def infer(
+        self,
+        unexpanded_x,
+        x,
+        src_mask,
+        mel_mask=None,
+        max_len=None,
+        pitch_target=None,
+        energy_target=None,
+        duration_target=None,
+        p_control=1.0,
+        e_control=1.0,
+        d_control=1.0,
+    ):
+        # x: [b, t, c]
+        log_duration_prediction = self.duration_predictor(x, src_mask)
+        pitch_prediction = None
+        energy_prediction = None
+
+        T = ms.ops.round(ms.ops.exp(log_duration_prediction) - 1) * d_control
+        duration_rounded = ms.ops.clip_by_value(T, ms.Tensor(0.0, dtype=T.dtype), None)
+        x, mel_len = self.length_regulator(unexpanded_x, duration_rounded, max_len)
+        mel_mask = get_mask_from_lengths(mel_len)
+
+        return {
+            "output": x,
+            "pitch_predictions": pitch_prediction,
+            "energy_predictions": energy_prediction,
+            "log_duration_predictions": log_duration_prediction,
+            "duration_rounded": duration_rounded,
+            "mel_len": mel_len,
+            "mel_masks": mel_mask,
+        }
+
+    def infer_emb_frame_level(self, x, mel_mask, p_control, e_control):
+        pitch_prediction, pitch_embedding = self.get_pitch_embedding(
+            x, None, mel_mask, p_control
         )
+        x = x + pitch_embedding
+        energy_prediction, energy_embedding = self.get_energy_embedding(
+            x, None, mel_mask, e_control
+        )
+        x = x + energy_embedding
+        return {
+            "output": x,
+            "pitch_predictions": pitch_prediction,
+            "energy_predictions": energy_prediction,
+        }

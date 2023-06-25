@@ -11,3 +11,4 @@ sentencepiece
 easydict
 matplotlib
 Levenshtein
+Pillow==9.4.0

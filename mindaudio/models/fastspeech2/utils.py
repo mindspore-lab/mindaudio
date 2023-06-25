@@ -1,4 +1,5 @@
 import mindspore as ms
+import numpy as np
 
 
 def get_mask_from_lengths(lengths, max_len=None):
@@ -6,6 +7,15 @@ def get_mask_from_lengths(lengths, max_len=None):
         _, max_len = ms.ops.max(lengths)
     ids = ms.numpy.arange(0, int(max_len)).expand_dims(0)
     mask = ids >= lengths.expand_dims(1)
+
+    return mask
+
+
+def get_mask_from_lengths_np(lengths, max_len=None):
+    if max_len is None:
+        max_len = lengths.max()
+    ids = np.arange(0, max_len)[None, ...]
+    mask = ids >= lengths[:, None, ...]
 
     return mask
 
