@@ -3,8 +3,6 @@ from typing import Literal, Optional, Union
 import mindspore.dataset.audio as msaudio
 import numpy as np
 
-# from typing_extensions import Literal
-
 __all__ = [
     "notch_filter",
     "low_pass_filter",

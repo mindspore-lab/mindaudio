@@ -23,16 +23,16 @@ def test_read_2chanel():
     print(f"length = {length}s")
     # length = 0.01s
 
-    import matplotlib.pyplot as plt
+    # import matplotlib.pyplot as plt
 
     # Plot the waveform.
-    time = np.linspace(0.0, length, audio.shape[0])
-    plt.plot(time, audio[:, 0], label="Left channel")
-    plt.plot(time, audio[:, 1], label="Right channel")
-    plt.legend()
-    plt.xlabel("Time [s]")
-    plt.ylabel("Amplitude")
-    plt.show()
+    # time = np.linspace(0.0, length, audio.shape[0])
+    # plt.plot(time, audio[:, 0], label="Left channel")
+    # plt.plot(time, audio[:, 1], label="Right channel")
+    # plt.legend()
+    # plt.xlabel("Time [s]")
+    # plt.ylabel("Amplitude")
+    # plt.show()
 
 
 def test_read_write():
