@@ -4,12 +4,15 @@ import glob
 import logging
 import os
 import shutil
+
 import wget
+
 import mindaudio
 
 logger = logging.getLogger(__name__)
 
 __all__ = ["prepare_aishell"]
+
 
 def download_aishell(data_folder):
     """
@@ -106,7 +109,14 @@ def prepare_aishell(data_path, download=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="prepare aishell")
-    parser.add_argument("--data_path", type=str, default="", help="The path to store data")
-    parser.add_argument("--download", type=bool, default=False, help="set true to download aishell datasets")
+    parser.add_argument(
+        "--data_path", type=str, default="", help="The path to store data"
+    )
+    parser.add_argument(
+        "--download",
+        type=bool,
+        default=False,
+        help="set true to download aishell datasets",
+    )
     arg = parser.parse_args()
     prepare_aishell(arg.data_path, arg.download)

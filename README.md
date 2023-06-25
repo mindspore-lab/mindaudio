@@ -12,7 +12,7 @@
 
 [Introduction](#introduction) |
 [Installation](#installation) |
-[Get Started](#get-started) 
+[Get Started](#get-started)
 
 </div>
 
@@ -55,7 +55,7 @@ python setup.py install
 
 ## Get started with audio data analysis
 
-### 
+###
 
 mindaudio provides a series of commonly used audio data processing apis, which can be easily invoked for data analysis and feature extraction.
 

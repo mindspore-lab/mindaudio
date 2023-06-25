@@ -4,6 +4,7 @@ import os
 import shutil
 import tarfile
 from pathlib import Path
+
 import wget
 
 LIBRI_SPEECH_URLS = {
@@ -21,6 +22,7 @@ LIBRI_SPEECH_URLS = {
 }
 
 __all__ = ["prepare_librispeech"]
+
 
 def download_data(data_path):
     for split_type, lst_libri_urls in LIBRI_SPEECH_URLS.items():
@@ -98,7 +100,14 @@ def prepare_librispeech(data_path, download):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="prepare Librispeech")
-    parser.add_argument("--data_path", type=str, default="", help="The path to store data")
-    parser.add_argument("--download", type=bool, default=False, help="set true to download librispeech datasets")
+    parser.add_argument(
+        "--data_path", type=str, default="", help="The path to store data"
+    )
+    parser.add_argument(
+        "--download",
+        type=bool,
+        default=False,
+        help="set true to download librispeech datasets",
+    )
     arg = parser.parse_args()
     prepare_librispeech(arg.data_path, arg.download)
