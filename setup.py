@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
+import os
+
 from setuptools import find_packages, setup
 
 with open("README.md", mode="r", encoding="utf-8") as f:
     long_description = f.read()
-
-with open("requirements.txt", mode="r", encoding="utf-8") as f:
-    requirements = f.read().splitlines()
 
 exec(open("mindaudio/version.py").read())
 
