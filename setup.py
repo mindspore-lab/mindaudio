@@ -27,6 +27,7 @@ setup(
     packages=find_packages(include=["mindaudio", "mindaudio.*"]),
     python_requires=">=3.8",
     install_requires=[
+        "pillow==9.4.0",
         "numpy",
         "pyyaml",
         "tqdm",

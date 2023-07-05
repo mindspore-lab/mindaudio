@@ -133,5 +133,6 @@ class PositionwiseFeedForward(nn.Cell):
         output = self.dropout(output)
 
         output = self.layer_norm(output + residual)
+        # testing
 
         return output
