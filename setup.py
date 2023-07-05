@@ -29,9 +29,12 @@ setup(
     packages=find_packages(include=["mindaudio", "mindaudio.*"]),
     python_requires=">=3.7",
     install_requires=[
-        "numpy >= 1.17.0",
-        "pyYAML >= 5.3",
+        "Pillow==8.1.0",
+        "numpy",
+        "pyyaml",
         "tqdm",
+        "scipy",
+        "sentencepiece",
     ],
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
