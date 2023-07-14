@@ -53,7 +53,8 @@ class MultiHeadAttention(nn.Cell):
         self.attention = ScaledDotProductAttention(
             temperature=np.power(d_k, 0.5), attn_dropout=dropout
         )
-        self.layer_norm = nn.LayerNorm([d_model])
+        # self.layer_norm = nn.LayerNorm([d_model])
+        self.layer_norm = nn.GroupNorm([8, d_model])
         self.dropout = nn.Dropout(p=dropout)
 
         self.transpose = ops.Transpose()
@@ -91,7 +92,10 @@ class MultiHeadAttention(nn.Cell):
         )  # b x lq x (n*dv)
 
         output = self.dropout(self.fc(output))
-        output = self.layer_norm(output + residual)
+        output = output + residual
+        output = self.layer_norm(output.transpose([0, 2, 1])[..., None])[
+            :, :, :, 0
+        ].transpose([0, 2, 1])
 
         return output
 
@@ -117,7 +121,8 @@ class PositionwiseFeedForward(nn.Cell):
         )
 
         self.dropout = nn.Dropout(p=dropout)
-        self.layer_norm = nn.LayerNorm([d_in])
+        # self.layer_norm = nn.LayerNorm([d_in])
+        self.layer_norm = nn.GroupNorm([8, d_in])
         self.relu = nn.ReLU()
 
         self.transpose = ops.Transpose()
@@ -132,6 +137,9 @@ class PositionwiseFeedForward(nn.Cell):
         output = self.transpose(output, (0, 2, 1))
         output = self.dropout(output)
 
-        output = self.layer_norm(output + residual)
+        output = output + residual
+        output = self.layer_norm(output.transpose([0, 2, 1])[..., None])[
+            :, :, :, 0
+        ].transpose([0, 2, 1])
 
         return output

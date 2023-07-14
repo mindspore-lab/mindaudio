@@ -47,15 +47,16 @@ class Encoder(nn.Cell):
         self.not_equal = ops.NotEqual()
         self.expand_dims = ops.ExpandDims()
         self.pad = Tensor(constants.PAD, dtype=mstype.int32)
+        self.dtype = mstype.float16 if hps.use_fp16 else mstype.float32
 
     def construct(self, src_seq, src_pos, positions_encoder=None):
         padding_mask = self.equal(src_seq, self.pad)
-        slf_attn_mask = self.expand_dims(padding_mask.astype(mstype.float32), 1)
+        slf_attn_mask = self.expand_dims(padding_mask.astype(self.dtype), 1)
         slf_attn_mask = ops.tile(slf_attn_mask, (self.n_head, 1, 1))
         slf_attn_mask_bool = slf_attn_mask.astype(mstype.bool_)
 
         non_pad_mask_bool = self.expand_dims(self.not_equal(src_seq, self.pad), 2)
-        non_pad_mask = non_pad_mask_bool.astype(mstype.float32)
+        non_pad_mask = non_pad_mask_bool.astype(self.dtype)
         if positions_encoder is not None:
             enc_output = self.src_word_emb(src_seq.astype("int32")) + positions_encoder
         else:
@@ -106,9 +107,10 @@ class Decoder(nn.Cell):
         self.equal = ops.Equal()
         self.not_equal = ops.NotEqual()
         self.expand_dims = ops.ExpandDims()
+        self.dtype = mstype.float16 if hps.use_fp16 else mstype.float32
 
     def construct(self, enc_seq, mask, positions_decoder=None):
-        slf_attn_mask = self.expand_dims(mask.astype(mstype.float32), 1)
+        slf_attn_mask = self.expand_dims(mask.astype(self.dtype), 1)
         slf_attn_mask_bool = slf_attn_mask.astype(mstype.bool_)
         slf_attn_mask_bool_tile = ops.tile(slf_attn_mask_bool, (self.n_head, 1, 1))
 
