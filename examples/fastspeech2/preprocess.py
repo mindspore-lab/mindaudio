@@ -141,8 +141,9 @@ def preprocess_ljspeech(data_path, manifest_path, is_train):
             )
         pitch, energy = x["pitch"].asnumpy(), x["energy"].asnumpy()
         pitch_min, pitch_max = min(pitch.min(), pitch_min), max(pitch.max(), pitch_max)
-        energy_min, energy_max = min(energy.min(), energy_min), max(
-            energy.max(), energy_max
+        energy_min, energy_max = (
+            min(energy.min(), energy_min),
+            max(energy.max(), energy_max),
         )
     np.save("stats.npy", np.array([pitch_min, pitch_max, energy_min, energy_max]))
 
