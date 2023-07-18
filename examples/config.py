@@ -4,7 +4,7 @@ import yaml
 
 
 class Config:
-    def init(self, cfg_dict):
+    def __init__(self, cfg_dict):
         for k, v in cfg_dict.items():
             if isinstance(v, (list, tuple)):
                 setattr(self, k, [Config(x) if isinstance(x, dict) else x for x in v])
