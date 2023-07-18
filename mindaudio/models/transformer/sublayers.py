@@ -54,8 +54,8 @@ class MultiHeadAttention(nn.Cell):
             temperature=np.power(d_k, 0.5), attn_dropout=dropout
         )
         # self.layer_norm = nn.LayerNorm([d_model])
-        self.layer_norm = nn.GroupNorm([8, d_model])
-        self.dropout = nn.Dropout(p=dropout)
+        self.layer_norm = nn.GroupNorm(8, d_model)
+        self.dropout = nn.Dropout(keep_prob=1 - dropout)
 
         self.transpose = ops.Transpose()
         self.reshape = ops.Reshape()
@@ -120,9 +120,9 @@ class PositionwiseFeedForward(nn.Cell):
             has_bias=True,
         )
 
-        self.dropout = nn.Dropout(p=dropout)
+        self.dropout = nn.Dropout(keep_prob=1 - dropout)
         # self.layer_norm = nn.LayerNorm([d_in])
-        self.layer_norm = nn.GroupNorm([8, d_in])
+        self.layer_norm = nn.GroupNorm(8, d_in)
         self.relu = nn.ReLU()
 
         self.transpose = ops.Transpose()
