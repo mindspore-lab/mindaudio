@@ -47,7 +47,7 @@ def preprocess_one_dir(in_dir, out_dir, out_filename, sample_rate=8000):
 
 
 def preprocess(arg):
-    """ Process all files """
+    """Process all files"""
     print("Begin preprocess")
     for data_type in ["train-100"]:
         for speaker in ["mix_clean", "s1", "s2"]:

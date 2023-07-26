@@ -1,0 +1,57 @@
+#system
+device_id: 0
+device_target: 'Ascend'
+continue_train: 0
+device_num: 6 #help="number of device, default: 0.
+
+#dataset
+in_dir: '/LibriMix/Libri2Mix/wav8k/min'
+out_dir: '/LibriMix/Libri2Mix/wav8k/min/data_json'
+train_dir: '/LibriMix/Libri2Mix/wav8k/min/data_json/train-100'
+data_dir: "/LibriMix/Libri2Mix/wav8k/min/data_json/test"
+data_url: './data'
+batch_size: 4
+sample_rate: 8000
+nspk: 2   #Number of speaker
+num_workers: 4 #'Number of workers to generate minibatch')
+shuffle: 0
+
+#network
+L: 20 #Length of the filters in samples (40=5ms at 8kHZ)
+N: 512 #Number of filters in autoencoder
+B: 256 #Number of channels in bottleneck 1 × 1-conv block
+H: 512 #Number of channels in convolutional blocks
+P: 3 #Kernel size in convolutional blocks
+X: 8 #Number of convolutional blocks in each repeat
+R: 4 #Number of repeats
+C: 2 #Number of speakers'
+norm_type: 'gLN'
+causal: 0 #help='Causal (1) or noncausal(0) training
+mask_nonlinear: 'relu' #non-linear to generate mask
+
+# Training config
+use_cuda: 0
+epochs: 100
+half_lr: 0
+early_stop: 0
+max_norm: 0 #Gradient norm threshold to clip
+ckpt_path: "DPTNet-10_890.ckpt" #Path to model file created by training
+
+
+#optimizer
+optimizer: 'adam'
+l2: 0.01
+lr: 0.0003
+momentum: 0.0
+
+#eval
+model_path: 'Conv-TasNet-100_20268.ckpt' #Location to save best validation model')
+cal_sdr: 0
+eval_batch_size: 4
+segment: 4
+
+#save
+save_folder: 'exp/temp' #Location to save epoch models
+checkpoint: 'checkpoint' #Enables checkpoint saving of model')
+continue_from: '' #Continue from checkpoint model')
+run_distribute: 0 #help="run distribute, default: false.")

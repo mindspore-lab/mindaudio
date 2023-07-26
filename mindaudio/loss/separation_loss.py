@@ -77,13 +77,13 @@ class Separation_Loss(nn.Cell):
         s_estimate = self.expand_dims(flat_estimate, 2)  # [B, C, 1, T]
         # s_target = <s', s>s / ||s||^2
         pair_wise_dot = self.sum(s_estimate * s_target, 3)  # [B, C, C, 1]
-        s_target_energy = self.sum(s_target ** 2, 3) + EPS  # [B, 1, C, 1]
+        s_target_energy = self.sum(s_target**2, 3) + EPS  # [B, 1, C, 1]
         pair_wise_proj = pair_wise_dot * s_target / s_target_energy  # [B, C, C, T]
         # e_noise = s' - s_target
         e_noise = s_estimate - pair_wise_proj  # [B, C, C, T]
         # SI-SNR = 10 * log_10(||s_target||^2 / ||e_noise||^2)
-        pair_wise_si_snr = self._sum(pair_wise_proj ** 2, 3) / (
-            self._sum(e_noise ** 2, 3) + EPS
+        pair_wise_si_snr = self._sum(pair_wise_proj**2, 3) / (
+            self._sum(e_noise**2, 3) + EPS
         )
         pair_wise_si_snr = (
             10 * self.log(pair_wise_si_snr + EPS) / self.log(self.log10)

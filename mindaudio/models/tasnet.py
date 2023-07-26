@@ -7,7 +7,7 @@ EPS = 1e-8
 
 
 class TasNet(nn.Cell):
-    """ TasNet """
+    """TasNet"""
 
     def __init__(self, L, N, hidden_size, num_layers, bidirectional=False, nspk=2):
         super(TasNet, self).__init__()
@@ -42,7 +42,7 @@ class TasNet(nn.Cell):
 
 
 class Encoder(nn.Cell):
-    """ Encoder """
+    """Encoder"""
 
     def __init__(self, L, N):
         super(Encoder, self).__init__()
@@ -95,7 +95,7 @@ class Encoder(nn.Cell):
 
 
 class Separator(nn.Cell):
-    """ Estimation of source masks """
+    """Estimation of source masks"""
 
     def __init__(self, N, hidden_size, num_layers, bidirectional=False, nspk=2):
         super(Separator, self).__init__()
@@ -141,7 +141,7 @@ class Separator(nn.Cell):
 
 
 class Decoder(nn.Cell):
-    """ Decoder """
+    """Decoder"""
 
     def __init__(self, N, L):
         super(Decoder, self).__init__()
