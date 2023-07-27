@@ -5,28 +5,30 @@ python train.py --config_path <CONFIG_FILE>
 
 import os
 
-from mindaudio.scheduler.scheduler_factory import ASRWarmupLR
-from mindaudio.utils.callback import (CalRunTimeCallback, EvalCallback,
-                                      MemoryStartTimeCallback, ResumeCallback,
-                                      TimeMonitor)
-from mindaudio.utils.common import get_parameter_numel
-from mindaudio.utils.config import get_config
-from mindaudio.utils.log import get_logger
-from mindaudio.utils.parallel_info import (get_device_id, get_device_num,
-                                           get_rank_id)
-from mindaudio.utils.train_one_step import TrainOneStepWithLossScaleCell
+from asr_model import creadte_asr_model, create_asr_eval_net
+from dataset import create_dataset
 from mindspore import ParameterTuple, context, set_seed
 from mindspore.communication.management import init
 from mindspore.context import ParallelMode
 from mindspore.nn.optim import Adam
 from mindspore.nn.wrap.loss_scale import DynamicLossScaleUpdateCell
 from mindspore.train import Model
-from mindspore.train.callback import (CheckpointConfig, ModelCheckpoint,
-                                      SummaryCollector)
+from mindspore.train.callback import CheckpointConfig, ModelCheckpoint, SummaryCollector
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
 
-from asr_model import creadte_asr_model, create_asr_eval_net
-from dataset import create_dataset
+from mindaudio.scheduler.scheduler_factory import ASRWarmupLR
+from mindaudio.utils.callback import (
+    CalRunTimeCallback,
+    EvalCallback,
+    MemoryStartTimeCallback,
+    ResumeCallback,
+    TimeMonitor,
+)
+from mindaudio.utils.common import get_parameter_numel
+from mindaudio.utils.config import get_config
+from mindaudio.utils.log import get_logger
+from mindaudio.utils.parallel_info import get_device_id, get_device_num, get_rank_id
+from mindaudio.utils.train_one_step import TrainOneStepWithLossScaleCell
 
 logger = get_logger()
 config = get_config("conformer")
