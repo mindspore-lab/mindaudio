@@ -26,7 +26,7 @@ from mindaudio.utils.callback import (
 )
 from mindaudio.utils.config import get_config
 from mindaudio.utils.log import get_logger
-from mindaudio.utils.net import get_parameter_numel
+from mindaudio.utils.common import get_parameter_numel
 from mindaudio.utils.parallel_info import get_device_id, get_device_num, get_rank_id
 from mindaudio.utils.train_one_step import TrainOneStepWithLossScaleCell
 
