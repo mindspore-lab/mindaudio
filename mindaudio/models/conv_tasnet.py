@@ -81,8 +81,7 @@ class ConvTasNet(nn.Cell):
 
 
 class Encoder(nn.Cell):
-    """Estimation of the nonnegative mixture weight by a 1-D conv layer.
-    """
+    """Estimation of the nonnegative mixture weight by a 1-D conv layer."""
 
     def __init__(self, L, N):
         super(Encoder, self).__init__()
@@ -235,7 +234,7 @@ class TemporalConvNet(nn.Cell):
             R -= 1
             blocks = []
             for gamma in range(X):
-                dilation = 2 ** gamma
+                dilation = 2**gamma
                 padding = (P - 1) * dilation if causal else (P - 1) * dilation // 2
                 blocks += [
                     TemporalBlock(
@@ -397,8 +396,7 @@ class DepthwiseSeparableConv(nn.Cell):
 
 
 class Chomp1d(nn.Cell):
-    """To ensure the output length is the same as the input.
-    """
+    """To ensure the output length is the same as the input."""
 
     def __init__(self, chomp_size):
         super(Chomp1d, self).__init__()
@@ -416,7 +414,7 @@ class Chomp1d(nn.Cell):
 
 def chose_norm(norm_type, channel_size):
     """The input of normlization will be (M, C, K), where M is batch size,
-       C is channel size and K is sequence length.
+    C is channel size and K is sequence length.
     """
     return GlobalLayerNorm(channel_size)
 

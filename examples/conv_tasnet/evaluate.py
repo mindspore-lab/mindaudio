@@ -127,10 +127,10 @@ def cal_SISNR(ref_sig, out_sig, eps=1e-8):
     assert len(ref_sig) == len(out_sig)
     ref_sig = ref_sig - np.mean(ref_sig)
     out_sig = out_sig - np.mean(out_sig)
-    ref_energy = np.sum(ref_sig ** 2) + eps
+    ref_energy = np.sum(ref_sig**2) + eps
     proj = np.sum(ref_sig * out_sig) * ref_sig / ref_energy
     noise = out_sig - proj
-    ratio = np.sum(proj ** 2) / (np.sum(noise ** 2) + eps)
+    ratio = np.sum(proj**2) / (np.sum(noise**2) + eps)
     sisnr = 10 * np.log(ratio + eps) / np.log(10.0)
     return sisnr
 

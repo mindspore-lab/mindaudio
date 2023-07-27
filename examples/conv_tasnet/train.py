@@ -5,8 +5,12 @@ from data import DatasetGenerator
 from mindspore import Model, context, load_checkpoint, load_param_into_net, nn
 from mindspore.communication.management import get_group_size, get_rank, init
 from mindspore.context import ParallelMode
-from mindspore.train.callback import (CheckpointConfig, LossMonitor,
-                                      ModelCheckpoint, TimeMonitor)
+from mindspore.train.callback import (
+    CheckpointConfig,
+    LossMonitor,
+    ModelCheckpoint,
+    TimeMonitor,
+)
 from preprocess import preprocess
 
 from mindaudio.loss.separation_loss import NetWithLoss, Separation_Loss

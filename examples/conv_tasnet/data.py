@@ -99,6 +99,7 @@ class DatasetGenerator:
             s1_infos = json.load(f)
         with open(s2_json, "r") as f:
             s2_infos = json.load(f)
+
         # sort it by #samples (impl bucket)
         def sort(infos):
             return sorted(infos, key=lambda info: int(info[1]), reverse=True)
