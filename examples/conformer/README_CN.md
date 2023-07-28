@@ -100,13 +100,6 @@ mpirun --allow-run-as-root -n 8 python train.py ----config_path ./conformer.yaml
 python predict.py ---config_path ./conformer.yaml
 ```
 
-生成预测结果后使用mindaudo/metric中的脚本进行评估。
-
-```shell
-cd mindaudio/metric
-python cer.py --char=1 --v=1 ${result_dir}/result.txt > ${result_dir}/cer.txt
-```
-
 
 
 ## **模型表现**

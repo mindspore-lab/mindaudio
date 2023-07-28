@@ -12,6 +12,7 @@ from mindspore import context
 from mindspore.train.model import Model
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
 
+from mindaudio.metric.wer import wer
 from mindaudio.models.decoders.decoder_factory import (
     Attention,
     AttentionRescoring,
@@ -134,20 +135,29 @@ def main():
 
         # batch size equals to 1
         content = ""
+        content_list = []
         ground_truth = ""
+        ground_truth_list = []
         count += 1
         for w in hyps[0]:
             if w == eos:
                 break
-            content += char_dict[w]
-        tokens = tokens.asnumpy()
-        for w in tokens:
-            ground_truth += char_dict[w]
+            character = char_dict[w]
+            content += character
+            content_list.append(character)
+        tokens_np = tokens.asnumpy()
+        for w in tokens_np:
+            character = char_dict[w]
+            ground_truth += character
+            ground_truth_list.append(character)
         logger.info("Labs (%d/%d): %s %s", count, tot_sample, uttid, ground_truth)
         logger.info("Hyps (%d/%d): %s %s", count, tot_sample, uttid, content)
+        cer = wer(content_list, ground_truth_list)
+        logger.info("cer : %.3f", cer)
         result_file.write("{} {}\n".format(uttid, content))
         result_file.flush()
-
+        sum += cer
+    logger.info("cer_average : %f", sum / count)
     result_file.close()
 
 
