@@ -80,6 +80,7 @@ def main():
     tot_sample = test_dataset.get_dataset_size()
     logger.info("Total predict samples size: %d", tot_sample)
     count = 0
+    sum = 0
     for data in test_dataset:
         uttid, xs_pad, xs_masks, tokens, xs_lengths = data
         logger.info("Using decoding strategy: %s", config.decode_mode)
