@@ -97,7 +97,7 @@ mpirun --allow-run-as-root -n 8 python train.py ----config_path ./conformer.yaml
 执行脚本后将生成包含预测结果的文件：result.txt
 
 ```shell
-python predict.py ---config_path ./conformer.yaml
+python predict.py --config_path ./conformer.yaml
 ```
 
 
