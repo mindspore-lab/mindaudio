@@ -11,7 +11,7 @@ Conv-Tasnet被广泛的应用在语音分离等任务上，取得了显著的效
 
 ### 模型结构
 
-模型包括  
+模型包括
 encoder：类似fft，提取语音特征。
 decoder：类似ifft，得到语音波形
 separation：类似得到mask，通过mix*单个语音的mask，类似得到单个语音的一个语谱图。通过decoder还原出语音波形。
