@@ -176,11 +176,11 @@ def get_padding_length(length, frame_bucket_limits):
     return frame_bucket_limits[-1]
 
 
-def load_samples(data_file, worker_id, frame_factor, workers_num):
+def load_samples(data_file, dict_file, worker_id, frame_factor, workers_num):
     """Load all training samples from data file."""
     data = []
     labels = []
-    with open("/disk1/huangyu/data/test.txt", "r") as f:
+    with open(dict_file, "r") as f:
         lines = f.readlines()
         i = 0
         for row in lines:
@@ -211,14 +211,14 @@ def load_samples(data_file, worker_id, frame_factor, workers_num):
     return data
 
 
-def parse_file(path, frame_factor, workers=8):
+def parse_file(path, dict_file, frame_factor, workers=8):
     """parse index file."""
     assert os.path.exists(path)
     results = []
     workers_thread = []
     pool = Pool(processes=workers)
     for i in range(workers):
-        w = pool.apply_async(load_samples, args=(path, i, frame_factor, workers))
+        w = pool.apply_async(load_samples, args=(path, dict_file, i, frame_factor, workers))
         workers_thread.append(w)
     pool.close()
     pool.join()
@@ -244,6 +244,7 @@ class BucketDatasetBase:
     def __init__(
         self,
         data_file,
+        dict_file,
         frame_bucket_limit="200,300",
         batch_bucket_limit="220,200",
         batch_factor=0.2,
@@ -260,7 +261,7 @@ class BucketDatasetBase:
         self.bucket_select_dict = self.bucket_init(self.frame_bucket_limit)
 
         # load all samples
-        data = parse_file(data_file, frame_factor, workers=1)
+        data = parse_file(data_file, dict_file, frame_factor, workers=1)
         # sort all date according to their lengths
         # each item of data include [uttid, wav_path, duration, tokenid, output_dim, kmeans_id (optional)]
         self.data = sorted(data, key=lambda x: x[2])
@@ -304,6 +305,7 @@ class BucketASRDataset(BucketDatasetBase):
     def __init__(
         self,
         data_file,
+        dict_file,
         max_length=10240,
         min_length=0,
         token_max_length=200,
@@ -316,6 +318,7 @@ class BucketASRDataset(BucketDatasetBase):
     ):
         super().__init__(
             data_file,
+            dict_file,
             frame_bucket_limit=frame_bucket_limit,
             batch_bucket_limit=batch_bucket_limit,
             batch_factor=batch_factor,
@@ -652,12 +655,13 @@ class CollateFunc:
 
 
 def create_dataset(
-    data_file, collate_conf, dataset_conf, rank=0, group_size=1, number_workers=8
+    data_file, dict_file, collate_conf, dataset_conf, rank=0, group_size=1, number_workers=8
 ):
     """Init a iterable dataset.
 
     Args:
         data_file (str): input data file.
+        dict_file (str): input dict file e.g.lang_char.txt.
         collate_conf (dict): configurations for the collate function.
         dataset_conf (dict): configurations for the dataset.
         rank (int): current rank of the total world size, for multi-GPUs distributed training.
@@ -670,6 +674,7 @@ def create_dataset(
     collate_func = CollateFunc(rank=rank, group_size=group_size, **collate_conf)
     dataset = BucketASRDataset(
         data_file,
+        dict_file,
         max_length=dataset_conf["max_length"],
         min_length=dataset_conf["min_length"],
         token_max_length=dataset_conf["token_max_length"],
@@ -749,6 +754,7 @@ class AsrPredictDataset:
     def __init__(
         self,
         data_file,
+        dict_file,
         max_length=10240,
         min_length=0,
         token_max_length=200,
@@ -758,7 +764,7 @@ class AsrPredictDataset:
         self.token_max_length = token_max_length
 
         # load all samples
-        data = parse_file(data_file, frame_factor, workers=6)
+        data = parse_file(data_file, dict_file, frame_factor, workers=6)
         self.batches = []
         num_sample = 0
         for i in range(len(data)):
@@ -816,19 +822,21 @@ def load_language_dict(dict_file):
             arr = line.strip().split()
             assert len(arr) == 2
             char_dict[int(arr[1])] = arr[0]
+    char_dict[0] = 0
     sos = len(char_dict) - 1
     eos = len(char_dict) - 1
     vocab_size = len(char_dict)
     return sos, eos, vocab_size, char_dict
 
 
-def create_asr_predict_dataset(data_file, dataset_conf, collate_conf, num_workers=1):
+def create_asr_predict_dataset(data_file, dict_file, dataset_conf, collate_conf, num_workers=1):
     """Create ASR predictiong dataset.
 
     Args:
         data_file (str): input data file.
-        extractor_conf (dict): configuration for feature extraction.
+        dict_file (str): input dict file.
         dataset_conf (dict): configurations for the dataset.
+        collate_conf (dict): configuration for feature extraction.
         num_workers (int): number of process workers.
 
     Returns:
@@ -836,6 +844,7 @@ def create_asr_predict_dataset(data_file, dataset_conf, collate_conf, num_worker
     """
     dataset = AsrPredictDataset(
         data_file,
+        dict_file,
         dataset_conf["max_length"],
         dataset_conf["min_length"],
         dataset_conf["token_max_length"],

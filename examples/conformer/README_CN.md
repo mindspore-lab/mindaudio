@@ -35,9 +35,8 @@ Conformer整体结构包括：SpecAug、ConvolutionSubsampling、Linear、Dropou
 以aishell数据集为例，mindaudio提供下载、生成统计信息的脚本（包含wav文件地址信息以及对应中文信息），执行此脚本会生成train.csv、dev.csv、test.csv三个文件。
 
 ```shell
-cd mindaudio/data
 # data_path为存放数据的地址
-python aishell.py --data_path "/data" --download False
+python mindaudio/data/aishell.py --data_path "/data" --download False
 ```
 
 如需下载数据， --download True

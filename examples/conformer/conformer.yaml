@@ -86,29 +86,29 @@ scheduler: warmuplr
 scheduler_conf:
     warmup_steps: 25000
 
-cmvn_file: "/data/data_aishell/global_cmvn"
+cmvn_file: "/disk1/huangyu/data/data_aishell/global_cmvn"
 is_json_cmvn: True
 
 exp_name: default
-train_data: "/data/train.csv"
-eval_data: "/data/dev.csv"
+train_data: "/disk1/huangyu/data/train.csv"
+eval_data: "/disk1/huangyu/data/dev.csv"
 save_checkpoint: True
 save_checkpoint_epochs: 1
 save_checkpoint_steps: 460
 keep_checkpoint_max: 30
 save_checkpoint_path: "./"
 device_target: "Ascend"
-is_distributed: False
+is_distributed: True
 mixed_precision: True
 resume_ckpt: ""
 save_graphs: False
 training_with_eval: True
 
 # decode option
-test_data: "/data/test.csv"
-dict: "/data/lang_char.txt"
-decode_ckpt: "avg_30.ckpt"
-decode_mode: "attention" # ctc_greedy_search,ctc_prefix_beam_search,attention,attention_rescoring
+test_data: "/disk1/huangyu/data/test.csv"
+dict: "/disk1/huangyu/data/test.txt"
+decode_ckpt: "/disk1/huangyu/code/06coding_online/mindaudio/examples/conformer/output0/default/model/conformer_avg_30.ckpt"
+decode_mode: "ctc_greedy_search" # ctc_greedy_search,ctc_prefix_beam_search,attention,attention_rescoring
 full_graph: True
 decode_batch_size: 1
 ctc_weight: 0.0
@@ -126,44 +126,3 @@ test_dataset_conf:
     batch_factor: 1
     shuffle: False
 
-# Builtin Configurations(DO NOT CHANGE THESE CONFIGURATIONS unless you know exactly what you are doing)
-enable_modelarts: False
-# Url for modelarts
-data_url: "obs://speech/corpus/aishell1"            # dataset path in OBS
-train_url: "obs://speech/code/asr/workspace/"       # workspace path in OBS
-checkpoint_url: ""                                  # pre-train ckpt in OBS
-# Path for local
-data_path: "/cache/data"
-output_path: "/cache/train"
-load_path: "/cache/checkpoint_path"
-need_modelarts_dataset_unzip: False
-modelarts_dataset_unzip_name: "corpora"
-mnt_enable: False
-ak: ""
-sk: ""
-server: ""
-compile_url: ""
-
-# mindinsight config
-enable_profiling: False
-enable_summary: True
-
-# Config description for each option
-use_dynamic_chunk:      # 'whether to use dynamic chunk or not, default: False'
-use_dynamic_left_chunk: # 'whether to use dynamic left chunk for training, default: False'
-decoding_chunk_size:    # 'ecoding chunk size for dynamic chunk, it is
-                        # 0: default for training, use random dynamic chunk.
-                        # <0: for decoding, use full chunk.
-                        # >0: for decoding, use fixed chunk size as set.'
-static_chunk_size:      # 'chunk size for static chunk training/decoding if it is greater than 0,
-                        # if use_dynamic_chunk is true, this parameter will be ignored'
-num_decoding_left_chunks: # 'number of left chunks, this is for decoding, the chunk size is decoding_chunk_size.
-                          # >=0: use num_decoding_left_chunks
-                          # <0: use all left chunks'
-
-# infer for Ascend310
-infer_model_path_1: ""
-infer_model_path_2: ""
-infer_data_path: ""
-config_name: ""
-label_file: "/path/test/text" # Used to calculate CER.

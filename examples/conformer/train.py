@@ -80,6 +80,7 @@ def train():
     logger.info("Initializing training dataset.")
     vocab_size, train_dataset = create_dataset(
         config.train_data,
+        config.dict,
         collate_conf=config.collate_conf,
         dataset_conf=config.dataset_conf,
         rank=rank,
@@ -94,6 +95,7 @@ def train():
         collate_conf["use_spec_aug"] = False
         _, eval_dataset = create_dataset(
             config.eval_data,
+            config.dict,
             collate_conf=collate_conf,
             dataset_conf=config.test_dataset_conf,
             rank=rank,

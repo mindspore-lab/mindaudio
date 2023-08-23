@@ -50,7 +50,7 @@ def main():
 
     # load test data
     test_dataset = create_asr_predict_dataset(
-        config.test_data, config.dataset_conf, config.collate_conf
+        config.test_data, config.dict, config.dataset_conf, config.collate_conf
     )
     # load dict
     sos, eos, vocab_size, char_dict = load_language_dict(config.dict)
@@ -141,6 +141,7 @@ def main():
         ground_truth_list = []
         count += 1
         for w in hyps[0]:
+            w += 2
             if w == eos:
                 break
             character = char_dict[w]
@@ -148,6 +149,7 @@ def main():
             content_list.append(character)
         tokens_np = tokens.asnumpy()
         for w in tokens_np:
+            w += 2
             character = char_dict[w]
             ground_truth += character
             ground_truth_list.append(character)
