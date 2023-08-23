@@ -218,7 +218,9 @@ def parse_file(path, dict_file, frame_factor, workers=8):
     workers_thread = []
     pool = Pool(processes=workers)
     for i in range(workers):
-        w = pool.apply_async(load_samples, args=(path, dict_file, i, frame_factor, workers))
+        w = pool.apply_async(
+            load_samples, args=(path, dict_file, i, frame_factor, workers)
+        )
         workers_thread.append(w)
     pool.close()
     pool.join()
@@ -655,7 +657,13 @@ class CollateFunc:
 
 
 def create_dataset(
-    data_file, dict_file, collate_conf, dataset_conf, rank=0, group_size=1, number_workers=8
+    data_file,
+    dict_file,
+    collate_conf,
+    dataset_conf,
+    rank=0,
+    group_size=1,
+    number_workers=8,
 ):
     """Init a iterable dataset.
 
@@ -829,7 +837,9 @@ def load_language_dict(dict_file):
     return sos, eos, vocab_size, char_dict
 
 
-def create_asr_predict_dataset(data_file, dict_file, dataset_conf, collate_conf, num_workers=1):
+def create_asr_predict_dataset(
+    data_file, dict_file, dataset_conf, collate_conf, num_workers=1
+):
     """Create ASR predictiong dataset.
 
     Args:
