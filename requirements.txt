@@ -8,4 +8,5 @@ sentencepiece
 easydict
 matplotlib
 Levenshtein
+mir_eval
 Pillow==9.4.0
