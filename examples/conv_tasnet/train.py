@@ -13,7 +13,7 @@ from mindspore.train.callback import (
 )
 from preprocess import preprocess
 
-from mindaudio.loss.separation_loss import NetWithLoss, Convtasnet_Loss
+from mindaudio.loss.separation_loss import Convtasnet_Loss, NetWithLoss
 from mindaudio.models.conv_tasnet import ConvTasNet
 from mindaudio.utils.hparams import parse_args
 
@@ -26,7 +26,7 @@ def main(args):
     elif device_num > 1:
         is_distributed = True
 
-    if is_distributed :
+    if is_distributed:
         print("parallel init", flush=True)
         init()
         rank_id = get_rank()
@@ -50,7 +50,7 @@ def main(args):
     )
 
     print("start Generatordataset")
-    if is_distributed :
+    if is_distributed:
         tr_loader = ds.GeneratorDataset(
             tr_dataset,
             ["mixture", "lens", "sources"],

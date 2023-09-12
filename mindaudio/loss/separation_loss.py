@@ -148,7 +148,9 @@ class Convtasnet_Loss(nn.Cell):
         self.zeros_like = ops.ZerosLike()
         self.log10 = Tensor(np.array([10.0]), mindspore.float32)
         self.perms = Tensor(list(permutations(range(2))), dtype=mindspore.int64)
-        self.perms_one_hot = Tensor(np.array([[1, 0], [0, 1], [0, 1], [1, 0]]), mindspore.float32)
+        self.perms_one_hot = Tensor(
+            np.array([[1, 0], [0, 1], [0, 1], [1, 0]]), mindspore.float32
+        )
 
         self.print = ops.Print()
 
@@ -162,11 +164,14 @@ class Convtasnet_Loss(nn.Cell):
             estimate_source: [B, C, T]
             source_lengths: [B]
         """
-        max_snr, perms, max_snr_idx = self.cal_si_snr_with_pit(source, estimate_source, source_lengths)
+        max_snr, perms, max_snr_idx = self.cal_si_snr_with_pit(
+            source, estimate_source, source_lengths
+        )
         loss_cal = 0 - self.mean(max_snr)
-        reorder_estimate_source = self.reorder_source(estimate_source, perms, max_snr_idx)
+        reorder_estimate_source = self.reorder_source(
+            estimate_source, perms, max_snr_idx
+        )
         return loss_cal, max_snr, estimate_source, reorder_estimate_source
-
 
     def cal_si_snr_with_pit(self, source, estimate_source, source_lengths):
         """Calculate SI-SNR with PIT training.
@@ -181,7 +186,9 @@ class Convtasnet_Loss(nn.Cell):
         estimate_source *= mask
 
         # Step 1. Zero-mean norm
-        num_samples = self.cast(source_lengths.view(-1, 1, 1), mindspore.float32)  # [B, 1, 1]
+        num_samples = self.cast(
+            source_lengths.view(-1, 1, 1), mindspore.float32
+        )  # [B, 1, 1]
         mean_target = self.sum(source, 2) / num_samples
         mean_estimate = self.sum(estimate_source, 2) / num_samples
         zero_mean_target = source - mean_target
@@ -196,14 +203,17 @@ class Convtasnet_Loss(nn.Cell):
         s_estimate = self.expand_dims(zero_mean_estimate, 2)  # [B, C, 1, T]
         # s_target = <s', s>s / ||s||^2
         pair_wise_dot = self.sum(s_estimate * s_target, 3)  # [B, C, C, 1]
-        s_target_energy = self.sum(s_target ** 2, 3) + EPS  # [B, 1, C, 1]
+        s_target_energy = self.sum(s_target**2, 3) + EPS  # [B, 1, C, 1]
         pair_wise_proj = pair_wise_dot * s_target / s_target_energy  # [B, C, C, T]
         # e_noise = s' - s_target
         e_noise = s_estimate - pair_wise_proj  # [B, C, C, T]
         # SI-SNR = 10 * log_10(||s_target||^2 / ||e_noise||^2)
-        pair_wise_si_snr = self._sum(pair_wise_proj ** 2, 3) / (self._sum(e_noise ** 2, 3) + EPS)
-        pair_wise_si_snr = 10 * self.log(pair_wise_si_snr + EPS) / self.log(
-            self.log10)  # [B, C, C]
+        pair_wise_si_snr = self._sum(pair_wise_proj**2, 3) / (
+            self._sum(e_noise**2, 3) + EPS
+        )
+        pair_wise_si_snr = (
+            10 * self.log(pair_wise_si_snr + EPS) / self.log(self.log10)
+        )  # [B, C, C]
 
         # Get max_snr of each utterance
         # permutations, [C!, C]
@@ -238,7 +248,6 @@ class Convtasnet_Loss(nn.Cell):
                 else:
                     reorder_source[b, c] = source[b, 0]
         return reorder_source
-
 
     def get_mask(self, source, source_lengths):
         """

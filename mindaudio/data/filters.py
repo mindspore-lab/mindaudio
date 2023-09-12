@@ -1,4 +1,5 @@
 from typing import Optional, Union
+
 try:
     from typing import Literal
 except ImportError:

@@ -6,9 +6,9 @@ from data import DatasetGenerator
 from mindspore import context, load_checkpoint, load_param_into_net
 from mir_eval.separation import bss_eval_sources
 
-from mindaudio.loss.separation_loss import NetWithLoss, Convtasnet_Loss
-from mindaudio.models.conv_tasnet import ConvTasNet
+from mindaudio.loss.separation_loss import Convtasnet_Loss, NetWithLoss
 from mindaudio.metric.snr import cal_SDRi, cal_SISNRi
+from mindaudio.models.conv_tasnet import ConvTasNet
 from mindaudio.utils.hparams import parse_args
 
 
