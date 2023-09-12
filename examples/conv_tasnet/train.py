@@ -13,7 +13,7 @@ from mindspore.train.callback import (
 )
 from preprocess import preprocess
 
-from mindaudio.loss.separation_loss import NetWithLoss, Separation_Loss
+from mindaudio.loss.separation_loss import NetWithLoss, Convtasnet_Loss
 from mindaudio.models.conv_tasnet import ConvTasNet
 from mindaudio.utils.hparams import parse_args
 
@@ -22,11 +22,11 @@ def main(args):
     context.set_context(mode=context.GRAPH_MODE, device_target=args.device_target)
     device_num = int(os.environ.get("RANK_SIZE", 1))
     if device_num == 1:
-        is_distributed = "False"
+        is_distributed = False
     elif device_num > 1:
-        is_distributed = "True"
+        is_distributed = True
 
-    if is_distributed == "True":
+    if is_distributed :
         print("parallel init", flush=True)
         init()
         rank_id = get_rank()
@@ -50,7 +50,7 @@ def main(args):
     )
 
     print("start Generatordataset")
-    if is_distributed == "True":
+    if is_distributed :
         tr_loader = ds.GeneratorDataset(
             tr_dataset,
             ["mixture", "lens", "sources"],
@@ -84,7 +84,6 @@ def main(args):
     if args.continue_train:
         params = load_checkpoint(args.ckpt_path)
         load_param_into_net(net, params)
-    print(net)
     net.set_train()
     milestone = [35 * num_steps, 55 * num_steps, 75 * num_steps, 100 * num_steps]
     learning_rates = [1e-3, 1e-4, 5e-5, 1e-5]
@@ -96,7 +95,7 @@ def main(args):
         momentum=args.momentum,
     )
 
-    my_loss = Separation_Loss()
+    my_loss = Convtasnet_Loss()
     net_with_loss = NetWithLoss(net, my_loss)
     model = Model(net_with_loss, optimizer=optimizer)
 

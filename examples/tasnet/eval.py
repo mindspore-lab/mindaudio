@@ -81,7 +81,6 @@ def evaluate(args):
     params = load_checkpoint(ckpt)
     load_param_into_net(model, params)
     print("=====> finish load generator")
-    print(model)
 
     # Load data
     tt_dataset = DatasetGenerator(

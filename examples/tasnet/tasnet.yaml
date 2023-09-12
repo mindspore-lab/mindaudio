@@ -6,7 +6,7 @@ continue_train: 0
 #dataset
 in_dir: '/LibriMix/Libri2Mix/wav8k/min'
 out_dir: '/LibriMix/Libri2Mix/wav8k/min/data_json'
-train_dir: '/LibriMix/Libri2Mix/wav8k/min/data_json/train-100'
+train_dir: '/mnt/nvme1/LibriMix/Libri2Mix/wav8k/min/data_json/train-360'
 data_dir: "/LibriMix/Libri2Mix/wav8k/min/data_json/test"
 data_url: './data'
 batch_size: 1
@@ -18,7 +18,7 @@ L: 40
 N: 500
 bidirectional: 0
 epochs: 50
-hidden_size: 500
+hidden_size: 512
 num_layers: 4
 save_folder: './ckpt'
 

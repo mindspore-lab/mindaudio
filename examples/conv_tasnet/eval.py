@@ -6,8 +6,9 @@ from data import DatasetGenerator
 from mindspore import context, load_checkpoint, load_param_into_net
 from mir_eval.separation import bss_eval_sources
 
-from mindaudio.loss.separation_loss import NetWithLoss, Separation_Loss
+from mindaudio.loss.separation_loss import NetWithLoss, Convtasnet_Loss
 from mindaudio.models.conv_tasnet import ConvTasNet
+from mindaudio.metric.snr import cal_SDRi, cal_SISNRi
 from mindaudio.utils.hparams import parse_args
 
 
@@ -33,7 +34,6 @@ def evaluate(args):
     model.set_train(mode=False)
     param_dict = load_checkpoint(args.model_path)
     load_param_into_net(model, param_dict)
-    print(model)
 
     # Load data
     tt_dataset = DatasetGenerator(
@@ -51,12 +51,12 @@ def evaluate(args):
         padded_mixture = data["mixture"]
         mixture_lengths = data["lens"]
         padded_source = data["sources"]
-        padded_mixture = ops.Cast()(padded_mixture, mindspore.float32)
-        padded_source = ops.Cast()(padded_source, mindspore.float32)
+        padded_mixture = ops.cast(padded_mixture, mindspore.float32)
+        padded_source = ops.cast(padded_source, mindspore.float32)
         mixture_lengths_with_list = mixture_lengths.asnumpy().tolist()
         estimate_source = model(padded_mixture)  # [B, C, T]
 
-        my_loss = Separation_Loss()
+        my_loss = Convtasnet_Loss()
         _, _, estimate_source, reorder_estimate_source = my_loss(
             padded_source, estimate_source, mixture_lengths
         )
@@ -80,59 +80,6 @@ def evaluate(args):
     if args.cal_sdr:
         print("Average SDR improvement: {0:.2f}".format(total_SDRi / total_cnt))
     print("Average SISNR improvement: {0:.2f}".format(total_SISNRi / total_cnt))
-
-
-def cal_SDRi(src_ref, src_est, mix):
-    """Calculate Source-to-Distortion Ratio improvement (SDRi).
-    NOTE: bss_eval_sources is very very slow.
-    Args:
-        src_ref: numpy.ndarray, [C, T]
-        src_est: numpy.ndarray, [C, T], reordered by best PIT permutation
-        mix: numpy.ndarray, [T]
-    Returns:
-        average_SDRi
-    """
-    src_anchor = np.stack([mix, mix], axis=0)
-    sdr, _, _, _ = bss_eval_sources(src_ref, src_est)
-    sdr0, _, _, _ = bss_eval_sources(src_ref, src_anchor)
-    avg_SDRi = ((sdr[0] - sdr0[0]) + (sdr[1] - sdr0[1])) / 2
-    return avg_SDRi
-
-
-def cal_SISNRi(src_ref, src_est, mix):
-    """Calculate Scale-Invariant Source-to-Noise Ratio improvement (SI-SNRi)
-    Args:
-        src_ref: numpy.ndarray, [C, T]
-        src_est: numpy.ndarray, [C, T], reordered by best PIT permutation
-        mix: numpy.ndarray, [T]
-    Returns:
-        average_SISNRi
-    """
-    sisnr1 = cal_SISNR(src_ref[0], src_est[0])
-    sisnr2 = cal_SISNR(src_ref[1], src_est[1])
-    sisnr1b = cal_SISNR(src_ref[0], mix)
-    sisnr2b = cal_SISNR(src_ref[1], mix)
-    avg_SISNRi = ((sisnr1 - sisnr1b) + (sisnr2 - sisnr2b)) / 2
-    return avg_SISNRi
-
-
-def cal_SISNR(ref_sig, out_sig, eps=1e-8):
-    """Calculate Scale-Invariant Source-to-Noise Ratio (SI-SNR)
-    Args:
-        ref_sig: numpy.ndarray, [T]
-        out_sig: numpy.ndarray, [T]
-    Returns:
-        SISNR
-    """
-    assert len(ref_sig) == len(out_sig)
-    ref_sig = ref_sig - np.mean(ref_sig)
-    out_sig = out_sig - np.mean(out_sig)
-    ref_energy = np.sum(ref_sig**2) + eps
-    proj = np.sum(ref_sig * out_sig) * ref_sig / ref_energy
-    noise = out_sig - proj
-    ratio = np.sum(proj**2) / (np.sum(noise**2) + eps)
-    sisnr = 10 * np.log(ratio + eps) / np.log(10.0)
-    return sisnr
 
 
 def remove_pad(inputs, inputs_lengths):
