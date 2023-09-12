@@ -8,6 +8,7 @@ sentencepiece
 easydict
 matplotlib
 Levenshtein
+mir_eval
 pylint
 pytest
 Pillow==9.4.0

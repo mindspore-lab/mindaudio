@@ -10,7 +10,7 @@
 - [fastspeech2](https://github.com/mindspore-lab/mindaudio/blob/main/examples/fastspeech2/README.md)
 - [wavegrad](https://github.com/mindspore-lab/mindaudio/blob/main/examples/wavegrad/README.md)
 
-### speech separation
+### Speech Separation
 
 - [tasnet](https://github.com/mindspore-lab/mindaudio/blob/main/examples/tasnet/README_CN.md)
 - [conv_tasnet](https://github.com/mindspore-lab/mindaudio/blob/main/examples/conv_tasnet/README_CN.md)
