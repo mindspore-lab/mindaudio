@@ -55,11 +55,6 @@ mpirun -n 8 python train.py -c "conv_tasnet.yaml"
 mpirun --allow-run-as-root -n 8 python train.py -c "conv_tasnet.yaml"
 ```
 
-也可以使用如下脚本启动分布式训练：
-```shell
-bash run_distribute_train.sh [DEVICE_NUM] [RANK_TABLE_FILE]
-```
-
 ### 3.评估模型
 
 ```shell

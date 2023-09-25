@@ -14,6 +14,7 @@ import mindspore.dataset as ds
 import mindspore.nn as nn
 import numpy as np
 import wget
+from config import config as hparams
 from mindspore import Tensor, context, load_checkpoint, load_param_into_net
 from mindspore.communication.management import get_group_size, get_rank, init
 from mindspore.context import ParallelMode
@@ -25,6 +26,7 @@ from mindspore.train.callback import (
     _InternalCallbackParam,
 )
 from reader import DatasetGeneratorBatch as DatasetGenerator
+from sampler import DistributedSampler
 from spec_augment import EnvCorrupt, InputNormalization, TimeDomainSpecAugment
 
 import mindaudio.data.io as io
@@ -36,8 +38,6 @@ from mindaudio.loss.loss_scale import (
     TrainOneStepWithLossScaleCellv2 as TrainOneStepWithLossScaleCell,
 )
 from mindaudio.models.ecapatdnn import Classifier, EcapaTDNN
-from mindaudio.utils.config import config as hparams
-from mindaudio.utils.distributed import DistributedSampler
 
 spk_id_encoded_dict = {}
 spk_id_encoded = -1

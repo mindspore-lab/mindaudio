@@ -3,10 +3,8 @@ import math
 
 import mindspore
 import mindspore.common.initializer
-import mindspore.nn as nn
-import mindspore.ops as ops
 import numpy as np
-from mindspore import Tensor, context
+from mindspore import Tensor, context, nn, ops
 
 EPS = 1e-8
 
@@ -60,7 +58,6 @@ class ConvTasNet(nn.Cell):
         )
         self.decoder = Decoder(N, L)
         self.pad = nn.Pad(paddings=((0, 0), (0, 0), (0, 10)), mode="CONSTANT")
-        self.print = ops.Print()
         # init
         for p in self.get_parameters():
             if p.ndim > 1:
@@ -99,7 +96,6 @@ class Encoder(nn.Cell):
             pad_mode="pad",
             weight_init="HeUniform",
         )
-        self.expanddims = ops.ExpandDims()
         self.relu = nn.ReLU()
 
     def construct(self, mixture):
@@ -109,7 +105,7 @@ class Encoder(nn.Cell):
         Returns:
             mixture_w: [M, N, K], where K = (T-L)/(L/2)+1 = 2T/L-1
         """
-        mixture = self.expanddims(mixture, 1)  # [M, 1, T]
+        mixture = ops.expand_dims(mixture, 1)  # [M, 1, T]
         mixture_w = self.relu(self.conv1d_U(mixture))  # [M, N, K]
         return mixture_w
 
@@ -131,10 +127,6 @@ class Decoder(nn.Cell):
         self.L = L
         # Components
         self.basis_signals = nn.Dense(N, L, has_bias=False)
-        self.expanddims = ops.ExpandDims()
-        self.transpose = ops.Transpose()
-        self.zero = ops.Zeros()
-        self.conc = ops.Concat(2)
         self.big_matrix = big_matrix()
 
     def construct(self, mixture_w, est_mask):
@@ -146,8 +138,8 @@ class Decoder(nn.Cell):
             est_source: [M, C, T]   #输出的【batch size，说话人数，T is #samples】
         """
         # D = W * M
-        source_w = self.expanddims(mixture_w, 1) * est_mask  # [M, C, N, K]
-        source_w = self.transpose(source_w, (0, 1, 3, 2))
+        source_w = ops.expand_dims(mixture_w, 1) * est_mask  # [M, C, N, K]
+        source_w = ops.transpose(source_w, (0, 1, 3, 2))
         # S = DV
         est_source = self.basis_signals(source_w)  # [M, C, K, L]
         est_source = self.overlap_and_add(est_source, self.L // 2)  # M x C x T
@@ -430,7 +422,6 @@ class ChannelwiseLayerNorm(nn.Cell):
         self.beta1 = np.zeros((1, channel_size, 1)).astype(np.float32)
         self.beta2 = Tensor.from_numpy(self.beta1)
         self.mean = ops.ReduceMean(keep_dims=True)
-        self.pow = ops.Pow()
 
     def construct(self, y):
         """
@@ -441,7 +432,7 @@ class ChannelwiseLayerNorm(nn.Cell):
         """
         mean = self.mean(y, 1)  # [M, 1, K]
         var = y.var(axis=1, keepdims=True, ddof=0)  # [M, 1, K]
-        cLN_y = self.gamma2 * (y - mean) / self.pow(var + EPS, 0.5) + self.beta2
+        cLN_y = self.gamma2 * (y - mean) / ops.pow(var + EPS, 0.5) + self.beta2
         return cLN_y
 
 
@@ -454,7 +445,6 @@ class GlobalLayerNorm(nn.Cell):
         self.gamma2 = Tensor.from_numpy(self.gamma1)
         self.beta1 = np.zeros((1, channel_size, 1)).astype(np.float32)
         self.beta2 = Tensor.from_numpy(self.beta1)
-        self.pow = ops.Pow()
         self.mean = ops.ReduceMean(keep_dims=True)
 
     def construct(self, y):
@@ -466,170 +456,19 @@ class GlobalLayerNorm(nn.Cell):
         """
         mean = self.mean(y, 1)
         mean = self.mean(mean, 2)
-        var = self.pow(y - mean, 2)
+        var = ops.pow(y - mean, 2)
         var = self.mean(var, 1)
         var = self.mean(var, 2)
-        gLN_y = self.gamma2 * (y - mean) / self.pow(var + EPS, 0.5) + self.beta2
+        gLN_y = self.gamma2 * (y - mean) / ops.pow(var + EPS, 0.5) + self.beta2
         return gLN_y
-
-
-parser = argparse.ArgumentParser(
-    "Fully-Convolutional Time-domain Audio Separation Network (Conv-TasNet) "
-    "with Permutation Invariant Training"
-)
-# General config
-# Task related
-parser.add_argument(
-    "--train_dir",
-    type=str,
-    default=r"/home/heu_MEDAI/RenQQ/The last/src/out/tr",
-    help="directory including mix.json, s1.json and s2.json",
-)
-parser.add_argument(
-    "--valid_dir",
-    type=str,
-    default=r"/home/heu_MEDAI/RenQQ/The last/src/out/cv",
-    help="directory including mix.json, s1.json and s2.json",
-)
-parser.add_argument("--sample_rate", default=8000, type=int, help="Sample rate")
-parser.add_argument("--segment", default=4, type=float, help="Segment length (seconds)")
-parser.add_argument(
-    "--cv_maxlen",
-    default=8,
-    type=float,
-    help="max audio length (seconds) in cv, to avoid OOM issue.",
-)
-# Network architecture
-parser.add_argument(
-    "--N", default=32, type=int, help="Number of filters in autoencoder"  # 256
-)
-parser.add_argument(
-    "--L",
-    default=20,
-    type=int,
-    help="Length of the filters in samples (40=5ms at 8kHZ)",
-)
-parser.add_argument(
-    "--B",
-    default=32,
-    type=int,  # 256
-    help="Number of channels in bottleneck 1 × 1-conv block",
-)
-parser.add_argument(
-    "--H",
-    default=256,
-    type=int,  # 512
-    help="Number of channels in convolutional blocks",
-)
-parser.add_argument(
-    "--P", default=3, type=int, help="Kernel size in convolutional blocks"
-)
-parser.add_argument(
-    "--X", default=8, type=int, help="Number of convolutional blocks in each repeat"
-)
-parser.add_argument("--R", default=4, type=int, help="Number of repeats")
-parser.add_argument("--C", default=2, type=int, help="Number of speakers")
-parser.add_argument(
-    "--norm_type",
-    default="gLN",
-    type=str,
-    choices=["gLN", "cLN", "BN"],
-    help="Layer norm type",
-)
-parser.add_argument(
-    "--causal", type=int, default=0, help="Causal (1) or noncausal(0) training"
-)
-parser.add_argument(
-    "--mask_nonlinear",
-    default="relu",
-    type=str,
-    choices=["relu", "softmax"],
-    help="non-linear to generate mask",
-)
-# Training config
-parser.add_argument("--use_cuda", type=int, default=1, help="Whether use GPU")
-parser.add_argument("--epochs", default=20, type=int, help="Number of maximum epochs")
-parser.add_argument(
-    "--half_lr",
-    dest="half_lr",
-    default=0,
-    type=int,
-    help="Halving learning rate when get small improvement",
-)
-parser.add_argument(
-    "--early_stop",
-    dest="early_stop",
-    default=0,
-    type=int,
-    help="Early stop training when no improvement for 10 epochs",
-)
-parser.add_argument(
-    "--max_norm", default=5, type=float, help="Gradient norm threshold to clip"
-)
-# minibatch
-parser.add_argument(
-    "--shuffle", default=0, type=int, help="reshuffle the data at every epoch"
-)
-parser.add_argument("--batch_size", default=3, type=int, help="Batch size")
-parser.add_argument(
-    "--num_workers", default=4, type=int, help="Number of workers to generate minibatch"
-)
-# optimizer
-parser.add_argument(
-    "--optimizer",
-    default="adam",
-    type=str,
-    choices=["sgd", "adam"],
-    help="Optimizer (support sgd and adam now)",
-)
-parser.add_argument("--lr", default=1e-3, type=float, help="Init learning rate")
-parser.add_argument(
-    "--momentum", default=0.0, type=float, help="Momentum for optimizer"
-)
-parser.add_argument("--l2", default=0.0, type=float, help="weight decay (L2 penalty)")
-# save and load model  #保存模型
-parser.add_argument(
-    "--save_folder", default="exp/temp", help="Location to save epoch models"
-)
-parser.add_argument(
-    "--checkpoint",
-    dest="checkpoint",
-    default=1,
-    type=int,
-    help="Enables checkpoint saving of model",
-)
-parser.add_argument(
-    "--continue_from", default="", help="Continue from checkpoint model"
-)
-parser.add_argument(
-    "--model_path",
-    default="final.pth.tar",
-    help="Location to save best validation model",
-)
-# logging
-parser.add_argument(
-    "--print_freq",
-    default=10,
-    type=int,
-    help="Frequency of printing training infomation",
-)
-parser.add_argument(
-    "--visdom", dest="visdom", type=int, default=0, help="Turn on visdom graphing"
-)
-parser.add_argument(
-    "--visdom_epoch",
-    dest="visdom_epoch",
-    type=int,
-    default=0,
-    help="Turn on visdom graphing each epoch",
-)
-parser.add_argument(
-    "--visdom_id", default="TasNet training", help="Identifier for visdom run"
-)
 
 
 if __name__ == "__main__":
     context.set_context(mode=context.GRAPH_MODE, device_target="Ascend", device_id=0)
+    parser = argparse.ArgumentParser(
+        "Fully-Convolutional Time-domain Audio Separation Network (Conv-TasNet) "
+        "with Permutation Invariant Training"
+    )
     args = parser.parse_args()
     model = ConvTasNet(
         args.N,

@@ -67,9 +67,6 @@ class Encoder(nn.Cell):
             has_bias=True,
             weight_init="XavierUniform",
         )
-        self.relu = ops.ReLU()
-        self.sigmoid = ops.Sigmoid()
-        self.expand_dims = ops.ExpandDims()
         self.Norm = nn.Norm(axis=2, keep_dims=True)
 
     def construct(self, mixture):
@@ -85,9 +82,9 @@ class Encoder(nn.Cell):
         norm_coef = self.Norm(mixture)  # B x K x 1
         norm_mixture = mixture / (norm_coef + EPS)  # B x K x L
         # 1-D gated conv
-        norm_mixture = self.expand_dims(norm_mixture.view(-1, L), 2)  # B*K x L x 1
-        conv = self.relu(self.conv1d_U(norm_mixture))  # B*K x N x 1
-        gate = self.sigmoid(self.conv1d_V(norm_mixture))  # B*K x N x 1
+        norm_mixture = ops.expand_dims(norm_mixture.view(-1, L), 2)  # B*K x L x 1
+        conv = ops.relu(self.conv1d_U(norm_mixture))  # B*K x N x 1
+        gate = ops.sigmoid(self.conv1d_V(norm_mixture))  # B*K x N x 1
         mixture_w = conv * gate  # B*K x N x 1
         mixture_w = mixture_w.view(B, K, self.N)  # B x K x N
         return mixture_w, norm_coef
@@ -147,8 +144,6 @@ class Decoder(nn.Cell):
         # self.basis_signals = nn.Linear(N, L, bias=False)
         self.basis_signals = nn.Dense(N, L, weight_init="XavierUniform")
         # self.basis_signals = nn.Dense(N, L)
-        self.expand_dims = ops.ExpandDims()
-        self.transpose = ops.Transpose()
 
     def construct(self, mixture_w, est_mask, norm_coef):
         """
@@ -160,11 +155,11 @@ class Decoder(nn.Cell):
             est_source: [B, nspk, K, L]
         """
         # D = W * M
-        source_w = self.expand_dims(mixture_w, 2) * est_mask  # B x K x nspk x N
+        source_w = ops.expand_dims(mixture_w, 2) * est_mask  # B x K x nspk x N
         # S = DB
         est_source = self.basis_signals(source_w)  # B x K x nspk x L
         # reverse L2 norm
-        norm_coef = self.expand_dims(norm_coef, 2)  # B x K x 1 x1
+        norm_coef = ops.expand_dims(norm_coef, 2)  # B x K x 1 x1
         est_source = est_source * norm_coef  # B x K x nspk x L
-        est_source = self.transpose(est_source, (0, 2, 1, 3))  # B x nspk x K x L
+        est_source = ops.transpose(est_source, (0, 2, 1, 3))  # B x nspk x K x L
         return est_source
