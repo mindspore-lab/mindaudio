@@ -102,7 +102,7 @@ is_distributed: False
 mixed_precision: True
 resume_ckpt: ""
 save_graphs: False
-training_with_eval: True
+training_with_eval: False
 
 # decode option
 test_data: "/data/test.csv"
