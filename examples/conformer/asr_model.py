@@ -360,7 +360,7 @@ class create_asr_eval_net(nn.Cell):
         self.network = network
         self.device_num = device_num
         if device_num > 1:
-            self.all_reduce = ops.AllReduce
+            self.all_reduce = ops.AllReduce()
         else:
             self.all_reduce = None
 
