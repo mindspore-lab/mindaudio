@@ -80,11 +80,11 @@ python train.py --config_path ./conformer.yaml
 此样例使用 8张NPU.
 ```shell
 # Distribute_training
-mpirun -n 8 python train.py ----config_path ./conformer.yaml
+mpirun -n 8 python train.py --config_path ./conformer.yaml
 ```
 注意:如果脚本是由root用户执行的，必须在mpirun中添加——allow-run-as-root参数，如下所示:
 ```shell
-mpirun --allow-run-as-root -n 8 python train.py ----config_path ./conformer.yaml
+mpirun --allow-run-as-root -n 8 python train.py --config_path ./conformer.yaml
 ```
 
 如在GPU中进行训练，可更改yaml文件中的配置。

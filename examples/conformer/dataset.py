@@ -694,7 +694,7 @@ def create_dataset(
         group_size=group_size,
     )
 
-    sampler = DistributedSampler(dataset, rank, group_size, shuffle=True)
+    sampler = DistributedSampler(dataset, rank, group_size, shuffle=True, group=False)
 
     ds = de.GeneratorDataset(
         dataset,

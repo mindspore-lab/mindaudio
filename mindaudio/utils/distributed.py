@@ -6,7 +6,8 @@ class DistributedSampler:
     For mindspore.dataset.GeneratorDataset
     """
 
-    def __init__(self, dataset, rank, group_size, shuffle=True, seed=0):
+    def __init__(self, dataset, rank, group_size, shuffle=True, seed=0, group=True):
+        self.group = group
         self.rank = rank
         self.group_size = group_size
         self.dataset_len = len(dataset)
@@ -20,7 +21,8 @@ class DistributedSampler:
             indices = np.random.permutation(self.dataset_len)
         else:
             indices = np.arange(self.dataset_len)
-        indices = indices[self.rank :: self.group_size]
+        if self.group:
+            indices = indices[self.rank :: self.group_size]
         return iter(indices)
 
     def __len__(self):
