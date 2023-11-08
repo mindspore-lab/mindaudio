@@ -12,6 +12,7 @@ from mindspore import context
 from mindspore.train.model import Model
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
 
+from mindaudio.metric.wer import wer
 from mindaudio.models.decoders.decoder_factory import (
     Attention,
     AttentionRescoring,
@@ -49,7 +50,7 @@ def main():
 
     # load test data
     test_dataset = create_asr_predict_dataset(
-        config.test_data, config.dataset_conf, config.collate_conf
+        config.test_data, config.dict, config.dataset_conf, config.collate_conf
     )
     # load dict
     sos, eos, vocab_size, char_dict = load_language_dict(config.dict)
@@ -79,6 +80,7 @@ def main():
     tot_sample = test_dataset.get_dataset_size()
     logger.info("Total predict samples size: %d", tot_sample)
     count = 0
+    sum = 0
     for data in test_dataset:
         uttid, xs_pad, xs_masks, tokens, xs_lengths = data
         logger.info("Using decoding strategy: %s", config.decode_mode)
@@ -134,20 +136,31 @@ def main():
 
         # batch size equals to 1
         content = ""
+        content_list = []
         ground_truth = ""
+        ground_truth_list = []
         count += 1
         for w in hyps[0]:
+            w += 2
             if w == eos:
                 break
-            content += char_dict[w]
-        tokens = tokens.asnumpy()
-        for w in tokens:
-            ground_truth += char_dict[w]
+            character = char_dict[w]
+            content += character
+            content_list.append(character)
+        tokens_np = tokens.asnumpy()
+        for w in tokens_np:
+            w += 2
+            character = char_dict[w]
+            ground_truth += character
+            ground_truth_list.append(character)
         logger.info("Labs (%d/%d): %s %s", count, tot_sample, uttid, ground_truth)
         logger.info("Hyps (%d/%d): %s %s", count, tot_sample, uttid, content)
+        cer = wer(content_list, ground_truth_list)
+        logger.info("cer : %.3f", cer)
         result_file.write("{} {}\n".format(uttid, content))
         result_file.flush()
-
+        sum += cer
+    logger.info("cer_average : %f", sum / count)
     result_file.close()
 
 

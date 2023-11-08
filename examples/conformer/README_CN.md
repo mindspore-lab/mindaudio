@@ -35,9 +35,8 @@ Conformer整体结构包括：SpecAug、ConvolutionSubsampling、Linear、Dropou
 以aishell数据集为例，mindaudio提供下载、生成统计信息的脚本（包含wav文件地址信息以及对应中文信息），执行此脚本会生成train.csv、dev.csv、test.csv三个文件。
 
 ```shell
-cd mindaudio/data
 # data_path为存放数据的地址
-python aishell.py --data_path "/data" --download False
+python mindaudio/data/aishell.py --data_path "/data" --download False
 ```
 
 如需下载数据， --download True
@@ -97,14 +96,7 @@ mpirun --allow-run-as-root -n 8 python train.py ----config_path ./conformer.yaml
 执行脚本后将生成包含预测结果的文件：result.txt
 
 ```shell
-python predict.py ---config_path ./conformer.yaml
-```
-
-生成预测结果后使用mindaudo/metric中的脚本进行评估。
-
-```shell
-cd mindaudio/metric
-python cer.py --char=1 --v=1 ${result_dir}/result.txt > ${result_dir}/cer.txt
+python predict.py --config_path ./conformer.yaml
 ```
 
 

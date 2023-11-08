@@ -1,0 +1,35 @@
+#system
+device_id: 0
+device_target: 'Ascend'
+continue_train: 0
+
+#dataset
+in_dir: '/LibriMix/Libri2Mix/wav8k/min'
+out_dir: '/LibriMix/Libri2Mix/wav8k/min/data_json'
+train_dir: '/mnt/nvme1/LibriMix/Libri2Mix/wav8k/min/data_json/train-360'
+data_dir: "/LibriMix/Libri2Mix/wav8k/min/data_json/test"
+data_url: './data'
+batch_size: 1
+sample_rate: 8000
+nspk: 2   #Number of speaker
+
+#train_model
+L: 40
+N: 500
+bidirectional: 0
+epochs: 50
+hidden_size: 512
+num_layers: 4
+save_folder: './ckpt'
+
+#lr
+l2: 0.01
+lr: 0.0003
+
+#optimizer
+optimizer: 'adam'
+
+#eval
+model_path: '/TasNet_train-50_435.ckpt'
+cal_sdr: 0
+eval_batch_size: 1

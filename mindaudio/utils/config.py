@@ -2,7 +2,6 @@
 
 import argparse
 import ast
-import datetime
 import os
 
 import yaml
@@ -256,9 +255,9 @@ def get_config(config=""):
     cfg_path = path_args.config_path
     cfg = Config(cfg_path)
     args = parse_cli_to_yaml(parser=parser, cfg=cfg, cfg_path=path_args.config_path)
-    args.train_url = os.path.join(
-        args.train_url, str(int(datetime.datetime.now().timestamp()))
-    )
+    # args.train_url = os.path.join(
+    #     args.train_url, str(int(datetime.datetime.now().timestamp()))
+    # )
 
     merge(args, cfg)
     return cfg

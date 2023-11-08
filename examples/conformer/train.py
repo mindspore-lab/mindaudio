@@ -24,9 +24,9 @@ from mindaudio.utils.callback import (
     ResumeCallback,
     TimeMonitor,
 )
+from mindaudio.utils.common import get_parameter_numel
 from mindaudio.utils.config import get_config
 from mindaudio.utils.log import get_logger
-from mindaudio.utils.net import get_parameter_numel
 from mindaudio.utils.parallel_info import get_device_id, get_device_num, get_rank_id
 from mindaudio.utils.train_one_step import TrainOneStepWithLossScaleCell
 
@@ -80,6 +80,7 @@ def train():
     logger.info("Initializing training dataset.")
     vocab_size, train_dataset = create_dataset(
         config.train_data,
+        config.dict,
         collate_conf=config.collate_conf,
         dataset_conf=config.dataset_conf,
         rank=rank,
@@ -94,6 +95,7 @@ def train():
         collate_conf["use_spec_aug"] = False
         _, eval_dataset = create_dataset(
             config.eval_data,
+            config.dict,
             collate_conf=collate_conf,
             dataset_conf=config.test_dataset_conf,
             rank=rank,

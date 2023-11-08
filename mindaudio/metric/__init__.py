@@ -1,3 +1,3 @@
-from .cer import *
 from .eer import *
+from .snr import *
 from .wer import *
