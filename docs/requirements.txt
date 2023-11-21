@@ -1,3 +1,4 @@
+mindspore
 docutils==0.16.0
 myst-parser
 opencv-python
@@ -5,3 +6,6 @@ sphinx-rtd-theme
 sphinx==4.0.2
 sphinx-copybutton
 sphinx_markdown_tables
+numpy >= 1.17.0
+pyyaml >= 5.3
+tqdm
