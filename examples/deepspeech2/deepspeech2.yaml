@@ -45,7 +45,7 @@ EvalConfig:
     save_output: 'librispeech_val_output'
 
 # use to finetune or eval model
-Pretrained_model: './ckpt'
+Pretrained_model: ''
 
 labels: ["'", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
          "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", " ", "_"]
