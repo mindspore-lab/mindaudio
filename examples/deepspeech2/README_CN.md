@@ -34,16 +34,15 @@ DeepSpeech2是一种采用CTC损失训练的语音识别模型。它用神经网
 如为未下载数据集，可使用提供的脚本进行一键下载以及数据准备，如下所示：
 
 ```shell
-cd mindaudio/data
 # Download and creat json
-python librispeech_prepare.py --root_path "your_data_path"
+python mindaudio/data/librispeech.py --root_path "your_data_path"
 ```
 
 如已下载好压缩文件，请按如下命令操作：
 
 ```shell
 # creat json
-python librispeech_prepare.py --root_path "your_data_path"  --data_ready True
+python mindaudio/data/librispeech.py --root_path "your_data_path"  --data_ready True
 ```
 
 LibriSpeech存储flac音频格式的文件。要在MindAudio中使用它们，须将所有flac文件转换为wav文件，用户可以使用[ffmpeg](https://gist.github.com/seungwonpark/4f273739beef2691cd53b5c39629d830)或[sox](https://sourceforge.net/projects/sox/)进行转换。
@@ -94,19 +93,13 @@ mpirun -n 8 python train.py -c "./deepspeech2.yaml"
 mpirun --allow-run-as-root -n 8 python train.py -c "./deepspeech2.yaml"
 ```
 
-#### 在GPU上进行多卡训练
-If you want to use the GPU for distributed training, see the following command：
-```shell
-# Distribute_training
-# assume you have 8 GPUs
-mpirun -n 8 python train.py -c "./deepspeech2.yaml" --device_target "GPU"
-```
 
 ### 3.评估模型
 
+将训好的权重地址更新在deepspeech2.yaml配置文件Pretrained_model中，执行以下命令
 ```shell
 # Validate a trained model
-python eval.py -c "./deepspeech2.yaml" --pre_trained_model_path "xx.ckpt"
+python eval.py -c "./deepspeech2.yaml"
 ```
 
 
