@@ -145,7 +145,7 @@ def train():
     ]
 
     if config.training_with_eval:
-        eval_net = create_asr_eval_net(net_with_loss)
+        eval_net = create_asr_eval_net(net_with_loss, device_num)
         callback_list.append(
             EvalCallback(
                 eval_net,

@@ -355,11 +355,14 @@ def creadte_asr_model(config, input_dim, vocab_size):
 class create_asr_eval_net(nn.Cell):
     """Create ASR eval network."""
 
-    def __init__(self, network):
+    def __init__(self, network, device_num):
         super(create_asr_eval_net, self).__init__()
         self.network = network
-        self.device_num = 1
-        self.all_reduce = None
+        self.device_num = device_num
+        if device_num > 1:
+            self.all_reduce = ops.AllReduce()
+        else:
+            self.all_reduce = None
 
     def construct(self, *inputs, **kwargs):
         loss = self.network(*inputs, **kwargs)

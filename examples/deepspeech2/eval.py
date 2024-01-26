@@ -6,12 +6,12 @@ import mindspore.common.dtype as mstype
 import mindspore.ops as ops
 import numpy as np
 from dataset import create_dataset
-from hparams import parse_args
 from mindspore import context, nn
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
 
 from mindaudio.models.decoders.greedydecoder import MSGreedyDecoder
 from mindaudio.models.deepspeech2 import DeepSpeechModel
+from mindaudio.utils.hparams import parse_args
 
 
 class PredictWithSoftmax(nn.Cell):
@@ -73,10 +73,7 @@ if __name__ == "__main__":
     load_param_into_net(model, param_dict)
     print("Successfully loading the pre-trained model")
 
-    if args.Decoder_type == "greedy":
-        decoder = MSGreedyDecoder(labels=labels, blank_index=labels.index("_"))
-    else:
-        raise NotImplementedError("Only greedy decoder is supported now")
+    decoder = MSGreedyDecoder(labels=labels, blank_index=labels.index("_"))
     target_decoder = MSGreedyDecoder(labels, blank_index=labels.index("_"))
 
     model.set_train(False)
@@ -106,8 +103,7 @@ if __name__ == "__main__":
         decoded_output, _ = decoder.decode(out, output_sizes)
         target_strings = target_decoder.convert_to_strings(split_targets)
 
-        if args.save_output is not None:
-            output_data.append((out.asnumpy(), output_sizes.asnumpy(), target_strings))
+        output_data.append((out.asnumpy(), output_sizes.asnumpy(), target_strings))
         for doutput, toutput in zip(decoded_output, target_strings):
             transcript, reference = doutput[0], toutput[0]
             wer_inst = decoder.wer(transcript, reference)
