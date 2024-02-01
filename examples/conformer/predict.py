@@ -144,6 +144,8 @@ def main():
             w += 2
             if w == eos:
                 break
+            if w > len(char_dict):
+                continue
             character = char_dict[w]
             content += character
             content_list.append(character)
