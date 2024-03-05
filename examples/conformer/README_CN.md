@@ -99,6 +99,15 @@ mpirun --allow-run-as-root -n 8 python train.py --config_path ./conformer.yaml
 
 如在GPU中进行训练，可更改yaml文件中的配置。
 
+3.启动训练前，可更改环境变量设置，更改线程数以提高运行速度。如下所示:
+
+```shell
+export OPENBLAS_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+```
+
+
+
 ### 4.评估模型
 
 提供ctc greedy search、ctc prefix beam search、attention decoder、attention rescoring四种解码方式，可在yaml配置文件中对解码方式进行修改。
