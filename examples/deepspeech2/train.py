@@ -6,7 +6,6 @@ from dataset import create_dataset
 from mindspore import ParameterTuple, Tensor, context
 from mindspore.communication.management import get_group_size, get_rank, init
 from mindspore.context import ParallelMode
-from mindspore.nn import TrainOneStepCell
 from mindspore.nn.optim import Adam
 from mindspore.train import Model
 from mindspore.train.callback import (
@@ -21,6 +20,7 @@ from mindaudio.loss.ctc_loss import NetWithCTCLoss
 from mindaudio.models.deepspeech2 import DeepSpeechModel
 from mindaudio.scheduler.scheduler_factory import step_lr
 from mindaudio.utils.hparams import parse_args
+from mindaudio.utils.train_one_step import TrainOneStepWithLossScaleCell
 
 
 def train(args):
@@ -61,7 +61,7 @@ def train(args):
         eps=args.OptimConfig.epsilon,
         loss_scale=args.OptimConfig.loss_scale,
     )
-    train_net = TrainOneStepCell(loss_net, optimizer)
+    train_net = TrainOneStepWithLossScaleCell(loss_net, optimizer, Tensor(1024))
     train_net.set_train(True)
     if args.Pretrained_model != "":
         param_dict = load_checkpoint(args.Pretrained_model)
