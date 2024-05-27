@@ -106,7 +106,7 @@ class MSGreedyDecoder(GreedyDecoder):
         """
         string = ""
         offsets = []
-        for i in range(size):
+        for i in range(int(size)):
             char = self.int_to_char[sequence[i].item()]
             if char != self.int_to_char[self.blank_index]:
                 if (
