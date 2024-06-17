@@ -5,9 +5,10 @@ python train.py --config_path <CONFIG_FILE>
 
 import os
 
+import mindspore
 from asr_model import creadte_asr_model, create_asr_eval_net
 from dataset import create_dataset
-from mindspore import ParameterTuple, context, set_seed
+from mindspore import ParameterTuple, set_seed
 from mindspore.communication.management import init
 from mindspore.context import ParallelMode
 from mindspore.nn.optim import Adam
@@ -57,21 +58,22 @@ def train():
     model_dir = os.path.join(exp_dir, "model")
     graph_dir = os.path.join(exp_dir, "graph")
     summary_dir = os.path.join(exp_dir, "summary")
-    context.set_context(
-        mode=context.GRAPH_MODE,
+    mindspore.set_context(
+        mode=0,
         device_target="Ascend",
         device_id=get_device_id(),
         save_graphs=config.save_graphs,
         save_graphs_path=graph_dir,
     )
+    mindspore.set_context(jit_config={"jit_level": "O2"})
 
     device_num = get_device_num()
     rank = get_rank_id()
     # configurations for distributed training
     if config.is_distributed:
         init()
-        context.reset_auto_parallel_context()
-        context.set_auto_parallel_context(
+        mindspore.reset_auto_parallel_context()
+        mindspore.set_auto_parallel_context(
             parallel_mode=ParallelMode.DATA_PARALLEL,
             gradients_mean=True,
             device_num=device_num,
