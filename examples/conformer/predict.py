@@ -5,10 +5,10 @@ python predict.py --config_path <CONFIG_FILE>
 
 import os
 
+import mindspore
 import numpy as np
 from asr_model import creadte_asr_model
 from dataset import create_asr_predict_dataset, load_language_dict
-from mindspore import context
 from mindspore.train.model import Model
 from mindspore.train.serialization import load_checkpoint, load_param_into_net
 
@@ -44,9 +44,12 @@ def main():
     os.makedirs(decode_dir, exist_ok=True)
     result_file = open(os.path.join(decode_dir, "result.txt"), "w")
 
-    context.set_context(
-        mode=context.GRAPH_MODE, device_target="Ascend", device_id=get_device_id()
+    mindspore.set_context(
+        mode=0,
+        device_target="Ascend",
+        device_id=get_device_id(),
     )
+    mindspore.set_context(jit_config={"jit_level": "O2"})
 
     # load test data
     test_dataset = create_asr_predict_dataset(
