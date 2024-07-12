@@ -20,8 +20,15 @@
 
 MindAudio is a toolbox of audio models and algorithms based on [MindSpore](https://www.mindspore.cn/). It provides a series of API for common audio data processing,data enhancement,feature extraction, so that users can preprocess data conveniently. Also provides examples to show how to build audio deep learning models with mindaudio.
 
-### data processing
+The following is the corresponding `mindaudio` versions and supported `mindspore` versions.
+|  mindaudio  |  mindspore  |
+|    :--:    |     :--:    |
+|   master   |    master   |
+|    0.4     |    2.3.0    | 
+|    0.3     |    2.2.10   |
+|    0.1.x   |    1.8&1.9   |
 
+### data processing
 
 ```python
 # read audio

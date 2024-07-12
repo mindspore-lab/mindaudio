@@ -16,19 +16,8 @@ Conformer整体结构包括：SpecAug、ConvolutionSubsampling、Linear、Dropou
 
   ![image-20230310165349460](https://raw.githubusercontent.com/mindspore-lab/mindaudio/main/tests/result/conformer.png)
 
-### 数据处理
 
-- 音频：
 
-  1.特征提取：采用fbank。
-
-  2.数据增强：在线speed_perturb。
-
-- 文字：
-
-​		文字编码使用逐字中文编码转换，用户可使用分词模型进行替换。
-
-## 使用步骤
 
 ### 1. 数据集准备
 
@@ -64,42 +53,34 @@ python compute_cmvn_stats.py --num_workers 16 --train_config conformer.yaml --in
 
 注意：--num_workers可根据训练设备的核数进行调整
 
-### 3. 训练
+### 3. 开始训练（默认使用Ascend 910）
 
-#### 单卡训练
+#### 单卡
 ```shell
 cd examples/conformer
 # Standalone training
 python train.py --config_path ./conformer.yaml
 ```
 
-注意:默认使用Ascend机器
-
-#### 在Ascend上进行多卡训练
-
-此样例使用 8张NPU.
-```shell
-# Distribute_training
-mpirun -n 8 python train.py --config_path ./conformer.yaml
-```
 注意:
 
-1.采用多卡训练时需确保yaml文件中的is_distributed为True，可通过更改yaml或在命令行中添加参数进行配置。
+#### 8卡训练
+
+需配置is_distributed参数为True
 
 ```shell
 # Distribute_training
 mpirun -n 8 python train.py --config_path ./conformer.yaml  --is_distributed True
 ```
 
-2.如果脚本是由root用户执行的，必须在mpirun中添加——allow-run-as-root参数，如下所示:
+如果脚本是由root用户执行的，必须在mpirun中添加——allow-run-as-root参数，如下所示:
 
 ```shell
 mpirun --allow-run-as-root -n 8 python train.py --config_path ./conformer.yaml
 ```
 
-如在GPU中进行训练，可更改yaml文件中的配置。
 
-3.启动训练前，可更改环境变量设置，更改线程数以提高运行速度。如下所示:
+启动训练前，可更改环境变量设置，更改线程数以提高运行速度。如下所示:
 
 ```shell
 export OPENBLAS_NUM_THREADS=1
@@ -108,11 +89,11 @@ export MKL_NUM_THREADS=1
 
 
 
-### 4.评估模型
+### 4.评估
 
-提供ctc greedy search、ctc prefix beam search、attention decoder、attention rescoring四种解码方式，可在yaml配置文件中对解码方式进行修改。
+我们提供ctc greedy search、ctc prefix beam search、attention decoder、attention rescoring四种解码方式，可在yaml配置文件中对解码方式进行修改。
 
-执行脚本后将生成包含预测结果的文件：result.txt
+执行脚本后将生成包含预测结果的文件为result.txt
 
 ```shell
 python predict.py --config_path ./conformer.yaml
@@ -120,10 +101,10 @@ python predict.py --config_path ./conformer.yaml
 
 
 
-## **模型表现**
+### **性能表现**
 
 * Feature info: using fbank feature, cmvn, online speed perturb
-* Training info: lr 0.001, acc_grad 1, 240 epochs, 8 Ascend910
+* Training info: lr 0.001, acc_grad 1, 240 epochs, ascend 910*8
 * Decoding info: ctc_weight 0.3, average_num 30
 * Performance result: total_time 11h17min, 8p, using hccl_tools.
 

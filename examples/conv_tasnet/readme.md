@@ -18,13 +18,12 @@ separation：类似得到mask，通过mix*单个语音的mask，类似得到单�
 
 ### 数据处理
 
-- 使用的数据集为: [librimix](<https://catalog.ldc.upenn.edu/docs/LDC93S1/TIMIT.html>)，LibriMix 是一个开源数据集，用于在嘈杂环境中进行源代码分离。
+  使用的数据集为: [librimix](<https://catalog.ldc.upenn.edu/docs/LDC93S1/TIMIT.html>)，LibriMix 是一个开源数据集，用于在嘈杂环境中进行源代码分离。
   要生成 LibriMix，请参照开源项目：https://github.com/JorisCos/LibriMix
 
 
 
 
-## 使用步骤
 
 ### 1. 数据集准备
 数据预处理运行示例:
@@ -34,18 +33,17 @@ python preprocess.py
 ```
 
 ### 2. 训练
-#### 单卡训练
+#### 单卡
 由于数据集较大，不推荐使用此种训练方式
 ```shell
 # Standalone training
 python train.py -c "conv_tasnet.yaml"
 ```
 
-注意:默认使用Ascend机器
 
-#### 在Ascend上进行多卡训练
+#### 多卡
 
-此样例使用 8张NPU，如果你想改变NPU的数量，可以更改下列命令中 -n 后的卡数。
+
 ```shell
 # Distribute_training
 mpirun -n 8 python train.py -c "conv_tasnet.yaml"
