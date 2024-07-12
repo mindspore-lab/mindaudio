@@ -84,10 +84,6 @@ Result presentation:
 
 ![image-20230310165349460](https://raw.githubusercontent.com/mindspore-lab/mindaudio/main/tests/result/stft_magnitude.png)
 
-## What's New
-- 2023/06/24: version 0.1.1, bug fix and readme update
-- 2023/03/30: version 0.1.0, including 50+ data processing APIs, 5 models supported.
-- 2022/09/30: beta, 33 data APIs + 3 models
 
 ## Contributing
 
