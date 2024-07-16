@@ -1,40 +1,41 @@
-# 使用conformer进行语音识别
+# Using Conformer for Speech Recognition
 
+> [Conformer: Convolution-augmented Transformer for Speech Recognition](https://arxiv.org/abs/2005.08100)
 
+## Introduction
 
-## 介绍
+Conformer is a model that combines transformers and CNNs to model both local and global dependencies in audio sequences. Currently, models based on transformers and convolutional neural networks (CNNs) have achieved good results in automatic speech recognition (ASR). Transformers can capture long-sequence dependencies and global interactions based on content, while CNNs can effectively utilize local features. Therefore, a convolution-enhanced transformer model called Conformer has been proposed for speech recognition, showing performance superior to both transformers and CNNs. The current version supports using the Conformer model for training/testing and inference on the AISHELL-1 dataset on ascend NPU and GPU.
 
-conformer是将一种transformer和cnn结合起来，对音频序列进行局部和全局依赖都进行建模的模型。目前基于transformer和卷积神经网络cnn的模型在ASR上已经达到了较好的效果，Transformer能够捕获长序列的依赖和基于内容的全局交互信息，CNN则能够有效利用局部特征，因此针对语音识别问题提出了卷积增强的transformer模型，称为conformer，模型性能优于transformer和cnn。目前提供版本支持在NPU和GPU上使用[conformer](https://arxiv.org/pdf/2102.06657v1.pdf)模型在aishell-1数据集上进行训练/测试和推理。
+### Model Structure
 
-### 模型结构
+The overall structure of Conformer includes SpecAug, ConvolutionSubsampling, Linear, Dropout, and ConformerBlocks×N, as shown in the structure diagram below.
 
-Conformer整体结构包括：SpecAug、ConvolutionSubsampling、Linear、Dropout、ConformerBlocks×N，可见如下结构图。
+- ConformerBlock Structure (N of this structure): Feed Forward Module, Multi-Head Self Attention Module, Convolution Module, Feed Forward Module, Layernorm. Each module is preceded by a Layernorm and followed by a Dropout, with residual connections linking the input data directly.
 
-- ConformerBlock结构（N个该结构）：Feed Forward Module、Multi-Head Self Attention Module、Convolution Module、Feed Forward Module、Layernorm。其中每个Module都是前接一个Layernorm后接一个Dropout，且都有残差链连接，残差数据为输入数据本身。
-
-- 马卡龙结构：可以看到ConformerBlock神似马卡龙结构，即两个一样的Feed Forward Module中间夹了Multi-Head Self Attention Module和Convolution。
+- Macaron Structure: The ConformerBlock resembles a macaron structure, with a Multi-Head Self Attention Module and Convolution Module sandwiched between two identical Feed Forward Modules.
 
   ![image-20230310165349460](https://raw.githubusercontent.com/mindspore-lab/mindaudio/main/tests/result/conformer.png)
 
 
 
+## Usage Steps
 
-### 1. 数据集准备
+### 1. Dataset Preparation
 
-以aishell数据集为例，mindaudio提供下载、生成统计信息的脚本（包含wav文件地址信息以及对应中文信息），执行此脚本会生成train.csv、dev.csv、test.csv三个文件。
+Take the AISHELL dataset as an example. MindAudio provides scripts to download and generate statistical information (including the addresses of wav files and corresponding Chinese information). Executing this script will generate three files: train.csv, dev.csv, and test.csv.
 
 ```shell
-# data_path为存放数据的地址
+# data_path is the path where the data is stored
 python mindaudio/data/aishell.py --data_path "/data" --download False
 ```
 
-如需下载数据， --download True
+To download data, set --download parameter to be True.
 
-### 2. 数据预处理
+### 2. Data Preprocessing
 
-#### 文字部分
+#### Text Part
 
-根据aishell提供的aishell_transcript_v0.8.txt，生成逐字的编码文件，每个字对应一个id，输出包含编码信息的文件：lang_char.txt。
+Based on the aishell_transcript_v0.8.txt provided by AISHELL, generate a character-by-character encoding file where each character corresponds to an ID, outputting a file containing encoding information: lang_char.txt.
 
 ```shell
 cd mindaudio/utils
@@ -42,45 +43,46 @@ python text2token.py -s 1 -n 1 "data_path/data_aishell/transcript/aishell_transc
         | sort | uniq | grep -a -v -e '^\s*$' | awk '{print $0 " " NR+1}' >> ${/data_path/lang_char.txt}
 ```
 
-#### 音频部分
+#### Audio Part
 
-本模型使用了全局cmvn，为提高模型训练效率，在训练前会对数据的特征进行统计，生成包含统计信息的文件：global_cmvn.json。
+This model uses global CMVN. To improve training efficiency, statistical features of the data are computed before training, generating a file with the statistical information: global_cmvn.json.
 
 ```shell
 cd examples/conformer
 python compute_cmvn_stats.py --num_workers 16 --train_config conformer.yaml --in_scp data_path/train.csv --out_cmvn data_path/global_cmvn
 ```
 
-注意：--num_workers可根据训练设备的核数进行调整
+Note: --num_workers can be adjusted according to the number of cores on the training device.
 
-### 3. 开始训练（默认使用Ascend 910）
+### 3. Training
 
-#### 单卡
+#### Single-Card Training (by default using Ascend 910)
 ```shell
 cd examples/conformer
 # Standalone training
 python train.py --config_path ./conformer.yaml
 ```
 
-注意:
+Note: Use Ascend device by default.
 
-#### 8卡训练
+#### Multi-Card Training on Ascend
 
-需配置is_distributed参数为True
+This example uses 8 ascend NPUs.
+```shell
+# Distribute training
+mpirun -n 8 python train.py --config_path ./conformer.yaml
+```
+Note:
+When using multi-card training, ensure that is_distributed in the YAML file is set to True. This can be configured by modifying the YAML file or adding parameters on the command line.
 
 ```shell
 # Distribute_training
 mpirun -n 8 python train.py --config_path ./conformer.yaml  --is_distributed True
 ```
-
-如果脚本是由root用户执行的，必须在mpirun中添加——allow-run-as-root参数，如下所示:
-
-```shell
-mpirun --allow-run-as-root -n 8 python train.py --config_path ./conformer.yaml
-```
+If the script is executed by the root user, the `--allow-run-as-root` parameter must be added to `mpirun`.
 
 
-启动训练前，可更改环境变量设置，更改线程数以提高运行速度。如下所示:
+Before starting training, you can set environment variable to adjust the number of threads for faster execution as shown below:
 
 ```shell
 export OPENBLAS_NUM_THREADS=1
@@ -89,28 +91,47 @@ export MKL_NUM_THREADS=1
 
 
 
-### 4.评估
+### 4. Evaluation
 
-我们提供ctc greedy search、ctc prefix beam search、attention decoder、attention rescoring四种解码方式，可在yaml配置文件中对解码方式进行修改。
+Four decoding methods are provided: CTC greedy search, CTC prefix beam search, attention decoder, and attention rescoring. The decoding method can be modified in the YAML configuration file.
 
-执行脚本后将生成包含预测结果的文件为result.txt
-
+Executing the script will generate a file containing the prediction results: result.txt.
 ```shell
+# by default using ctc greedy search decoder
 python predict.py --config_path ./conformer.yaml
+
+# using ctc prefix beam search decoder
+python predict.py --config_path ./conformer.yaml --decode_mode ctc_prefix_beam_search
+
+# using attention decoder
+python predict.py --config_path ./conformer.yaml --decode_mode attention
+
+# using attention rescoring decoder
+python predict.py --config_path ./conformer.yaml --decode_mode attention_rescoring
 ```
 
 
 
-### **性能表现**
+## Model Performance
+The training config can be found in the [conformer.yaml](https://github.com/mindspore-lab/mindaudio/blob/main/examples/conformer/conformer.yaml).
 
-* Feature info: using fbank feature, cmvn, online speed perturb
-* Training info: lr 0.001, acc_grad 1, 240 epochs, ascend 910*8
-* Decoding info: ctc_weight 0.3, average_num 30
-* Performance result: total_time 11h17min, 8p, using hccl_tools.
+Performance tested on ascend 910 (8p) with graph mode:
 
-| model     | decoding mode          | CER  |
-| --------- | ---------------------- | ---- |
-| conformer | ctc greedy search      | 5.05 |
-| conformer | ctc prefix beam search | 5.05 |
-| conformer | attention decoder      | 5.00 |
-| conformer | attention rescoring    | 4.73 |
+| model     | decoding mode          | CER          |
+|-----------|------------------------|--------------|
+| conformer | ctc greedy search      | 5.35         |
+| conformer | ctc prefix beam search | 5.36         |
+| conformer | attention decoder      | comming soon |
+| conformer | attention rescoring    | 4.95         |
+- [weights](https://download-mindspore.osinfra.cn/toolkits/mindaudio/conformer/conformer_avg_30-548ee31b.ckpt) can be downloaded here.
+
+---
+Performance tested on ascend 910* (8p) with graph mode:
+
+| model     | decoding mode          | CER          |
+|-----------|------------------------|--------------|
+| conformer | ctc greedy search      | 5.62         |
+| conformer | ctc prefix beam search | 5.62         |
+| conformer | attention decoder      | comming soon |
+| conformer | attention rescoring    | 5.12         |
+- [weights](https://download-mindspore.osinfra.cn/toolkits/mindaudio/conformer/conformer_avg_30-692d57b3-910v2.ckpt) can be downloaded here.

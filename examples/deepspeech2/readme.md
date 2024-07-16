@@ -1,52 +1,49 @@
-# 使用DeepSpeech2进行语音识别
+# Using DeepSpeech2 for Speech Recognition
+> [Deep Speech 2: End-to-End Speech Recognition in English and Mandarin](https://arxiv.org/abs/1512.02595)
 
+## Introduction
 
+DeepSpeech2 is a speech recognition model trained using CTC loss. It replaces the entire manually designed component pipeline with neural networks and can handle a variety of speech, including noisy environments, accents, and different languages. The currently provided version supports using the [DeepSpeech2](http://arxiv.org/pdf/1512.02595v1.pdf) model for training/testing and inference on the librispeech dataset on NPU and GPU.
 
-## 介绍
+### Model Architecture
 
-DeepSpeech2是一种采用CTC损失训练的语音识别模型。它用神经网络取代了整个手工设计组件的管道，可以处理各种各样的语音，包括嘈杂的环境、口音和不同的语言。目前提供版本支持在NPU和GPU上使用[DeepSpeech2](http://arxiv.org/pdf/1512.02595v1.pdf)模型在librispeech数据集上进行训练/测试和推理。
+The current reproduced model includes:
 
-### 模型结构
+- Two convolutional layers:
+  - Number of channels: 32, kernel size: 41, 11, stride: 2, 2
+  - Number of channels: 32, kernel size: 41, 11, stride: 2, 1
+- Five bidirectional LSTM layers (size 1024)
+- A projection layer [size equal to the number of characters plus 1 (for the CTC blank symbol), 28]
 
-目前的复现的模型包括:
+### Data Processing
 
-- 两个卷积层:
-  - 通道数为 32，内核大小为  41, 11 ，步长为  2, 2
-  - 通道数为 32，内核大小为  41, 11 ，步长为  2, 1
-- 五个双向 LSTM 层（大小为 1024）
-- 一个投影层【大小为字符数加 1（为CTC空白符号)，28】
+- Audio:
+  1. Feature extraction: log power spectrum.
+  2. Data augmentation: not used yet.
 
-### 数据处理
+- Text:
+  - Text encoding uses labels for English alphabet conversion; users can replace this with a tokenization model.
 
-- 音频：
+## Usage Steps
 
-  1.特征提取：采用log功率谱。
-
-  2.数据增强：暂未使用。
-
-- 文字：
-
-​		文字编码使用labels进行英文字母转换，用户可使用分词模型进行替换。
-
-
-### 1. 数据集准备
-如为未下载数据集，可使用提供的脚本进行一键下载以及数据准备，如下所示：
+### 1. Preparing the Dataset
+If the dataset is not downloaded, you can use the provided script to download and prepare the data with one command, as shown below:
 
 ```shell
-# Download and creat json
+# Download and create json
 python mindaudio/data/librispeech.py --root_path "your_data_path"
 ```
 
-如已下载好压缩文件，请按如下命令操作：
+If you have already downloaded the compressed files, operate with the following command:
 
 ```shell
-# creat json
-python mindaudio/data/librispeech.py --root_path "your_data_path"  --data_ready True
+# Create json
+python mindaudio/data/librispeech.py --root_path "your_data_path" --data_ready True
 ```
 
-LibriSpeech存储flac音频格式的文件。要在MindAudio中使用它们，须将所有flac文件转换为wav文件，用户可以使用[ffmpeg](https://gist.github.com/seungwonpark/4f273739beef2691cd53b5c39629d830)或[sox](https://sourceforge.net/projects/sox/)进行转换。
+LibriSpeech stores files in flac audio format. To use them in MindAudio, all flac files need to be converted to wav files. Users can use [ffmpeg](https://gist.github.com/seungwonpark/4f273739beef2691cd53b5c39629d830) or [sox](https://sourceforge.net/projects/sox/) for the conversion.
 
-处理后，数据集目录结构如下所示:
+After processing, the dataset directory structure is as follows:
 
 ```
     ├─ LibriSpeech_dataset
@@ -68,42 +65,37 @@ LibriSpeech存储flac音频格式的文件。要在MindAudio中使用它们，�
     │  │   └─ txt
 ```
 
-4个**.json文件存储了相应数据的绝对路径，在后续进行模型训练以及验证中，请将yaml配置文件中的xx_manifest改为对应libri_xx_manifest.json的存放地址。
+The four **.json files store the absolute paths of the corresponding data. For subsequent model training and validation, update the xx_manifest in the yaml configuration file to the location of the corresponding libri_xx_manifest.json file.
 
-### 2. 训练
-#### 单卡
-由于数据集较大，不推荐使用此种训练方式
+### 2. Training
+#### Single-Card Training
+Due to the large dataset, this training method is not recommended.
 ```shell
 # Standalone training
 python train.py -c "./deepspeech2.yaml"
 ```
+Note: The default is to use Ascend machines.
 
-
-#### 多卡
-
-
+#### Multi-Card Training on Ascend
+This example uses 8 NPUs. If you want to change the number of NPUs, you can modify the number of cards after -n in the command below.
 ```shell
-# Distribute_training
+# Distributed training
 mpirun -n 8 python train.py -c "./deepspeech2.yaml"
 ```
-注意:如果脚本是由root用户执行的，必须在mpirun中添加——allow-run-as-root参数，如下所示:
+Note: If the script is executed by the root user, you must add the --allow-run-as-root parameter in mpirun, as shown below:
 ```shell
 mpirun --allow-run-as-root -n 8 python train.py -c "./deepspeech2.yaml"
 ```
 
-
-### 3.评估
-
-将训好的权重地址更新在deepspeech2.yaml配置文件Pretrained_model中，执行以下命令
+### 3. Evaluating the Model
+Update the path to the trained weights in the Pretrained_model section of the deepspeech2.yaml configuration file and execute the following command:
 ```shell
 # Validate a trained model
 python eval.py -c "./deepspeech2.yaml"
 ```
 
+## **Model Performance**
 
-
-## **性能表现**
-
-| model        | LM   | test clean cer| test clean wer | config                                     | weights|
-| ----------- | ---- | -------------- | -------------- |--------------------------------------------------------------------------------------------------| ------------------------------------------------------------ |
-| deepspeech2 | No   | 3.461          | 10.24          | [yaml](https://github.com/mindsporelab/mindaudio/blob/main/example/deepspeech2/deepspeech2.yaml) | [weights](https://download.mindspore.cn/toolkits/mindaudio/deepspeech2/deepspeech2.ckpt) |
+| Model        | Machine   | LM   | Test Clean CER | Test Clean WER | Parameters                                                                                               | Weights                                                         |
+|--------------|-----------|------|----------------|----------------|----------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------|
+| DeepSpeech2  | D910x8-G  | No   | 3.461          | 10.24          | [yaml](https://github.com/mindsporelab/mindaudio/blob/main/example/deepspeech2/deepspeech2.yaml)          | [weights](https://download.mindspore.cn/toolkits/mindaudio/deepspeech2/deepspeech2.ckpt)               |

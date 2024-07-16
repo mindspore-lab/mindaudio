@@ -14,6 +14,7 @@
 [Installation](#installation) |
 [Get Started](#get-started)
 
+[English](README.md) | 中文
 </div>
 
 ## 介绍
@@ -21,13 +22,11 @@ MindAudio 是基于 [MindSpore](https://www.mindspore.cn/) 的音频模型和算
 
 下表显示了相应的 `mindaudio` 版本和支持的 `mindspore` 版本。
 
-| `mindspore` | `mindaudio` | `tested hardware`|
-| :--:| :--:| :-- |
-| `master`  | `master`| `ascend 910*`| 
-| `2.3.0`   | `0.4`  |  `ascend 910*`|
-| `2.2.10`  | `0.3` |  `ascend 910*`|
-| `2.0`     | `0.2` | `ascend 910`|
-| `1.8`     | `0.1`  |`ascend 910`|
+| `mindspore`  | `mindaudio` | `tested hardware`            |
+|--------------|-------------|------------------------------|
+| `master`     | `master`    | `ascend 910*`                |
+| `2.3.0`      | `0.4`       | `ascend 910*`                |
+| `2.2.10`     | `0.3`       | `ascend 910` & `ascend 910*` |
 
 ### 数据处理
 
@@ -92,10 +91,6 @@ MindAudio 提供了一系列常用的音频数据处理 APIs，可以轻松调�
 
 ![image-20230310165349460](https://raw.githubusercontent.com/mindspore-lab/mindaudio/main/tests/result/stft_magnitude.png)
 
-## 新特性
-- 2023/06/24: version 0.1.1，bug修复和更新 README。
-- 2023/03/30: version 0.1.0，支持50+数据处理 APIs，提供5个模型的实现。
-- 2022/09/30: beta, 支持33数据处理 APIs，提供3个模型的实现。
 
 ## 贡献方式
 我们感谢开发者用户的所有贡献，一起让 MindAudio 变得更好。
