@@ -37,9 +37,9 @@ python preprocess.py
 python train.py -c "tasnet.yaml"
 ```
 
-注意:默认使用Ascend机器
 
-#### 在Ascend上进行多卡训练
+
+#### 多卡
 
 此样例使用 8张NPU，如果你想改变NPU的数量，可以更改下列命令中 -n 后的卡数。
 ```shell
@@ -51,7 +51,7 @@ mpirun -n 8 python train.py -c "tasnet.yaml"
 mpirun --allow-run-as-root -n 8 python train.py -c "tasnet.yaml"
 ```
 
-### 3.评估模型
+### 3.评估
 
 ```shell
 # Validate a trained model
@@ -60,8 +60,8 @@ python eval.py -c "tasnet.yaml"
 
 
 
-## **模型表现**
+## **性能表现**
 
-| 模型   | 机器     | SI-SNR | 参数                                                         |
-| ------ | -------- | ------ | ------------------------------------------------------------ |
-| tasnet | D910x8-G | 5.97   | [yaml](https://github.com/mindsporelab/mindaudio/blob/main/example/tasnet/tasnet.yaml) |
+| model   | SI-SNR | config |
+| :-:|:-:| :-:|
+| tasnet  | 5.97   | [yaml](https://github.com/mindsporelab/mindaudio/blob/main/example/tasnet/tasnet.yaml) |

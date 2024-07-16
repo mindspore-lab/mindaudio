@@ -20,19 +20,15 @@
 
 MindAudio is a toolbox of audio models and algorithms based on [MindSpore](https://www.mindspore.cn/). It provides a series of API for common audio data processing,data enhancement,feature extraction, so that users can preprocess data conveniently. Also provides examples to show how to build audio deep learning models with mindaudio.
 
-The table below shows the corresponding `mindaudio` versions and supported
-`mindspore` versions.
-
-| `mindspore` | `mindaudio` | `tested hardware`|
-| :--:| :--:| :-- |
-| `master`  | `master`| `ascend 910*`| 
-| `2.3.0`   | `0.4`  |  `ascend 910*`|
-| `2.2.10`  | `0.3` |  `ascend 910*`|
-| `2.0`     | `0.2` | `ascend 910`|
-| `1.8`     | `0.1`  |`ascend 910`|
+The following is the corresponding `mindaudio` versions and supported `mindspore` versions.
+|  mindaudio  |  mindspore  |
+|    :--:    |     :--:    |
+|   master   |    master   |
+|    0.4     |    2.3.0    | 
+|    0.3     |    2.2.10   |
+|    0.1.x   |    1.8&1.9   |
 
 ### data processing
-
 
 ```python
 # read audio
@@ -68,7 +64,7 @@ python setup.py install
 
 ###
 
-MindAudio provides a series of commonly used audio data processing APIs, which can be easily invoked for data analysis and feature extraction.
+mindaudio provides a series of commonly used audio data processing apis, which can be easily invoked for data analysis and feature extraction.
 
 ```python
 >>> import mindaudio.data.io as io
@@ -95,10 +91,6 @@ Result presentation:
 
 ![image-20230310165349460](https://raw.githubusercontent.com/mindspore-lab/mindaudio/main/tests/result/stft_magnitude.png)
 
-## What's New
-- 2023/06/24: version 0.1.1, bug fix and readme update
-- 2023/03/30: version 0.1.0, including 50+ data processing APIs, 5 models supported.
-- 2022/09/30: beta, 33 data APIs + 3 models
 
 ## Contributing
 
