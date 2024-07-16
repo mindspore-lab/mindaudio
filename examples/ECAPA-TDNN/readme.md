@@ -118,9 +118,9 @@ python speaker_verification_cosine.py --need_generate_data=False
 
 
 ## **性能表现**
- - tested on ascend 910 with 8 cards. 
+ - tested on ascend 910 with 8 cards.
  - total training time : 24hours
 
-| model      | eer with s-norm | eer s-norm | config| weights|
-| :-: | :-: | :-: | :-: | :-:|
-| ECAPA-TDNN  | 1.50%           | 1.70%      | [yaml](https://github.com/mindsporelab/mindaudio/blob/main/example/ECAPA-TDNN/ecapatdnn.yaml) | [weights](https://download.mindspore.cn/toolkits/mindaudio/ecapatdnn/ecapatdnn_vox12.ckpt) |
+|   model    | eer with s-norm | eer s-norm |                                            config                                             |                                          weights                                           |
+|:----------:|:---------------:|:----------:|:---------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------:|
+| ECAPA-TDNN |      1.50%      |   1.70%    | [yaml](https://github.com/mindsporelab/mindaudio/blob/main/example/ECAPA-TDNN/ecapatdnn.yaml) | [weights](https://download.mindspore.cn/toolkits/mindaudio/ecapatdnn/ecapatdnn_vox12.ckpt) |
