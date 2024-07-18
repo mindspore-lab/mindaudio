@@ -68,31 +68,30 @@ Voxceleb2 是按m4a格式保存音频文件的，想要在MindAudio中使用它�
 
 ### 2. 训练
 
-#### 单卡训练
+#### 单卡
 
 Voxceleb1、Voxceleb2 数据集准备好之后, 可以直接运行下面脚本预处理音频数据、在单卡上训练说话人特证:
 
-单卡训练速度较慢，不提倡使用此种方式
+单卡训练速度较慢，不推荐使用此种方式
 
 ```shell
 # Standalone training
 python train_speaker_embeddings.py
 ```
 
-注意: 1.默认使用Ascend机器
 
 ​		  2.Voxceleb1、Voxceleb2 数据集很大,预处理音频数据时间比较长，所以在此使用30个进程同时做音频预处理。
 
-如果机器不支持, 请修改`ecapatdnn.yaml`文件中的`data_process_num`超参数，到机器支持为止。
+可修改`ecapatdnn.yaml`文件中的`data_process_num`参数进行调试
 
-如果预处理数据已经生成, 可以运行下面代码单独在单卡上训练:
+预处理数据生成后, 可以运行以下代码进行单卡训练:
 
 ```shell
 # Standalone training with prepared data
 python train_speaker_embeddings.py --need_generate_data=False
 ```
 
-#### 多卡训练
+#### 多卡
 
 如果预处理数据已经生成，可以运行下面代码进行分布式多卡训练:
 
@@ -102,14 +101,14 @@ hccl.json 文件是使用 hccl 工具生成的,可以参考此文章实现 (http
 
 ### 3.评估
 
-模型训练结束之后, 可以运行下面脚本来做说话人验证:
+模型训练完成后, 可运行以下脚本做验证:
 
 ```shell
 # eval
 python speaker_verification_cosine.py
 ```
 
-当说话人验证数据预处理之后, 可以运行下面脚本跳过数据预处理，只做说话人验证:
+如果已做过数据预处理, 可设置--need_generate_data=False:
 
 ```shell
 # eval with prepared data
@@ -118,8 +117,10 @@ python speaker_verification_cosine.py --need_generate_data=False
 
 
 
-## **模型表现**
+## **性能表现**
+ - tested on ascend 910 with 8 cards.
+ - total training time : 24hours
 
-| 模型       | 机器     | traning time | EER with s-norm | EER s-norm | 参数                                                         | 权重                                                         |
-| ---------- | -------- | ------------ | --------------- | ---------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| ECAPA-TDNN | D910x8-G | 24h          | 1.50%           | 1.70%      | [yaml](https://github.com/mindsporelab/mindaudio/blob/main/example/ECAPA-TDNN/ecapatdnn.yaml) | [weights](https://download.mindspore.cn/toolkits/mindaudio/ecapatdnn/ecapatdnn_vox12.ckpt) |
+|   model    | eer with s-norm | eer s-norm |                                            config                                             |                                          weights                                           |
+|:----------:|:---------------:|:----------:|:---------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------:|
+| ECAPA-TDNN |      1.50%      |   1.70%    | [yaml](https://github.com/mindsporelab/mindaudio/blob/main/example/ECAPA-TDNN/ecapatdnn.yaml) | [weights](https://download.mindspore.cn/toolkits/mindaudio/ecapatdnn/ecapatdnn_vox12.ckpt) |
