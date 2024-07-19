@@ -14,15 +14,13 @@
 [Installation](#installation) |
 [Get Started](#get-started)
 
-English | [中文](README_CN.md)
-
+[English](README.md) | 中文
 </div>
 
-## Introduction
+## 介绍
+MindAudio 是基于 [MindSpore](https://www.mindspore.cn/) 的音频模型和算法工具箱。它提供了一系列用于常见音频数据处理、数据增强、特征提取的 API，方便用户对数据进行预处理。此外，它还提供了一些示例，展示如何利用 mindaudio 建立音频深度学习模型。
 
-MindAudio is a toolbox of audio models and algorithms based on [MindSpore](https://www.mindspore.cn/). It provides a series of API for common audio data processing,data enhancement,feature extraction, so that users can preprocess data conveniently. Also provides examples to show how to build audio deep learning models with mindaudio.
-
-The following is the corresponding `mindaudio` versions and supported `mindspore` versions.
+下表显示了相应的 `mindaudio` 版本和支持的 `mindspore` 版本。
 
 | `mindspore`  | `mindaudio` | `tested hardware`            |
 |--------------|-------------|------------------------------|
@@ -30,7 +28,8 @@ The following is the corresponding `mindaudio` versions and supported `mindspore
 | `2.3.0`      | `0.4`       | `ascend 910*`                |
 | `2.2.10`     | `0.3`       | `ascend 910` & `ascend 910*` |
 
-### data processing
+### 数据处理
+
 
 ```python
 # read audio
@@ -41,19 +40,18 @@ The following is the corresponding `mindaudio` versions and supported `mindspore
 >>> feats = features.fbanks(audio_data)
 ```
 
-## Installation
+## 安装
 
-### Install with PyPI
+### Pypi安装
 
-The released version of MindAudio can be installed via `PyPI` as follows:
+MindAudio的发布版本可以通过`PyPI`安装:
 
 ```shell
 pip install mindaudio
 ```
 
-### Install from Source
-
-The latest version of MindAudio can be installed as follows:
+### 源码安装
+最新版本的 MindAudio 可以通过如下方式安装：
 
 ```shell
 git clone https://github.com/mindspore-lab/mindaudio.git
@@ -62,11 +60,11 @@ pip install -r requirements/requirements.txt
 python setup.py install
 ```
 
-## Get started with audio data analysis
+## 快速入门音频数据分析
 
 ###
 
-MindAudio provides a series of commonly used audio data processing apis, which can be easily invoked for data analysis and feature extraction.
+MindAudio 提供了一系列常用的音频数据处理 APIs，可以轻松调用这些 APIs 进行数据分析和特征提取。
 
 ```python
 >>> import mindaudio.data.io as io
@@ -89,22 +87,22 @@ MindAudio provides a series of commonly used audio data processing apis, which c
 >>> plt.show()
 ```
 
-Result presentation:
+结果如图:
 
 ![image-20230310165349460](https://raw.githubusercontent.com/mindspore-lab/mindaudio/main/tests/result/stft_magnitude.png)
 
 
-## Contributing
+## 贡献方式
+我们感谢开发者用户的所有贡献，一起让 MindAudio 变得更好。
+贡献指南请参考[CONTRIBUTING.md](CONTRIBUTING.md) 。
 
-We appreciate all contributions to improve MindSpore Audio. Please refer to [CONTRIBUTING.md](CONTRIBUTING.md) for the contributing guideline.
+## 许可证
 
-## License
+MindAudio 遵循[Apache License 2.0](LICENSE)开源协议.
 
-This project is released under the [Apache License 2.0](LICENSE).
+## 引用
 
-## Citation
-
-If you find this project useful in your research, please consider citing:
+如果你觉得 MindAudio 对你的项目有帮助，请考虑引用：
 
 ```latex
 @misc{MindSpore Audio 2022,

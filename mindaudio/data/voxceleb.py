@@ -88,7 +88,7 @@ def prepare_voxceleb(
 ):
     """
     Prepares the csv files for the Voxceleb1 or Voxceleb2 datasets.
-    Please follow the instructions in the README.md file for
+    Please follow the instructions in the readme.md file for
     preparing Voxceleb2.
     """
 

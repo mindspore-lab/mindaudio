@@ -160,7 +160,9 @@ def main():
             ground_truth_list.append(character)
         logger.info("Labs (%d/%d): %s %s", count, tot_sample, uttid, ground_truth)
         logger.info("Hyps (%d/%d): %s %s", count, tot_sample, uttid, content)
-        cer = wer(content_list, ground_truth_list)
+        if not content_list:
+            raise ValueError("The Hypothesis utterance should not be empty")
+        cer = wer(ground_truth_list, content_list)
         logger.info("cer : %.3f", cer)
         result_file.write("{} {}\n".format(uttid, content))
         result_file.flush()
