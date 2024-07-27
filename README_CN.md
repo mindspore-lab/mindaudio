@@ -10,9 +10,9 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 
-[Introduction](#introduction) |
-[Installation](#installation) |
-[Get Started](#get-started)
+[介绍](#介绍) |
+[安装](#安装) |
+[快速入门](#快速入门音频数据分析)
 
 [English](README.md) | 中文
 </div>
@@ -22,11 +22,11 @@ MindAudio 是基于 [MindSpore](https://www.mindspore.cn/) 的音频模型和算
 
 下表显示了相应的 `mindaudio` 版本和支持的 `mindspore` 版本。
 
-| `mindspore`  | `mindaudio` | `tested hardware`            |
-|--------------|-------------|------------------------------|
-| `master`     | `master`    | `ascend 910*`                |
-| `2.3.0`      | `0.4`       | `ascend 910*`                |
-| `2.2.10`     | `0.3`       | `ascend 910` & `ascend 910*` |
+| `mindspore`  | `mindaudio` |
+|--------------|-------------|
+| `master`     | `master`    |
+| `2.3.0`      | `0.4`       |
+| `2.2.10`     | `0.3`       |
 
 ### 数据处理
 
